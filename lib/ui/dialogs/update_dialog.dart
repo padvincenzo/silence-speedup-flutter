@@ -6,7 +6,7 @@
 
 import 'package:flutter/material.dart';
 
-import '../../l10n/translator_context.dart';
+import '../../l10n/gen/app_localizations.dart';
 import '../../services/update_checker.dart';
 
 /// Tells the user a newer release exists and sends them to it.
@@ -36,7 +36,7 @@ class UpdateDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       icon: const Icon(Icons.system_update_alt),
-      title: Text(context.t('menu.update')),
+      title: Text(AppLocalizations.of(context).menuUpdate),
       content: SizedBox(
         width: 400,
         child: Column(
@@ -49,9 +49,7 @@ class UpdateDialog extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              context.t('update.available', <String, Object?>{
-                'version': update.version,
-              }),
+              AppLocalizations.of(context).updateAvailable(update.version),
               style: Theme.of(context).textTheme.bodyMedium,
             ),
           ],
@@ -60,12 +58,12 @@ class UpdateDialog extends StatelessWidget {
       actions: <Widget>[
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(context.t('ui.close')),
+          child: Text(AppLocalizations.of(context).uiClose),
         ),
         FilledButton.icon(
           onPressed: () => onOpenLink(update.url),
           icon: const Icon(Icons.download),
-          label: Text(context.t('update.download')),
+          label: Text(AppLocalizations.of(context).updateDownload),
         ),
       ],
     );

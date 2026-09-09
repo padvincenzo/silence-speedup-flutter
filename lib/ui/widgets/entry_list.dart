@@ -7,7 +7,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../l10n/translator_context.dart';
+import '../../l10n/gen/app_localizations.dart';
+import '../../l10n/labels.dart';
 import '../../models/media_entry.dart';
 import '../../state/process_store.dart';
 import '../../state/queue_store.dart';
@@ -15,10 +16,17 @@ import '../theme.dart';
 
 /// The queue, or the welcome note when there is nothing in it yet.
 class EntryList extends StatelessWidget {
-  const EntryList({super.key, required this.onRevealOutput});
+  const EntryList({
+    super.key,
+    required this.onRevealOutput,
+    required this.onPreview,
+  });
 
   /// Opens the finished file's folder.
   final void Function(MediaEntry entry) onRevealOutput;
+
+  /// Builds a short sample and plays it.
+  final void Function(MediaEntry entry) onPreview;
 
   @override
   Widget build(BuildContext context) {
@@ -35,7 +43,10 @@ class EntryList extends StatelessWidget {
         final MediaEntry entry = queue.entries[index];
         return ChangeNotifierProvider<MediaEntry>.value(
           value: entry,
-          child: _EntryTile(onRevealOutput: onRevealOutput),
+          child: _EntryTile(
+            onRevealOutput: onRevealOutput,
+            onPreview: onPreview,
+          ),
         );
       },
     );
@@ -67,7 +78,7 @@ class _EmptyQueueMessage extends StatelessWidget {
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
-                    context.t('app.intro'),
+                    AppLocalizations.of(context).appIntro,
                     style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                       color: scheme.onSecondaryContainer,
                     ),
@@ -84,9 +95,10 @@ class _EmptyQueueMessage extends StatelessWidget {
 
 /// One row: name, status, and the actions that make sense right now.
 class _EntryTile extends StatelessWidget {
-  const _EntryTile({required this.onRevealOutput});
+  const _EntryTile({required this.onRevealOutput, required this.onPreview});
 
   final void Function(MediaEntry entry) onRevealOutput;
+  final void Function(MediaEntry entry) onPreview;
 
   @override
   Widget build(BuildContext context) {
@@ -123,7 +135,7 @@ class _EntryTile extends StatelessWidget {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    _statusLine(context, entry),
+                    _statusLine(AppLocalizations.of(context), entry),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: Theme.of(context).textTheme.bodySmall?.copyWith(
@@ -138,22 +150,30 @@ class _EntryTile extends StatelessWidget {
               IconButton(
                 onPressed: () => onRevealOutput(entry),
                 icon: const Icon(Icons.folder_outlined),
-                tooltip: context.t('file.reveal'),
+                tooltip: AppLocalizations.of(context).fileReveal,
               ),
-            if (!process.isRunning)
+            if (!process.isRunning) ...<Widget>[
+              IconButton(
+                onPressed: entry.isProcessable
+                    ? () => onPreview(entry)
+                    : null,
+                icon: const Icon(Icons.play_circle_outline),
+                tooltip: AppLocalizations.of(context).filePreview,
+              ),
               IconButton(
                 onPressed: entry.isProcessable
                     ? () => context.read<ProcessStore>().analyze(entry)
                     : null,
                 icon: const Icon(Icons.graphic_eq),
-                tooltip: context.t('file.analyze'),
+                tooltip: AppLocalizations.of(context).fileAnalyze,
               ),
+            ],
             IconButton(
               onPressed: queue.canImport
                   ? () => context.read<QueueStore>().remove(entry)
                   : null,
               icon: const Icon(Icons.delete_outline),
-              tooltip: context.t('file.remove'),
+              tooltip: AppLocalizations.of(context).fileRemove,
             ),
           ],
         ),
@@ -162,16 +182,12 @@ class _EntryTile extends StatelessWidget {
   }
 
   /// Builds the second line: the status, plus whatever detail fits with it.
-  String _statusLine(BuildContext context, MediaEntry entry) {
-    final String status = context.t(_statusKey(entry.status));
-
-    final List<String> parts = <String>[status];
-
+  String _statusLine(AppLocalizations strings, MediaEntry entry) {
     if (entry.status == EntryStatus.ready && entry.duration != null) {
-      return context.t('status.loaded', <String, Object?>{
-        'duration': formatDuration(entry.duration!),
-      });
+      return strings.statusLoaded(formatDuration(entry.duration!));
     }
+
+    final List<String> parts = <String>[statusText(entry.status, strings)];
     if (entry.detail != null && entry.detail!.isNotEmpty) {
       parts.add(entry.detail!);
     } else if (entry.duration != null) {
@@ -179,18 +195,6 @@ class _EntryTile extends StatelessWidget {
     }
     return parts.join(' · ');
   }
-
-  static String _statusKey(EntryStatus status) => switch (status) {
-    EntryStatus.probing => 'status.loading',
-    EntryStatus.ready => 'status.ready',
-    EntryStatus.queued => 'status.queued',
-    EntryStatus.analyzing => 'status.analyzing',
-    EntryStatus.exporting => 'status.exporting',
-    EntryStatus.concatenating => 'status.concatenating',
-    EntryStatus.completed => 'status.completed',
-    EntryStatus.failed => 'status.failed',
-    EntryStatus.interrupted => 'status.interrupted',
-  };
 
   static Color _accentFor(EntryStatus status, StatusPalette palette) =>
       switch (status) {

@@ -121,9 +121,12 @@ class MediaEntry extends ChangeNotifier {
   }
 
   /// File name to write, honouring the chosen container.
-  String outputNameFor(String format) {
-    if (format == kKeepFormat) return name;
-    return '${p.basenameWithoutExtension(name)}.$format';
+  ///
+  /// [suffix] goes before the extension, which is how a preview ends up as
+  /// `lecture (preview).mp4` rather than competing with the real output.
+  String outputNameFor(String format, {String suffix = ''}) {
+    final String extension = format == kKeepFormat ? this.extension : format;
+    return '${p.basenameWithoutExtension(name)}$suffix.$extension';
   }
 
   /// Extension the fragments must use, since they are concatenated without

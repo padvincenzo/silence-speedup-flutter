@@ -7,8 +7,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../l10n/translator.dart';
-import '../../l10n/translator_context.dart';
+import '../../l10n/gen/app_localizations.dart';
+import '../../l10n/labels.dart';
 import '../../models/options.dart';
 import '../../models/processing_settings.dart';
 import '../../state/preferences_store.dart';
@@ -29,27 +29,18 @@ class SettingsDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations strings = AppLocalizations.of(context);
     final PreferencesStore preferences = context.watch<PreferencesStore>();
     final ProcessingSettings settings = preferences.settings;
-    final Translator translator = context.watch<Translator>();
 
     void update(ProcessingSettings next) =>
         context.read<PreferencesStore>().updateSettings(next);
 
-    String label(LabeledOption option) => option.labelKey == null
-        ? option.label
-        : translator.t(option.labelKey!);
-
-    String speedLabel(int index) {
-      final SpeedOption option = kSpeedOptions[index];
-      return option.labelKey == null
-          ? option.label
-          : translator.t(option.labelKey!);
-    }
+    String speedLabel(int index) => speedText(kSpeedOptions[index], strings);
 
     return AlertDialog(
       icon: const Icon(Icons.tune),
-      title: Text(context.t('settings.title')),
+      title: Text(strings.settingsTitle),
       contentPadding: const EdgeInsets.symmetric(horizontal: 24),
       content: SizedBox(
         width: 560,
@@ -59,11 +50,11 @@ class SettingsDialog extends StatelessWidget {
             children: <Widget>[
               SettingSection(
                 icon: Icons.bolt,
-                title: context.t('settings.basic'),
+                title: strings.settingsBasic,
                 children: <Widget>[
                   SettingRow(
-                    label: context.t('settings.silenceSpeed'),
-                    help: context.t('help.silenceSpeed'),
+                    label: strings.settingsSilenceSpeed,
+                    help: strings.helpSilenceSpeed,
                     child: IndexSlider(
                       value: settings.silenceSpeedIndex,
                       max: kSpeedOptions.length - 1,
@@ -73,8 +64,8 @@ class SettingsDialog extends StatelessWidget {
                     ),
                   ),
                   SettingRow(
-                    label: context.t('settings.playbackSpeed'),
-                    help: context.t('help.playbackSpeed'),
+                    label: strings.settingsPlaybackSpeed,
+                    help: strings.helpPlaybackSpeed,
                     child: IndexSlider(
                       // Stops one short of `remove`: dropping the spoken parts
                       // would leave nothing behind.
@@ -86,17 +77,29 @@ class SettingsDialog extends StatelessWidget {
                     ),
                   ),
                   SettingRow(
-                    label: context.t('settings.muteSilences'),
-                    help: context.t('help.muteSilences'),
+                    label: strings.settingsAudioTracks,
+                    help: strings.helpAudioTracks,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Switch(
+                        value: settings.keepAllAudioTracks,
+                        onChanged: (bool value) => update(
+                          settings.copyWith(keepAllAudioTracks: value),
+                        ),
+                      ),
+                    ),
+                  ),
+                  SettingRow(
+                    label: strings.settingsMuteSilences,
+                    help: strings.helpMuteSilences,
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: Switch(
                         value: settings.mutesSilence,
                         onChanged: settings.dropsSilence
                             ? null
-                            : (bool value) => update(
-                                settings.copyWith(muteSilences: value),
-                              ),
+                            : (bool value) =>
+                                  update(settings.copyWith(muteSilences: value)),
                       ),
                     ),
                   ),
@@ -104,36 +107,36 @@ class SettingsDialog extends StatelessWidget {
               ),
               SettingSection(
                 icon: Icons.graphic_eq,
-                title: context.t('settings.silence'),
+                title: strings.settingsSilence,
                 children: <Widget>[
                   SettingRow(
-                    label: context.t('settings.backgroundNoise'),
-                    help: context.t('help.backgroundNoise'),
+                    label: strings.settingsBackgroundNoise,
+                    help: strings.helpBackgroundNoise,
                     child: IndexSlider(
                       value: settings.thresholdIndex,
                       max: kThresholds.length - 1,
-                      labelAt: (int index) => label(kThresholds[index]),
+                      labelAt: (int index) =>
+                          optionText(kThresholds[index], strings),
                       onChanged: (int index) =>
                           update(settings.copyWith(thresholdIndex: index)),
                     ),
                   ),
                   SettingRow(
-                    label: context.t('settings.silenceMinDuration'),
-                    help: context.t('help.silenceMinDuration'),
+                    label: strings.settingsSilenceMinDuration,
+                    help: strings.helpSilenceMinDuration,
                     child: ValueSlider(
                       value: settings.silenceMinDuration,
                       min: kSilenceDurationMin,
                       max: kSilenceDurationMax,
                       step: kSilenceDurationStep,
                       format: _seconds,
-                      onChanged: (double value) => update(
-                        settings.copyWith(silenceMinDuration: value),
-                      ),
+                      onChanged: (double value) =>
+                          update(settings.copyWith(silenceMinDuration: value)),
                     ),
                   ),
                   SettingRow(
-                    label: context.t('settings.silenceMargin'),
-                    help: context.t('help.silenceMargin'),
+                    label: strings.settingsSilenceMargin,
+                    help: strings.helpSilenceMargin,
                     child: ValueSlider(
                       value: settings.silenceMargin,
                       min: kSilenceDurationMin,
@@ -148,11 +151,11 @@ class SettingsDialog extends StatelessWidget {
               ),
               SettingSection(
                 icon: Icons.build_outlined,
-                title: context.t('settings.advanced'),
+                title: strings.settingsAdvanced,
                 children: <Widget>[
                   SettingRow(
-                    label: context.t('settings.crf'),
-                    help: context.t('help.crf'),
+                    label: strings.settingsCrf,
+                    help: strings.helpCrf,
                     child: ValueSlider(
                       value: settings.crf.toDouble(),
                       min: kCrfMin.toDouble(),
@@ -164,59 +167,77 @@ class SettingsDialog extends StatelessWidget {
                     ),
                   ),
                   SettingRow(
-                    label: context.t('settings.fps'),
-                    help: context.t('help.fps'),
+                    label: strings.settingsFps,
+                    help: strings.helpFps,
                     child: OptionDropdown<int>(
                       value: settings.fpsIndex,
-                      items: _indexItems(kFpsOptions, label),
+                      items: _indexItems(kFpsOptions, strings),
                       onChanged: (int? index) => index == null
                           ? null
                           : update(settings.copyWith(fpsIndex: index)),
                     ),
                   ),
                   SettingRow(
-                    label: context.t('settings.preset'),
-                    help: context.t('help.preset'),
+                    label: strings.settingsPreset,
+                    help: strings.helpPreset,
                     child: OptionDropdown<int>(
                       value: settings.presetIndex,
-                      items: _indexItems(kPresets, label),
+                      items: _indexItems(kPresets, strings),
                       onChanged: (int? index) => index == null
                           ? null
                           : update(settings.copyWith(presetIndex: index)),
                     ),
                   ),
                   SettingRow(
-                    label: context.t('settings.audioRate'),
+                    label: strings.settingsAudioRate,
                     child: OptionDropdown<int>(
                       value: settings.audioRateIndex,
-                      items: _indexItems(kAudioRates, label),
+                      items: _indexItems(kAudioRates, strings),
                       onChanged: (int? index) => index == null
                           ? null
                           : update(settings.copyWith(audioRateIndex: index)),
                     ),
                   ),
                   SettingRow(
-                    label: context.t('settings.tune'),
+                    label: strings.settingsTune,
                     child: OptionDropdown<int>(
                       value: settings.tuneIndex,
-                      items: _indexItems(kTunes, label),
+                      items: _indexItems(kTunes, strings),
                       onChanged: (int? index) => index == null
                           ? null
                           : update(settings.copyWith(tuneIndex: index)),
                     ),
                   ),
                   SettingRow(
-                    label: context.t('settings.format'),
-                    help: context.t('help.format'),
+                    label: strings.settingsPreviewDuration,
+                    help: strings.helpPreviewDuration,
+                    child: OptionDropdown<int>(
+                      value: settings.previewIndex,
+                      items: List<DropdownMenuItem<int>>.generate(
+                        kPreviewDurations.length,
+                        (int index) => DropdownMenuItem<int>(
+                          value: index,
+                          child: Text(
+                            strings.previewSeconds(kPreviewDurations[index]),
+                          ),
+                        ),
+                      ),
+                      onChanged: (int? index) => index == null
+                          ? null
+                          : update(settings.copyWith(previewIndex: index)),
+                    ),
+                  ),
+                  SettingRow(
+                    label: strings.settingsFormat,
+                    help: strings.helpFormat,
                     child: OptionDropdown<String>(
                       value: settings.outputFormat,
                       items: kFormats
                           .map(
-                            (LabeledOption format) =>
-                                DropdownMenuItem<String>(
-                                  value: format.value,
-                                  child: Text(label(format)),
-                                ),
+                            (LabeledOption format) => DropdownMenuItem<String>(
+                              value: format.value,
+                              child: Text(optionText(format, strings)),
+                            ),
                           )
                           .toList(),
                       onChanged: (String? format) => format == null
@@ -236,11 +257,11 @@ class SettingsDialog extends StatelessWidget {
       actions: <Widget>[
         TextButton(
           onPressed: context.read<PreferencesStore>().resetSettings,
-          child: Text(context.t('preference.reset')),
+          child: Text(strings.preferenceReset),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(context.t('ui.close')),
+          child: Text(strings.uiClose),
         ),
       ],
     );
@@ -250,13 +271,13 @@ class SettingsDialog extends StatelessWidget {
 
   static List<DropdownMenuItem<int>> _indexItems(
     List<LabeledOption> options,
-    String Function(LabeledOption option) label,
+    AppLocalizations strings,
   ) {
     return List<DropdownMenuItem<int>>.generate(
       options.length,
       (int index) => DropdownMenuItem<int>(
         value: index,
-        child: Text(label(options[index])),
+        child: Text(optionText(options[index], strings)),
       ),
     );
   }
@@ -287,7 +308,7 @@ class _FilterPreview extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: <Widget>[
           Text(
-            context.t('settings.filterPreview'),
+            AppLocalizations.of(context).settingsFilterPreview,
             style: Theme.of(context).textTheme.labelSmall?.copyWith(
               color: scheme.onSurfaceVariant,
             ),

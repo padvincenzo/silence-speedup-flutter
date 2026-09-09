@@ -8,7 +8,7 @@ arranged to make possible.
 
 ---
 
-## 1. Demo player
+## 1. Live demo player
 
 **The one feature from the Electron app that is not ported.**
 
@@ -19,10 +19,17 @@ plugin, which played the file live — jumping the playback rate up during the
 detected silences and back down for speech. It let you *hear* your settings
 before spending twenty minutes encoding.
 
-In the port, its role is partly covered by the per-row **Measure the silences
-without exporting** action, which reports the percentage of silence found in
-seconds. That answers "are my thresholds sane"; it does not answer "does this
-sound right".
+Two things in the port cover part of its role:
+
+- **Generate a short preview sample** encodes a stretch of the video through the
+  real pipeline and opens it. This does answer "does this sound right" — for
+  that stretch, and after a short encode.
+- **Measure the silences without exporting** reports the percentage of silence
+  found in seconds. That answers "are my thresholds sane".
+
+What is still missing is the immediacy: scrubbing through the *whole* file and
+hearing the effect live, with no encode at all, and being able to change a
+setting and hear the difference at once.
 
 ### What it needs
 
@@ -66,7 +73,8 @@ kind of use.
 
 The largest item on this list: a new window/route, a new native dependency, and
 rate-switching that has to be smooth enough to be useful. Do not start it
-without agreeing the scope first.
+without agreeing the scope first — and weigh it against the preview sample,
+which already covers much of the need at a fraction of the complexity.
 
 ---
 
@@ -121,6 +129,13 @@ Things the Electron app never had, that a batch tool wants.
 - **Per-file settings.** One noise preset for the whole batch is wrong when the
   files come from different rooms. Would mean moving `ProcessingSettings` from
   the store onto the entry, with the store holding the default.
+- **Pick which audio track drives detection.** Detection reads the first track,
+  which is the right default for an OBS capture but not for a file whose voice
+  track happens to be second. Needs `ffprobe` to enumerate the tracks and a
+  per-file choice.
+- **A preview that follows the queue.** Previews are per-row; sampling the same
+  stretch of every queued file in one go would suit a batch from one recording
+  session.
 - **Presets.** Named setting bundles — "lecture", "podcast", "screencast" —
   since the useful combinations are few and stable.
 - **Retry a failed file** without re-adding it.

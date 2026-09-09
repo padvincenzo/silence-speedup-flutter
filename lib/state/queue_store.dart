@@ -9,7 +9,8 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
-import '../l10n/translator.dart';
+import '../l10n/gen/app_localizations.dart';
+import '../l10n/locale_controller.dart';
 import '../models/media_entry.dart';
 import '../services/ffmpeg_runner.dart';
 import 'log_store.dart';
@@ -22,14 +23,16 @@ class QueueStore extends ChangeNotifier {
   QueueStore({
     required FFmpegRunner runner,
     required LogStore log,
-    required Translator translator,
+    required LocaleController locales,
   }) : _runner = runner,
        _log = log,
-       _t = translator;
+       _locales = locales;
 
   final FFmpegRunner _runner;
   final LogStore _log;
-  final Translator _t;
+  final LocaleController _locales;
+
+  AppLocalizations get _s => _locales.strings;
 
   final List<MediaEntry> _entries = <MediaEntry>[];
   bool _locked = false;
@@ -65,9 +68,7 @@ class QueueStore extends ChangeNotifier {
 
       final String name = p.basename(path);
       if (_entries.any((MediaEntry entry) => entry.name == name)) {
-        _log.warning(
-          _t.t('log.alreadyExists', <String, Object?>{'name': name}),
-        );
+        _log.warning(_s.logAlreadyExists(name));
         continue;
       }
 
@@ -79,9 +80,7 @@ class QueueStore extends ChangeNotifier {
     if (added.isEmpty) return 0;
 
     notifyListeners();
-    _log.info(
-      _t.t('log.filesAdded', <String, Object?>{'count': added.length}),
-    );
+    _log.info(_s.logFilesAdded(added.length));
 
     // Probing is per-file and independent, so let them all run at once rather
     // than making the last row in a long import wait for the first.
@@ -125,11 +124,7 @@ class QueueStore extends ChangeNotifier {
     entry.duration = duration;
     if (duration == null) {
       entry.setStatus(EntryStatus.failed);
-      _log.warning(
-        _t.t('ffmpeg.silencedetectError', <String, Object?>{
-          'name': entry.name,
-        }),
-      );
+      _log.warning(_s.ffmpegDurationError(entry.name));
     } else {
       entry.setStatus(EntryStatus.ready);
     }

@@ -7,51 +7,83 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../l10n/translator.dart';
+import '../l10n/locale_controller.dart';
+import '../models/media_entry.dart';
 import '../models/processing_settings.dart';
 import '../services/app_paths.dart';
 
-/// Everything that survives a restart: the export folder, the look of the app,
-/// and the processing settings.
+/// Where a finished file is written.
+enum OutputMode {
+  /// Into the folder the source file came from. The default: it is where the
+  /// result is wanted most of the time, and it needs no setting up.
+  alongsideSource,
+
+  /// Into one folder chosen once, whatever the source.
+  fixedDirectory,
+}
+
+/// Everything that survives a restart: where files go, the look of the app,
+/// the language, and the processing settings.
 ///
 /// The Electron app reset its settings on every launch and kept a `config.json`
-/// next to the executable; keeping them here means a batch run can be repeated
-/// tomorrow without redialling every slider.
+/// next to the executable; persisting them here means a batch run can be
+/// repeated tomorrow without redialling every slider.
 class PreferencesStore extends ChangeNotifier {
-  PreferencesStore._(this._prefs, this._translator, this._outputDirectory);
+  PreferencesStore._(
+    this._prefs,
+    this._locales,
+    this._fixedDirectory,
+    this._workingDirectory,
+  );
 
+  static const String keyLocale = 'locale';
+  static const String _keyOutputMode = 'outputMode';
   static const String _keyOutputDirectory = 'outputDirectory';
+  static const String _keyWorkingDirectory = 'workingDirectory';
   static const String _keyThemeMode = 'themeMode';
-  static const String _keyLocale = 'locale';
   static const String _keySettings = 'processingSettings';
 
   final SharedPreferences _prefs;
-  final Translator _translator;
+  final LocaleController _locales;
 
-  String _outputDirectory;
+  OutputMode _outputMode = OutputMode.alongsideSource;
+  String _fixedDirectory;
+  String _workingDirectory;
   ThemeMode _themeMode = ThemeMode.system;
   ProcessingSettings _settings = const ProcessingSettings();
 
-  /// Loads persisted state, falling back to sane defaults for anything absent
-  /// or corrupt, and applies the stored language to [translator].
-  static Future<PreferencesStore> load(Translator translator) async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String fallbackDirectory = await AppPaths.defaultOutputDirectory();
+  /// The language pinned in a previous session, or null to follow the system.
+  ///
+  /// Read before the [LocaleController] exists, since the controller needs it
+  /// to resolve the starting language before the first frame.
+  static Locale? storedLocale(SharedPreferences prefs) {
+    final String? languageCode = prefs.getString(keyLocale);
+    return languageCode == null ? null : Locale(languageCode);
+  }
 
+  /// Loads persisted state, falling back to sane defaults for anything absent
+  /// or corrupt.
+  static Future<PreferencesStore> load({
+    required SharedPreferences prefs,
+    required LocaleController locales,
+  }) async {
     final PreferencesStore store = PreferencesStore._(
       prefs,
-      translator,
-      prefs.getString(_keyOutputDirectory) ?? fallbackDirectory,
+      locales,
+      prefs.getString(_keyOutputDirectory) ??
+          await AppPaths.defaultOutputDirectory(),
+      prefs.getString(_keyWorkingDirectory) ??
+          await AppPaths.defaultWorkingDirectory(),
     );
 
+    store._outputMode = OutputMode.values.firstWhere(
+      (OutputMode mode) => mode.name == prefs.getString(_keyOutputMode),
+      orElse: () => OutputMode.alongsideSource,
+    );
     store._themeMode = _decodeThemeMode(prefs.getString(_keyThemeMode));
-
-    final String? languageCode = prefs.getString(_keyLocale);
-    if (languageCode != null) {
-      await translator.setLocale(Locale(languageCode));
-    }
 
     final String? rawSettings = prefs.getString(_keySettings);
     if (rawSettings != null) {
@@ -67,19 +99,59 @@ class PreferencesStore extends ChangeNotifier {
     return store;
   }
 
-  String get outputDirectory => _outputDirectory;
+  OutputMode get outputMode => _outputMode;
+
+  bool get exportsAlongsideSource =>
+      _outputMode == OutputMode.alongsideSource;
+
+  /// The folder used when [OutputMode.fixedDirectory] is active. Remembered
+  /// even while exporting alongside the source, so toggling back is free.
+  String get fixedDirectory => _fixedDirectory;
+
+  /// Holds the intermediate fragments during a run.
+  String get workingDirectory => _workingDirectory;
 
   ThemeMode get themeMode => _themeMode;
 
-  Locale get locale => _translator.locale;
+  /// The language actually in use, whoever chose it.
+  Locale get activeLocale => _locales.activeLocale;
+
+  /// The pinned language, or null while the system decides.
+  Locale? get preferredLocale => _locales.preferredLocale;
+
+  bool get followsSystemLocale => _locales.followsSystem;
 
   ProcessingSettings get settings => _settings;
 
-  Future<void> setOutputDirectory(String directory) async {
-    if (directory == _outputDirectory) return;
-    _outputDirectory = directory;
+  /// Where [entry] should be written.
+  String outputDirectoryFor(MediaEntry entry) =>
+      exportsAlongsideSource ? p.dirname(entry.path) : _fixedDirectory;
+
+  Future<void> setOutputMode(OutputMode mode) async {
+    if (mode == _outputMode) return;
+    _outputMode = mode;
     notifyListeners();
-    await _prefs.setString(_keyOutputDirectory, directory);
+    await _prefs.setString(_keyOutputMode, mode.name);
+  }
+
+  /// Sets the fixed export folder, switching to it as well.
+  Future<void> setFixedDirectory(String directory) async {
+    final String trimmed = directory.trim();
+    if (trimmed.isEmpty) return;
+
+    _fixedDirectory = trimmed;
+    _outputMode = OutputMode.fixedDirectory;
+    notifyListeners();
+    await _prefs.setString(_keyOutputDirectory, trimmed);
+    await _prefs.setString(_keyOutputMode, _outputMode.name);
+  }
+
+  Future<void> setWorkingDirectory(String directory) async {
+    final String trimmed = directory.trim();
+    if (trimmed.isEmpty || trimmed == _workingDirectory) return;
+    _workingDirectory = trimmed;
+    notifyListeners();
+    await _prefs.setString(_keyWorkingDirectory, trimmed);
   }
 
   Future<void> setThemeMode(ThemeMode mode) async {
@@ -89,10 +161,17 @@ class PreferencesStore extends ChangeNotifier {
     await _prefs.setString(_keyThemeMode, mode.name);
   }
 
-  Future<void> setLocale(Locale locale) async {
-    await _translator.setLocale(locale);
+  /// Pins [locale], or pass null to follow the system again.
+  Future<void> setPreferredLocale(Locale? locale) async {
+    await _locales.setPreferred(locale);
     notifyListeners();
-    await _prefs.setString(_keyLocale, _translator.locale.languageCode);
+
+    final Locale? pinned = _locales.preferredLocale;
+    if (pinned == null) {
+      await _prefs.remove(keyLocale);
+    } else {
+      await _prefs.setString(keyLocale, pinned.languageCode);
+    }
   }
 
   Future<void> updateSettings(ProcessingSettings settings) async {
@@ -104,9 +183,9 @@ class PreferencesStore extends ChangeNotifier {
   /// Puts every processing setting back to its shipped default.
   Future<void> resetSettings() => updateSettings(const ProcessingSettings());
 
-  /// Restores the platform default export folder.
-  Future<void> resetOutputDirectory() async {
-    await setOutputDirectory(await AppPaths.defaultOutputDirectory());
+  /// Restores the platform default working directory.
+  Future<void> resetWorkingDirectory() async {
+    await setWorkingDirectory(await AppPaths.defaultWorkingDirectory());
   }
 
   static ThemeMode _decodeThemeMode(String? name) {

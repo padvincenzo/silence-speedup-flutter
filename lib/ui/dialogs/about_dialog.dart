@@ -6,7 +6,7 @@
 
 import 'package:flutter/material.dart';
 
-import '../../l10n/translator_context.dart';
+import '../../l10n/gen/app_localizations.dart';
 import '../../services/ffmpeg_runner.dart';
 
 /// Credits, and the licence notice GPLv3 asks a program to display.
@@ -48,9 +48,7 @@ class AppAboutDialog extends StatelessWidget {
               children: <Widget>[
                 const Text('Silence SpeedUp'),
                 Text(
-                  context.t('menu.version', <String, Object?>{
-                    'version': version,
-                  }),
+                  AppLocalizations.of(context).menuVersion(version),
                   style: text.bodySmall?.copyWith(
                     color: scheme.onSurfaceVariant,
                   ),
@@ -66,7 +64,7 @@ class AppAboutDialog extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: <Widget>[
-              Text(context.t('help.intro'), style: text.bodyMedium),
+              Text(AppLocalizations.of(context).helpIntro, style: text.bodyMedium),
               const SizedBox(height: 12),
               Text(
                 'Copyright (C) 2025-2026 Vincenzo Padula',
@@ -75,23 +73,23 @@ class AppAboutDialog extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: 16),
-              Text(context.t('help.license'), style: text.bodySmall),
+              Text(AppLocalizations.of(context).helpLicense, style: text.bodySmall),
               const SizedBox(height: 16),
-              Text(context.t('help.credits'), style: text.titleSmall),
+              Text(AppLocalizations.of(context).helpCredits, style: text.titleSmall),
               const SizedBox(height: 8),
               const _FFmpegVersion(),
               const SizedBox(height: 8),
               Text(
-                context.t('help.ffmpegNotice'),
+                AppLocalizations.of(context).helpFfmpegNotice,
                 style: text.bodySmall?.copyWith(
                   color: scheme.onSurfaceVariant,
                 ),
               ),
               const SizedBox(height: 12),
-              Text(context.t('help.icons'), style: text.titleSmall),
+              Text(AppLocalizations.of(context).helpIcons, style: text.titleSmall),
               const SizedBox(height: 4),
               Text(
-                context.t('help.iconsCredit'),
+                AppLocalizations.of(context).helpIconsCredit,
                 style: text.bodySmall?.copyWith(
                   color: scheme.onSurfaceVariant,
                 ),
@@ -131,11 +129,11 @@ class AppAboutDialog extends StatelessWidget {
             applicationName: 'Silence SpeedUp',
             applicationVersion: version,
           ),
-          child: Text(context.t('menu.thirdPartyLicenses')),
+          child: Text(AppLocalizations.of(context).menuThirdPartyLicenses),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(context.t('ui.close')),
+          child: Text(AppLocalizations.of(context).uiClose),
         ),
       ],
     );
@@ -213,7 +211,7 @@ class LicenseNoticeDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return AlertDialog(
       icon: const Icon(Icons.gavel_outlined),
-      title: Text(context.t('menu.license')),
+      title: Text(AppLocalizations.of(context).menuLicense),
       content: SizedBox(
         width: 480,
         child: Column(
@@ -226,7 +224,7 @@ class LicenseNoticeDialog extends StatelessWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              context.t('help.gplNotice'),
+              AppLocalizations.of(context).helpGplNotice,
               style: Theme.of(context).textTheme.bodySmall,
             ),
           ],
@@ -235,11 +233,11 @@ class LicenseNoticeDialog extends StatelessWidget {
       actions: <Widget>[
         TextButton(
           onPressed: () => onOpenLink('https://www.gnu.org/licenses/gpl-3.0.html'),
-          child: Text(context.t('help.readLicense')),
+          child: Text(AppLocalizations.of(context).helpReadLicense),
         ),
         FilledButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(context.t('ui.close')),
+          child: Text(AppLocalizations.of(context).uiClose),
         ),
       ],
     );

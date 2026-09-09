@@ -7,7 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../l10n/translator_context.dart';
+import '../../l10n/gen/app_localizations.dart';
 import '../../models/options.dart';
 import '../../models/processing_settings.dart';
 import '../../state/preferences_store.dart';
@@ -38,12 +38,12 @@ class QueueToolbar extends StatelessWidget {
           FilledButton.icon(
             onPressed: queue.canImport ? actions.openFiles : null,
             icon: const Icon(Icons.movie_outlined),
-            label: Text(context.t('menu.openFile')),
+            label: Text(AppLocalizations.of(context).menuOpenFile),
           ),
           IconButton.outlined(
             onPressed: queue.canImport ? actions.openFolder : null,
             icon: const Icon(Icons.folder_open_outlined),
-            tooltip: context.t('menu.openFolder'),
+            tooltip: AppLocalizations.of(context).menuOpenFolder,
           ),
           const _ToolbarGap(),
           _SpeedSummaryButton(
@@ -58,18 +58,18 @@ class QueueToolbar extends StatelessWidget {
                 foregroundColor: Theme.of(context).colorScheme.onError,
               ),
               icon: const Icon(Icons.stop),
-              label: Text(context.t('process.stop')),
+              label: Text(AppLocalizations.of(context).processStop),
             )
           else
             FilledButton.icon(
               onPressed: process.canStart ? actions.start : null,
               icon: const Icon(Icons.play_arrow),
-              label: Text(context.t('process.start')),
+              label: Text(AppLocalizations.of(context).processStart),
             ),
           IconButton.outlined(
             onPressed: process.isRunning ? actions.compactMode : null,
             icon: const Icon(Icons.minimize),
-            tooltip: context.t('menu.progress'),
+            tooltip: AppLocalizations.of(context).menuProgress,
           ),
         ],
       ),
@@ -99,7 +99,7 @@ class _SpeedSummaryButton extends StatelessWidget {
     final TextTheme text = Theme.of(context).textTheme;
 
     final String silenceLabel = silence.isRemove
-        ? context.t('settings.speedRemoveShort')
+        ? AppLocalizations.of(context).settingsSpeedRemoveShort
         : silence.label;
 
     return OutlinedButton.icon(

@@ -7,10 +7,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:provider/single_child_widget.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:window_manager/window_manager.dart';
 
 import 'app.dart';
-import 'l10n/translator.dart';
+import 'l10n/locale_controller.dart';
 import 'services/ffmpeg_runner.dart';
 import 'state/log_store.dart';
 import 'state/preferences_store.dart';
@@ -21,11 +22,18 @@ import 'ui/platform.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  // Translations load before the first frame so no widget ever shows raw keys.
-  final Translator translator = Translator();
-  await translator.load();
-
-  final PreferencesStore preferences = await PreferencesStore.load(translator);
+  // Preferences are read first because the language pinned in a previous
+  // session decides which catalogue to load before the first frame; with
+  // nothing pinned, the controller follows the system and falls back to
+  // English.
+  final SharedPreferences prefs = await SharedPreferences.getInstance();
+  final LocaleController locales = await LocaleController.create(
+    preferred: PreferencesStore.storedLocale(prefs),
+  );
+  final PreferencesStore preferences = await PreferencesStore.load(
+    prefs: prefs,
+    locales: locales,
+  );
 
   if (isDesktop) {
     await windowManager.ensureInitialized();
@@ -51,20 +59,20 @@ Future<void> main() async {
   final QueueStore queue = QueueStore(
     runner: runner,
     log: log,
-    translator: translator,
+    locales: locales,
   );
   final ProcessStore process = ProcessStore(
     runner: runner,
     queue: queue,
     preferences: preferences,
     log: log,
-    translator: translator,
+    locales: locales,
   );
 
   runApp(
     MultiProvider(
       providers: <SingleChildWidget>[
-        ChangeNotifierProvider<Translator>.value(value: translator),
+        ChangeNotifierProvider<LocaleController>.value(value: locales),
         ChangeNotifierProvider<PreferencesStore>.value(value: preferences),
         ChangeNotifierProvider<LogStore>.value(value: log),
         ChangeNotifierProvider<QueueStore>.value(value: queue),

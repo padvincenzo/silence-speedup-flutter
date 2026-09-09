@@ -27,6 +27,8 @@ class ProcessingSettings {
     this.fpsIndex = 5,
     this.audioRateIndex = 0,
     this.tuneIndex = 0,
+    this.keepAllAudioTracks = false,
+    this.previewIndex = 1,
   });
 
   /// Index into [kThresholds]: how loud the room is allowed to be.
@@ -56,6 +58,15 @@ class ProcessingSettings {
   final int audioRateIndex;
   final int tuneIndex;
 
+  /// Carry every audio track of the source into the output instead of just the
+  /// first. Silences are still detected on the first track alone — with a
+  /// multi-track recording that track is the voice, and the others are game or
+  /// system audio that should not decide where the pauses are.
+  final bool keepAllAudioTracks;
+
+  /// Index into [kPreviewDurations]: how long a preview sample lasts.
+  final int previewIndex;
+
   SpeedOption get silenceSpeed => kSpeedOptions[silenceSpeedIndex];
 
   SpeedOption get playbackSpeed => kSpeedOptions[playbackSpeedIndex];
@@ -75,6 +86,9 @@ class ProcessingSettings {
   String get audioRate => kAudioRates[audioRateIndex].value;
 
   String get tune => kTunes[tuneIndex].value;
+
+  /// Length of a preview sample, in seconds.
+  int get previewSeconds => kPreviewDurations[previewIndex];
 
   /// Window handed to `silencedetect`. It is widened by the margin on both
   /// sides so that, once each detected range is trimmed back by the margin,
@@ -98,6 +112,8 @@ class ProcessingSettings {
     int? fpsIndex,
     int? audioRateIndex,
     int? tuneIndex,
+    bool? keepAllAudioTracks,
+    int? previewIndex,
   }) {
     return ProcessingSettings(
       thresholdIndex: thresholdIndex ?? this.thresholdIndex,
@@ -112,6 +128,8 @@ class ProcessingSettings {
       fpsIndex: fpsIndex ?? this.fpsIndex,
       audioRateIndex: audioRateIndex ?? this.audioRateIndex,
       tuneIndex: tuneIndex ?? this.tuneIndex,
+      keepAllAudioTracks: keepAllAudioTracks ?? this.keepAllAudioTracks,
+      previewIndex: previewIndex ?? this.previewIndex,
     );
   }
 
@@ -128,6 +146,8 @@ class ProcessingSettings {
     'fpsIndex': fpsIndex,
     'audioRateIndex': audioRateIndex,
     'tuneIndex': tuneIndex,
+    'keepAllAudioTracks': keepAllAudioTracks,
+    'previewIndex': previewIndex,
   };
 
   /// Rebuilds settings from persisted JSON, clamping every index so that a
@@ -187,6 +207,14 @@ class ProcessingSettings {
         json['tuneIndex'],
         defaults.tuneIndex,
         kTunes.length - 1,
+      ),
+      keepAllAudioTracks: json['keepAllAudioTracks'] is bool
+          ? json['keepAllAudioTracks'] as bool
+          : defaults.keepAllAudioTracks,
+      previewIndex: _clampInt(
+        json['previewIndex'],
+        defaults.previewIndex,
+        kPreviewDurations.length - 1,
       ),
     );
   }

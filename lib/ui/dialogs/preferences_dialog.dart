@@ -8,14 +8,16 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../l10n/translator_context.dart';
+import '../../l10n/gen/app_localizations.dart';
 import '../../services/app_paths.dart';
 import '../../state/preferences_store.dart';
 
-/// Where finished files land, and what to do with the scratch space.
+/// The settings that are not part of a run: where scratch space lives, and
+/// what the app does with it.
 ///
-/// The Electron version also asked for a path to `ffmpeg`; there is nothing to
-/// ask here, because FFmpeg ships inside the app.
+/// The export folder is deliberately absent — it lives on the main window,
+/// where the batch is started. The Electron version also asked for a path to
+/// `ffmpeg`; there is nothing to ask, because FFmpeg ships inside the app.
 class PreferencesDialog extends StatefulWidget {
   const PreferencesDialog({super.key});
 
@@ -31,73 +33,70 @@ class PreferencesDialog extends StatefulWidget {
 }
 
 class _PreferencesDialogState extends State<PreferencesDialog> {
-  late final TextEditingController _directory;
-  int? _temporaryBytes;
+  late final TextEditingController _working;
+  int? _scratchBytes;
   bool _clearing = false;
 
   @override
   void initState() {
     super.initState();
-    _directory = TextEditingController(
-      text: context.read<PreferencesStore>().outputDirectory,
+    _working = TextEditingController(
+      text: context.read<PreferencesStore>().workingDirectory,
     );
-    _refreshTemporarySize();
+    _refreshScratchSize();
   }
 
   @override
   void dispose() {
-    _directory.dispose();
+    _working.dispose();
     super.dispose();
   }
 
-  Future<void> _refreshTemporarySize() async {
-    final int bytes = await AppPaths.temporaryBytes(
-      context.read<PreferencesStore>().outputDirectory,
+  Future<void> _refreshScratchSize() async {
+    final int bytes = await AppPaths.directoryBytes(
+      context.read<PreferencesStore>().workingDirectory,
     );
     if (!mounted) return;
-    setState(() => _temporaryBytes = bytes);
+    setState(() => _scratchBytes = bytes);
   }
 
   Future<void> _browse() async {
     final String? chosen = await FilePicker.getDirectoryPath(
-      dialogTitle: context.translator.t('preference.chooseExportDir'),
-      initialDirectory: _directory.text.isEmpty ? null : _directory.text,
+      dialogTitle: AppLocalizations.of(context).preferenceChooseWorkingDir,
+      initialDirectory: _working.text.isEmpty ? null : _working.text,
     );
     if (chosen == null || !mounted) return;
-    setState(() => _directory.text = chosen);
+    setState(() => _working.text = chosen);
   }
 
-  Future<void> _clearTemporary() async {
+  Future<void> _clearScratch() async {
     setState(() => _clearing = true);
-    await AppPaths.clearTemporary(
-      context.read<PreferencesStore>().outputDirectory,
+    await AppPaths.emptyDirectory(
+      context.read<PreferencesStore>().workingDirectory,
     );
     if (!mounted) return;
     setState(() => _clearing = false);
-    await _refreshTemporarySize();
+    await _refreshScratchSize();
   }
 
   Future<void> _save() async {
-    final String directory = _directory.text.trim();
     final PreferencesStore preferences = context.read<PreferencesStore>();
+    final String directory = _working.text.trim();
 
     if (directory.isEmpty) {
-      await preferences.resetOutputDirectory();
+      await preferences.resetWorkingDirectory();
     } else if (!await AppPaths.ensureDirectory(directory)) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text(
-            context.translator.t('log.outputDirError', <String, Object?>{
-              'path': directory,
-              'error': '',
-            }),
+            AppLocalizations.of(context).logOutputDirError(directory, ''),
           ),
         ),
       );
       return;
     } else {
-      await preferences.setOutputDirectory(directory);
+      await preferences.setWorkingDirectory(directory);
     }
 
     if (!mounted) return;
@@ -106,19 +105,20 @@ class _PreferencesDialogState extends State<PreferencesDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations strings = AppLocalizations.of(context);
     final ColorScheme scheme = Theme.of(context).colorScheme;
 
     return AlertDialog(
       icon: const Icon(Icons.settings_outlined),
-      title: Text(context.t('menu.preferences')),
+      title: Text(strings.menuPreferences),
       content: SizedBox(
-        width: 520,
+        width: 540,
         child: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: <Widget>[
             Text(
-              context.t('preference.exportDir'),
+              strings.preferenceWorkingDir,
               style: Theme.of(context).textTheme.labelLarge,
             ),
             const SizedBox(height: 6),
@@ -126,9 +126,9 @@ class _PreferencesDialogState extends State<PreferencesDialog> {
               children: <Widget>[
                 Expanded(
                   child: TextField(
-                    controller: _directory,
+                    controller: _working,
                     decoration: InputDecoration(
-                      hintText: context.t('preference.exportDir'),
+                      hintText: strings.preferenceWorkingDir,
                     ),
                   ),
                 ),
@@ -136,9 +136,16 @@ class _PreferencesDialogState extends State<PreferencesDialog> {
                 IconButton.outlined(
                   onPressed: _browse,
                   icon: const Icon(Icons.folder_open_outlined),
-                  tooltip: context.t('preference.chooseExportDir'),
+                  tooltip: strings.preferenceChooseWorkingDir,
                 ),
               ],
+            ),
+            const SizedBox(height: 6),
+            Text(
+              strings.preferenceWorkingDirHint,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: scheme.onSurfaceVariant,
+              ),
             ),
             const SizedBox(height: 20),
             Card(
@@ -155,7 +162,7 @@ class _PreferencesDialogState extends State<PreferencesDialog> {
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
-                            context.t('preference.bundledFfmpeg'),
+                            strings.preferenceBundledFfmpeg,
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ),
@@ -166,23 +173,26 @@ class _PreferencesDialogState extends State<PreferencesDialog> {
                       children: <Widget>[
                         Expanded(
                           child: Text(
-                            context.t('preference.temporaryFiles', <String, Object?>{
-                              'size': _temporaryBytes == null
+                            strings.preferenceTemporaryFiles(
+                              _scratchBytes == null
                                   ? '…'
-                                  : _formatBytes(_temporaryBytes!),
-                            }),
+                                  : _formatBytes(_scratchBytes!),
+                            ),
                             style: Theme.of(context).textTheme.bodySmall,
                           ),
                         ),
                         TextButton.icon(
                           onPressed:
                               _clearing ||
-                                  _temporaryBytes == null ||
-                                  _temporaryBytes == 0
+                                  _scratchBytes == null ||
+                                  _scratchBytes == 0
                               ? null
-                              : _clearTemporary,
-                          icon: const Icon(Icons.delete_sweep_outlined, size: 18),
-                          label: Text(context.t('preference.clearTemporary')),
+                              : _clearScratch,
+                          icon: const Icon(
+                            Icons.delete_sweep_outlined,
+                            size: 18,
+                          ),
+                          label: Text(strings.preferenceClearTemporary),
                         ),
                       ],
                     ),
@@ -196,24 +206,19 @@ class _PreferencesDialogState extends State<PreferencesDialog> {
       actions: <Widget>[
         TextButton(
           onPressed: () async {
-            await context.read<PreferencesStore>().resetOutputDirectory();
+            await context.read<PreferencesStore>().resetWorkingDirectory();
             if (!context.mounted) return;
             setState(() {
-              _directory.text = context
-                  .read<PreferencesStore>()
-                  .outputDirectory;
+              _working.text = context.read<PreferencesStore>().workingDirectory;
             });
           },
-          child: Text(context.t('preference.reset')),
+          child: Text(strings.preferenceReset),
         ),
         TextButton(
           onPressed: () => Navigator.of(context).pop(),
-          child: Text(context.t('ui.close')),
+          child: Text(strings.uiClose),
         ),
-        FilledButton(
-          onPressed: _save,
-          child: Text(context.t('preference.save')),
-        ),
+        FilledButton(onPressed: _save, child: Text(strings.preferenceSave)),
       ],
     );
   }

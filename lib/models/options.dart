@@ -18,6 +18,11 @@ const String kNoneValue = '-';
 /// Output format value meaning "same container as the input".
 const String kKeepFormat = 'keep';
 
+/// Option labels that are words rather than technical tokens, and so need
+/// translating. Resolved by `localizedLabel` in lib/l10n/labels.dart, which
+/// keeps this file free of any dependency on the generated localizations.
+enum OptionLabel { keep, none, noiseLow, noiseMid, noiseHigh, removeSilence }
+
 /// How a fragment's playback rate is applied.
 enum SpeedKind {
   /// Untouched: no `setpts` / `atempo` filter at all.
@@ -37,7 +42,7 @@ class SpeedOption {
       factor = 1.0,
       videoFilter = null,
       audioFilter = null,
-      labelKey = null;
+      translatedLabel = null;
 
   const SpeedOption.scaled(
     this.label, {
@@ -47,9 +52,9 @@ class SpeedOption {
   }) : kind = SpeedKind.scaled,
        videoFilter = video,
        audioFilter = audio,
-       labelKey = null;
+       translatedLabel = null;
 
-  const SpeedOption.remove({required this.labelKey})
+  const SpeedOption.remove({required this.translatedLabel})
     : label = 'remove',
       kind = SpeedKind.remove,
       factor = 1.0,
@@ -71,8 +76,8 @@ class SpeedOption {
   /// `atempo=...`, possibly chained since a single `atempo` caps at 2x.
   final String? audioFilter;
 
-  /// Translation key, for the entry whose label is a word rather than a rate.
-  final String? labelKey;
+  /// Set only for the entry whose label is a word rather than a rate.
+  final OptionLabel? translatedLabel;
 
   bool get isRemove => kind == SpeedKind.remove;
 }
@@ -147,7 +152,7 @@ const List<SpeedOption> kSpeedOptions = <SpeedOption>[
     video: 'setpts=0.05*PTS',
     audio: 'atempo=2,atempo=2,atempo=2,atempo=2,atempo=1.25',
   ),
-  SpeedOption.remove(labelKey: 'settings.speedRemove'),
+  SpeedOption.remove(translatedLabel: OptionLabel.removeSilence),
 ];
 
 /// Index of the trailing `remove` entry.
@@ -158,25 +163,30 @@ final int kLastKeptSpeedIndex = kSpeedOptions.length - 2;
 
 @immutable
 class LabeledOption {
-  const LabeledOption(this.label, this.value) : labelKey = null;
+  const LabeledOption(this.label, this.value) : translatedLabel = null;
 
   /// Variant whose label is a translated word rather than a technical token.
-  const LabeledOption.translated(this.labelKey, this.value) : label = '';
+  const LabeledOption.translated(this.translatedLabel, this.value)
+    : label = '';
 
+  /// Literal label, for the ffmpeg tokens that are not worth translating.
   final String label;
-  final String? labelKey;
+
+  /// Set instead of [label] when the text is a word the user reads.
+  final OptionLabel? translatedLabel;
+
   final String value;
 }
 
 /// `silencedetect` noise floors, as linear amplitude ratios.
 const List<LabeledOption> kThresholds = <LabeledOption>[
-  LabeledOption.translated('noise.low', '0.002'),
-  LabeledOption.translated('noise.mid', '0.02'),
-  LabeledOption.translated('noise.high', '0.1'),
+  LabeledOption.translated(OptionLabel.noiseLow, '0.002'),
+  LabeledOption.translated(OptionLabel.noiseMid, '0.02'),
+  LabeledOption.translated(OptionLabel.noiseHigh, '0.1'),
 ];
 
 const List<LabeledOption> kFormats = <LabeledOption>[
-  LabeledOption.translated('option.keep', kKeepFormat),
+  LabeledOption.translated(OptionLabel.keep, kKeepFormat),
   LabeledOption('AVI', 'avi'),
   LabeledOption('FLV', 'flv'),
   LabeledOption('MKV', 'mkv'),
@@ -226,7 +236,7 @@ const List<LabeledOption> kFpsOptions = <LabeledOption>[
 ];
 
 const List<LabeledOption> kAudioRates = <LabeledOption>[
-  LabeledOption.translated('option.keep', kNoneValue),
+  LabeledOption.translated(OptionLabel.keep, kNoneValue),
   LabeledOption('32 kHz', '32000'),
   LabeledOption('44.1 kHz', '44100'),
   LabeledOption('48 kHz', '48000'),
@@ -235,7 +245,7 @@ const List<LabeledOption> kAudioRates = <LabeledOption>[
 ];
 
 const List<LabeledOption> kTunes = <LabeledOption>[
-  LabeledOption.translated('option.none', kNoneValue),
+  LabeledOption.translated(OptionLabel.none, kNoneValue),
   LabeledOption('Film', 'film'),
   LabeledOption('Animation', 'animation'),
   LabeledOption('Grain', 'grain'),
@@ -243,6 +253,10 @@ const List<LabeledOption> kTunes = <LabeledOption>[
   LabeledOption('Fast decode', 'fastdecode'),
   LabeledOption('Zero latency', 'zerolatency'),
 ];
+
+/// How long a preview sample lasts. Short enough to be quick, long enough to
+/// judge whether the pauses sound right.
+const List<int> kPreviewDurations = <int>[30, 60, 120];
 
 /// Bounds for the two silence-shaping sliders, in seconds.
 const double kSilenceDurationMin = 0.0;

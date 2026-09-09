@@ -8,16 +8,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../../l10n/translator.dart';
-import '../../l10n/translator_context.dart';
+import '../../l10n/gen/app_localizations.dart';
 import '../../services/update_checker.dart';
 import '../../state/log_store.dart';
 import '../../state/preferences_store.dart';
 import '../../state/process_store.dart';
 import '../../state/queue_store.dart';
 
-/// What the menu bar can trigger. Bundled so the same set can be reused by the
-/// keyboard shortcuts without duplicating the wiring.
+/// What the menu bar can trigger. Bundled so the keyboard shortcuts can reuse
+/// the same set without duplicating the wiring.
 @immutable
 class MenuActions {
   const MenuActions({
@@ -52,8 +51,8 @@ class MenuActions {
 /// The File / Media / View / Help bar.
 ///
 /// Flutter's [MenuBar] renders in-app rather than in the window chrome, which
-/// is what keeps a single implementation working on Windows, Linux and macOS
-/// alike — the Electron build had to hand its template to the native menu.
+/// is what keeps one implementation working on Windows, Linux and macOS alike —
+/// the Electron build had to hand its template to the native menu.
 class AppMenuBar extends StatelessWidget {
   const AppMenuBar({
     super.key,
@@ -72,11 +71,11 @@ class AppMenuBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final AppLocalizations strings = AppLocalizations.of(context);
     final ProcessStore process = context.watch<ProcessStore>();
     final QueueStore queue = context.watch<QueueStore>();
     final PreferencesStore preferences = context.watch<PreferencesStore>();
     final LogStore log = context.watch<LogStore>();
-    final Locale locale = context.watch<Translator>().locale;
 
     return MenuBar(
       style: MenuStyle(
@@ -96,9 +95,12 @@ class AppMenuBar extends StatelessWidget {
           menuChildren: <Widget>[
             MenuItemButton(
               leadingIcon: const Icon(Icons.movie_outlined),
-              shortcut: const SingleActivator(LogicalKeyboardKey.keyO, control: true),
+              shortcut: const SingleActivator(
+                LogicalKeyboardKey.keyO,
+                control: true,
+              ),
               onPressed: queue.canImport ? actions.openFiles : null,
-              child: Text(context.t('menu.openFile')),
+              child: Text(strings.menuOpenFile),
             ),
             MenuItemButton(
               leadingIcon: const Icon(Icons.folder_open_outlined),
@@ -108,41 +110,47 @@ class AppMenuBar extends StatelessWidget {
                 shift: true,
               ),
               onPressed: queue.canImport ? actions.openFolder : null,
-              child: Text(context.t('menu.openFolder')),
+              child: Text(strings.menuOpenFolder),
             ),
             const Divider(),
             MenuItemButton(
               leadingIcon: const Icon(Icons.tune),
               onPressed: process.isRunning ? null : actions.settings,
-              child: Text(context.t('settings.title')),
+              child: Text(strings.settingsTitle),
             ),
             MenuItemButton(
               leadingIcon: const Icon(Icons.settings_outlined),
               onPressed: process.isRunning ? null : actions.preferences,
-              child: Text(context.t('menu.preferences')),
+              child: Text(strings.menuPreferences),
             ),
             const Divider(),
             MenuItemButton(
               leadingIcon: const Icon(Icons.power_settings_new),
-              shortcut: const SingleActivator(LogicalKeyboardKey.keyQ, control: true),
+              shortcut: const SingleActivator(
+                LogicalKeyboardKey.keyQ,
+                control: true,
+              ),
               onPressed: actions.quit,
-              child: Text(context.t('menu.quit')),
+              child: Text(strings.menuQuit),
             ),
           ],
-          child: Text(context.t('menu.file')),
+          child: Text(strings.menuFile),
         ),
         SubmenuButton(
           menuChildren: <Widget>[
             MenuItemButton(
               leadingIcon: const Icon(Icons.play_arrow),
               onPressed: process.canStart ? actions.start : null,
-              child: Text(context.t('process.start')),
+              child: Text(strings.processStart),
             ),
             MenuItemButton(
               leadingIcon: const Icon(Icons.stop),
-              shortcut: const SingleActivator(LogicalKeyboardKey.keyD, control: true),
+              shortcut: const SingleActivator(
+                LogicalKeyboardKey.keyD,
+                control: true,
+              ),
               onPressed: process.isRunning ? actions.stop : null,
-              child: Text(context.t('process.stop')),
+              child: Text(strings.processStop),
             ),
             const Divider(),
             MenuItemButton(
@@ -150,17 +158,17 @@ class AppMenuBar extends StatelessWidget {
               onPressed: queue.canImport && !queue.isEmpty
                   ? context.read<QueueStore>().clear
                   : null,
-              child: Text(context.t('menu.clearQueue')),
+              child: Text(strings.menuClearQueue),
             ),
           ],
-          child: Text(context.t('menu.media')),
+          child: Text(strings.menuMedia),
         ),
         SubmenuButton(
           menuChildren: <Widget>[
             MenuItemButton(
               leadingIcon: const Icon(Icons.minimize),
               onPressed: process.isRunning ? actions.compactMode : null,
-              child: Text(context.t('menu.progress')),
+              child: Text(strings.menuProgress),
             ),
             const Divider(),
             SubmenuButton(
@@ -169,82 +177,89 @@ class AppMenuBar extends StatelessWidget {
                 _ThemeItem(
                   mode: ThemeMode.light,
                   current: preferences.themeMode,
-                  label: context.t('ui.lightMode'),
+                  label: strings.uiLightMode,
                 ),
                 _ThemeItem(
                   mode: ThemeMode.dark,
                   current: preferences.themeMode,
-                  label: context.t('ui.darkMode'),
+                  label: strings.uiDarkMode,
                 ),
                 _ThemeItem(
                   mode: ThemeMode.system,
                   current: preferences.themeMode,
-                  label: context.t('ui.systemMode'),
+                  label: strings.uiSystemMode,
                 ),
               ],
-              child: Text(context.t('ui.theme')),
+              child: Text(strings.uiTheme),
             ),
             SubmenuButton(
               leadingIcon: const Icon(Icons.translate),
               menuChildren: <Widget>[
+                // Following the system is the default; the two explicit
+                // choices pin a language until the user comes back here.
                 _LanguageItem(
-                  code: 'en',
-                  current: locale,
+                  locale: null,
+                  current: preferences.preferredLocale,
+                  label: strings.uiSystemMode,
+                ),
+                const _LanguageItemDivider(),
+                _LanguageItem(
+                  locale: const Locale('en'),
+                  current: preferences.preferredLocale,
                   label: 'English',
                 ),
                 _LanguageItem(
-                  code: 'it',
-                  current: locale,
+                  locale: const Locale('it'),
+                  current: preferences.preferredLocale,
                   label: 'Italiano',
                 ),
               ],
-              child: Text(context.t('ui.language')),
+              child: Text(strings.uiLanguage),
             ),
             const Divider(),
             MenuItemButton(
               leadingIcon: const Icon(Icons.terminal),
               onPressed: context.read<LogStore>().toggleVisible,
               child: Text(
-                context.t(log.visible ? 'menu.hideShell' : 'menu.showShell'),
+                log.visible ? strings.menuHideShell : strings.menuShowShell,
               ),
             ),
             MenuItemButton(
               leadingIcon: const Icon(Icons.cleaning_services_outlined),
               onPressed: log.isEmpty ? null : context.read<LogStore>().clear,
-              child: Text(context.t('menu.cleanShell')),
+              child: Text(strings.menuCleanShell),
             ),
           ],
-          child: Text(context.t('menu.view')),
+          child: Text(strings.menuView),
         ),
         SubmenuButton(
           menuChildren: <Widget>[
             MenuItemButton(
               onPressed: null,
-              child: Text(
-                context.t('menu.version', <String, Object?>{'version': version}),
-              ),
+              child: Text(strings.menuVersion(version)),
             ),
             if (update != null)
               MenuItemButton(
                 leadingIcon: const Icon(Icons.system_update_alt),
                 onPressed: actions.showUpdate,
-                child: Text(context.t('menu.update')),
+                child: Text(strings.menuUpdate),
               ),
             const Divider(),
             MenuItemButton(
               leadingIcon: const Icon(Icons.info_outline),
               onPressed: actions.about,
-              child: Text(context.t('menu.about')),
+              child: Text(strings.menuAbout),
             ),
             MenuItemButton(
               leadingIcon: const Icon(Icons.gavel_outlined),
               onPressed: actions.license,
-              child: Text(context.t('menu.license')),
+              child: Text(strings.menuLicense),
             ),
             MenuItemButton(
               leadingIcon: const Icon(Icons.coffee_outlined),
-              onPressed: () => actions.openLink('https://paypal.me/VincenzoPadula'),
-              child: Text(context.t('menu.donate')),
+              onPressed: () =>
+                  actions.openLink('https://paypal.me/VincenzoPadula'),
+              child: Text(strings.menuDonate),
             ),
             const Divider(),
             MenuItemButton(
@@ -252,7 +267,7 @@ class AppMenuBar extends StatelessWidget {
               onPressed: () => actions.openLink(
                 'https://github.com/padvincenzo/silence-speedup-flutter/issues',
               ),
-              child: Text(context.t('menu.issue')),
+              child: Text(strings.menuIssue),
             ),
             SubmenuButton(
               leadingIcon: const Icon(Icons.link),
@@ -261,7 +276,7 @@ class AppMenuBar extends StatelessWidget {
                   onPressed: () => actions.openLink(
                     'https://github.com/padvincenzo/silence-speedup-flutter',
                   ),
-                  child: Text(context.t('menu.sourceCode')),
+                  child: Text(strings.menuSourceCode),
                 ),
                 MenuItemButton(
                   onPressed: () => actions.openLink('https://ffmpeg.org/'),
@@ -272,10 +287,10 @@ class AppMenuBar extends StatelessWidget {
                   child: const Text('Flutter'),
                 ),
               ],
-              child: Text(context.t('menu.references')),
+              child: Text(strings.menuReferences),
             ),
           ],
-          child: Text(context.t('menu.help')),
+          child: Text(strings.menuHelp),
         ),
       ],
     );
@@ -306,29 +321,40 @@ class _ThemeItem extends StatelessWidget {
   }
 }
 
+/// One language choice. A null [locale] means "follow the system".
 class _LanguageItem extends StatelessWidget {
   const _LanguageItem({
-    required this.code,
+    required this.locale,
     required this.current,
     required this.label,
   });
 
-  final String code;
-  final Locale current;
+  final Locale? locale;
+
+  /// The pinned language, or null while the system decides.
+  final Locale? current;
+
   final String label;
 
   @override
   Widget build(BuildContext context) {
+    final bool selected = locale?.languageCode == current?.languageCode;
+
     return MenuItemButton(
       leadingIcon: Icon(
-        code == current.languageCode
-            ? Icons.radio_button_checked
-            : Icons.radio_button_off,
+        selected ? Icons.radio_button_checked : Icons.radio_button_off,
         size: 18,
       ),
       onPressed: () =>
-          context.read<PreferencesStore>().setLocale(Locale(code)),
+          context.read<PreferencesStore>().setPreferredLocale(locale),
       child: Text(label),
     );
   }
+}
+
+class _LanguageItemDivider extends StatelessWidget {
+  const _LanguageItemDivider();
+
+  @override
+  Widget build(BuildContext context) => const Divider();
 }

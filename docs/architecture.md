@@ -104,15 +104,16 @@ that decide what gets encoded:
 
 | Function | Responsibility |
 | --- | --- |
-| `detectArguments` | The `silencedetect` pass |
-| `buildRanges` | Pair up detected boundaries, apply the margin |
-| `plan` | Walk the timeline into alternating fragments |
+| `detectArguments` | The `silencedetect` pass, over the whole file or one window |
+| `buildRanges` | Pair up boundaries, apply the margin, make positions absolute |
+| `plan` | Walk a stretch of the timeline into alternating fragments |
 | `exportArguments` | Encode one fragment at its rate |
 | `concatArguments` | Join the fragments without re-encoding |
 | `concatListEntry` | One line of the concat list file, correctly escaped |
 
 No I/O, no `BuildContext`, no clock. All of it is asserted in
-[test/fragment_planner_test.dart](../test/fragment_planner_test.dart).
+[test/fragment_planner_test.dart](../test/fragment_planner_test.dart) and
+[test/preview_and_audio_test.dart](../test/preview_and_audio_test.dart).
 
 ### The concat invariant
 
@@ -128,6 +129,26 @@ interchangeable**: same codecs, same container, same frame rate. That is why:
 Break any of those and the concat step either fails or produces a file whose
 audio drifts. If you need a genuinely different encode per fragment, the concat
 step has to become a re-encode, which is a much bigger change.
+
+### Stream mapping is explicit
+
+Fragments map `0:v:0?` plus either `0:a:0?` or, with **Keep all audio tracks**
+on, `0:a?`; the concat step maps `0`. Leave any of that out and FFmpeg's default
+stream selection keeps one audio track and silently drops the others — which is
+exactly how a multi-track recording loses its second track.
+
+Detection is the exception that proves the rule: it always reads `0:a:0`, even
+when every track is being exported. In a multi-track recording the first track
+is the voice, and only the voice should decide where the pauses are.
+
+### Positions are absolute source seconds
+
+`Fragment` and `SilenceRange` always count from the start of the source file. A
+preview processes a `TimeWindow` instead of the whole thing, and `silencedetect`
+reports relative to its own seek, so `buildRanges` adds the window's start back
+and clamps to it. That is the one place the conversion happens; the plan, the
+arguments and the progress arithmetic are all unaware that a run might be
+partial.
 
 ---
 
@@ -168,7 +189,10 @@ fragment finished or would be reported as a failure.
 
 ### Scratch space
 
-Each entry gets its own directory under `<export>/tmp/run_<microseconds>/`.
+Each entry gets its own directory under the configured working directory,
+`run_<microseconds>/`, which defaults to a folder in the system temp directory.
+It is deliberately not under the export folder: that folder can follow each
+source file, so there is nowhere single under it to put fragments.
 Per-run isolation means a leftover from an interrupted run, or from an older
 version of the app, cannot end up in this concatenation. The directory is
 deleted after a successful run and **kept after a failure**, since the fragments
@@ -183,7 +207,7 @@ Four `ChangeNotifier` stores, constructed in
 
 | Store | Owns |
 | --- | --- |
-| `PreferencesStore` | Export directory, theme, language, processing settings — everything persisted |
+| `PreferencesStore` | Export destination, working directory, theme, language, processing settings — everything persisted |
 | `QueueStore` | The list of files, their probe results, whether importing is allowed |
 | `ProcessStore` | Whether a run is active, its progress, compact-window mode |
 | `LogStore` | The log lines behind the terminal button |
@@ -200,18 +224,41 @@ whole list.
 
 ## Localization
 
-A plain `ChangeNotifier` (`Translator`) holding a flat `Map<String, String>`,
-loaded from `assets/locales/<code>.json` before the first frame.
+Messages live in ARB catalogues under `lib/l10n/arb/` and are compiled by
+`flutter gen-l10n` into a typed `AppLocalizations`. Typed matters: a renamed or
+missing message becomes a compile error rather than a string that quietly
+renders as its own key.
 
-It is deliberately **not** a `LocalizationsDelegate`. The engine logs localized
-messages from deep inside async work where there is no `BuildContext`; it holds a
-`Translator` directly. Flutter's own delegates are still registered, for the
-strings Material widgets provide themselves.
+Three ways in, by layer:
 
-Two entry points, and the distinction matters:
+- **Widgets** — `AppLocalizations.of(context).someKey`, which rebuilds them when
+  the language changes.
+- **Services and stores** — they hold a `LocaleController` and read
+  `strings.someKey`. The engine logs translated messages from deep inside async
+  work where there is no `BuildContext`, which is why the controller keeps an
+  `AppLocalizations` of its own, loaded through the delegate.
+- **Model enums** — resolved only in `lib/l10n/labels.dart`, so `models/` never
+  imports the generated class. Each switch there is exhaustive, so adding an
+  enum value breaks the build instead of rendering nothing.
 
-- `context.t(key)` — subscribes the widget to language changes. `build` only.
-- `context.translator.t(key)` — does not subscribe. For callbacks and async code.
+`LocaleController` decides the language: the first system language the app
+supports, English otherwise. A choice pinned from View → Language overrides that
+until the user picks "System" again, and `didChangeLocales` re-resolves if the
+OS language changes while the app is running.
+
+Formatting goes through ARB as well — plurals for counts, and `double`
+placeholders with `decimalPatternDigits` for percentages, so Italian reads
+`12,50` rather than `12.50`. String concatenation would lose both.
+
+The generated files in `lib/l10n/gen/` are committed, so a fresh clone analyses
+without a codegen step.
+
+## Where output goes
+
+The export folder can follow each source file, so there is no single output
+directory to hand the engine. `PreferencesStore.outputDirectoryFor(entry)`
+answers per entry, and the engine takes that resolver rather than a path — the
+same seam that will let Android answer with a MediaStore location instead.
 
 ---
 

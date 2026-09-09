@@ -50,6 +50,17 @@ copy — pushed everything after that fragment out of sync.
 The port appends `volume=0` to the tempo chain instead. Covered by `muting keeps
 the tempo filter so audio and video stay the same length`.
 
+### Only the first audio track used to survive
+
+The original mapped no streams explicitly, leaving FFmpeg's default selection to
+keep one video and one audio stream. A multi-track recording — OBS writing the
+voice to track 1 and system audio to track 2 — therefore came out with the voice
+only, however many tracks went in.
+
+The port maps streams explicitly (`0:v:0?` plus `0:a:0?` or `0:a?`) and maps `0`
+at the concat step, and adds a **Keep all audio tracks** setting. Detection still
+reads `0:a:0`: the cuts should follow the voice, not the game audio.
+
 ### Output files are never overwritten
 
 The original passed `-y` and wrote straight over any existing file. With the
@@ -57,7 +68,8 @@ format set to **Keep** and an export directory that happened to be the source
 folder, it overwrote the original with its own sped-up version — unrecoverable.
 
 The port appends ` (1)`, ` (2)` … to avoid a collision, and refuses to write to
-the source path.
+the source path. That guarantee carries more weight now that exporting next to
+the source is the default.
 
 ### A silence running to the end of the file no longer fails
 
@@ -66,15 +78,17 @@ not match" otherwise. A file fading out into silence can produce a final
 `silence_start` with no close, which failed the whole file. The port closes it at
 the end of the media, and only reports an error for mismatches it cannot repair.
 
-### Temporary files are cleaned up
+### Temporary files are cleaned up, and live elsewhere
 
-The original shared one `tmp` directory across all runs and never emptied it —
-its own docs said "these are *not* auto-deleted". Two runs interrupted at the
-wrong moment could mix fragments.
+The original shared one `tmp` directory under the export folder across all runs
+and never emptied it — its own docs said "these are *not* auto-deleted". Two
+runs interrupted at the wrong moment could mix fragments.
 
 The port gives each entry its own `run_<microseconds>` directory, deletes it on
-success, and keeps it on failure with the path in the log. Preferences shows the
-scratch size and can empty it.
+success, and keeps it on failure with the path in the log. It also moves the
+scratch space out of the export folder entirely, since that folder can now
+follow each source file. Preferences shows the size, can empty it, and can move
+the working directory.
 
 ### Version comparison actually compares versions
 
@@ -130,16 +144,35 @@ equivalent and are gone.
   defaults rather than crashing.
 - **System theme.** Light and dark were the only options; the theme now also
   follows the OS.
+- **Preview samples.** Per-row action that runs a short stretch of the video
+  through the full pipeline and opens the result, so the settings can be
+  *heard* before committing to a whole file. It costs about what processing
+  those seconds costs: the window is bounded with `-ss`/`-t` as input options
+  rather than by cutting a clip out first.
 - **Analyse without exporting.** Per-row action that runs only the detection
-  pass and reports the percentage of silence found — the cheap way to judge
-  detection settings before committing to a full encode. It replaces the
-  original's *demo* button, whose player is not yet ported
+  pass and reports the percentage of silence found — seconds rather than
+  minutes, for checking whether the thresholds are sane.
+
+  Between them these two cover what the original's *demo* button did, except
+  for playing the file live as you watch; that player is not yet ported
   ([ROADMAP.md](../ROADMAP.md)).
+- **The export folder is on the main window.** The original hid it in a modal
+  preferences window. It is now a row under the toolbar, editable in place, and
+  defaults to writing next to the source video rather than to one fixed folder.
 - **Show the exported file.** Opens the output folder for a finished row.
 - **The detection filter is visible.** Settings shows the composed
   `silencedetect` string, making the margin widening explicit.
 - **Tooltips** on the settings whose effect is not obvious from the label.
-- **Clear the scratch directory** from Preferences, with its current size.
+- **The working directory is configurable**, with its current size and a way to
+  empty it, for when the temp drive is short of room.
+- **Language follows the system**, falling back to English, and can still be
+  pinned. The original defaulted to the OS locale but offered no way back to
+  following it.
+- **Locale-aware number formatting.** Percentages go through ARB placeholders,
+  so Italian reads `12,50` where English reads `12.50`. The original
+  interpolated strings and always produced a decimal point.
+- **A Windows installer.** Inno Setup, in English and Italian, built by
+  `installer/build-installer.ps1`. The original shipped a zip.
 - **Tests.** The original had none ("no automated test suite is available").
   Argument construction and range geometry are now asserted.
 
@@ -157,7 +190,7 @@ equivalent and are gone.
 | `src/classes/speedup.js` (pipeline + arguments) | `lib/services/speedup_engine.dart` + `lib/services/fragment_planner.dart` |
 | `src/classes/interface.js` | `lib/ui/home_page.dart` + `lib/ui/widgets/` |
 | `src/classes/shell.js` | `lib/state/log_store.dart` + `lib/ui/widgets/log_console.dart` |
-| `src/i18n.js` + `locales/*/translation.json` | `lib/l10n/translator.dart` + `assets/locales/*.json` |
+| `src/i18n.js` + `locales/*/translation.json` | `lib/l10n/arb/*.arb` + generated `AppLocalizations` + `lib/l10n/locale_controller.dart` |
 | `renderer/preferences`, `about`, `update` windows | `lib/ui/dialogs/` |
 | `renderer/progress` window | `lib/ui/widgets/compact_progress_view.dart` |
 | `renderer/player` (video.js) | not ported — [ROADMAP.md](../ROADMAP.md) |

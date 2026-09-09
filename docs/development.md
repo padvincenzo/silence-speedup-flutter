@@ -25,6 +25,7 @@ flutter run -d windows
 
 | Command | What it does |
 | --- | --- |
+| `flutter gen-l10n` | Regenerates `lib/l10n/gen/` from the ARB catalogues. Run it after editing them. |
 | `flutter analyze` | Static analysis. Must be clean before committing. |
 | `flutter test` | Unit tests. No encoder or media files needed; runs in seconds. |
 | `flutter run -d windows` | Debug run with hot reload. |
@@ -61,14 +62,15 @@ silence-speedup-flutter/
 ├── CLAUDE.md            # working rules for AI assistants
 ├── ROADMAP.md           # what is not built yet
 ├── analysis_options.yaml
+├── l10n.yaml            # gen-l10n configuration
 ├── assets/
-│   ├── icons/           # app icon (shared with the Electron app)
-│   └── locales/         # en.json, it.json — flat dotted keys
+│   └── icons/           # app icon (shared with the Electron app)
 ├── docs/
+├── installer/           # Inno Setup script + build-installer.ps1
 ├── lib/
 │   ├── main.dart        # bootstrap: translations → prefs → window → stores
 │   ├── app.dart         # MaterialApp, theme, locale
-│   ├── l10n/            # Translator + BuildContext extension
+│   ├── l10n/            # ARB catalogues, generated class, locale controller
 │   ├── models/          # options catalogue, settings, queue entry
 │   ├── services/        # FFmpeg boundary, planner, engine, paths, updates
 │   ├── state/           # the four ChangeNotifier stores
@@ -89,9 +91,16 @@ file rather than an error:
 - [test/fragment_planner_test.dart](../test/fragment_planner_test.dart) —
   boundary pairing, margin trimming, fragment planning, every argument list,
   concat-list escaping.
+- [test/preview_and_audio_test.dart](../test/preview_and_audio_test.dart) —
+  the preview window's placement, detection over a window, stream mapping for
+  one or many audio tracks, preview output naming.
 - [test/settings_and_update_test.dart](../test/settings_and_update_test.dart) —
   settings serialisation and clamping, the speed catalogue's internal
   consistency, entry naming, version comparison.
+- [test/localization_test.dart](../test/localization_test.dart) — language
+  resolution, that the two ARB catalogues cover the same keys and that no
+  Italian value was left in English, and that placeholders and locale-aware
+  number formatting work.
 
 When adding a feature that changes what FFmpeg is asked to do, add the assertion
 to `fragment_planner_test.dart` in the same commit. It is much cheaper than
@@ -114,6 +123,13 @@ The pipeline touches real files, so a few things only a real run will show:
 6. A **format change**, e.g. `.mov` in, MP4 out.
 7. A path containing **spaces and an apostrophe** (checks concat-list escaping).
 8. Two runs of the same file into the same folder (checks ` (1)` naming).
+9. A **multi-track** recording with **Keep all audio tracks** on, e.g. an OBS
+   capture with voice on track 1 and system audio on track 2 (checks that both
+   tracks survive and stay in sync, and that only track 1 drove the cuts).
+10. A **preview** on a long file (checks the sample is taken from the middle,
+    not the start) and on a file shorter than the preview length.
+11. The app with the system language set to Italian, and with it set to
+    something the app does not have (should fall back to English).
 
 ## Adding to the app
 
@@ -125,7 +141,7 @@ The pipeline touches real files, so a few things only a real run will show:
 2. If it changes the FFmpeg call, change `FragmentPlanner` and add a test.
 3. Add a `SettingRow` to `SettingsDialog`.
 4. Add the label — and the tooltip, if the effect is not obvious — to **both**
-   `assets/locales/en.json` and `it.json`.
+   ARB catalogues, then run `flutter gen-l10n`.
 
 ### A new option in a catalogue
 
@@ -134,24 +150,54 @@ Append to the list in `lib/models/options.dart`. Indexes are persisted, so
 existing users have selected. `ProcessingSettings.fromJson` clamps out-of-range
 indexes, so shrinking a list is safe.
 
+### A new message
+
+1. Add it to `lib/l10n/arb/app_en.arb` — the template — with an `@`-entry
+   declaring any placeholders.
+2. Add the translation to `app_it.arb`. A test fails if you forget.
+3. `flutter gen-l10n`, and commit the regenerated files alongside the ARB
+   change.
+
+Prefer ARB placeholders and plurals over building strings in Dart: numbers
+declared as `double` with `decimalPatternDigits` come out with the right decimal
+separator per language, which string interpolation cannot do.
+
 ### A new language
 
-1. Copy `assets/locales/en.json` to `assets/locales/<code>.json` and translate
-   the values.
-2. Add the locale to `Translator.supportedLocales`.
+1. Copy `lib/l10n/arb/app_en.arb` to `app_<code>.arb`, change `@@locale`, and
+   translate the values.
+2. `flutter gen-l10n` — the locale is picked up automatically and appears in
+   `AppLocalizations.supportedLocales`.
 3. Add a `_LanguageItem` to the View → Language submenu.
 
-Missing keys fall back to English, so a partial translation degrades rather than
-breaks.
+Missing keys fall back to the template, so a partial translation degrades rather
+than breaks — but the ARB test will flag it.
 
 ## Releasing
 
-1. Bump `version:` in `pubspec.yaml`.
+1. Bump `version:` in `pubspec.yaml` — the one place the version is stated.
 2. `flutter analyze && flutter test`.
-3. `flutter build windows --release`.
-4. Zip `build/windows/x64/runner/Release/` whole — the FFmpeg DLLs beside the
-   executable are required.
-5. Tag and publish a GitHub release. The in-app update check reads the
+3. Build and package:
+
+   ```powershell
+   .\installer\build-installer.ps1
+   ```
+
+   It reads the version from `pubspec.yaml`, runs the release build, checks
+   that `libx264-*.dll` made it into the output, and writes
+   `dist/SilenceSpeedUp-<version>-windows-x64-setup.exe`.
+
+   Pass `-SkipBuild` to package a build that already exists, and `-IsccPath`
+   if Inno Setup lives somewhere unusual. Install Inno Setup with:
+
+   ```powershell
+   winget install --id JRSoftware.InnoSetup --source winget
+   ```
+
+   A plain zip of `build/windows/x64/runner/Release/` also works as a
+   portable release, as long as the whole folder is included — the FFmpeg
+   DLLs beside the executable are required.
+4. Tag and publish a GitHub release. The in-app update check reads the
    repository's `releases.atom`, so the tag must contain the version number.
 
 Because FFmpeg is bundled under the GPL, releases must keep carrying the GPLv3

@@ -6,7 +6,8 @@
 
 import 'package:flutter/foundation.dart';
 
-import '../l10n/translator.dart';
+import '../l10n/gen/app_localizations.dart';
+import '../l10n/locale_controller.dart';
 import '../models/media_entry.dart';
 import '../services/app_paths.dart';
 import '../services/ffmpeg_runner.dart';
@@ -25,15 +26,15 @@ class ProcessStore extends ChangeNotifier {
     required QueueStore queue,
     required PreferencesStore preferences,
     required LogStore log,
-    required Translator translator,
+    required LocaleController locales,
   }) : _queue = queue,
        _preferences = preferences,
        _log = log,
-       _t = translator {
+       _locales = locales {
     _engine = SpeedupEngine(
       runner: runner,
       log: log,
-      translator: translator,
+      locales: locales,
       onProgress: _handleProgress,
     );
   }
@@ -41,13 +42,16 @@ class ProcessStore extends ChangeNotifier {
   final QueueStore _queue;
   final PreferencesStore _preferences;
   final LogStore _log;
-  final Translator _t;
+  final LocaleController _locales;
+
+  AppLocalizations get _s => _locales.strings;
 
   late final SpeedupEngine _engine;
 
   bool _running = false;
   bool _compactMode = false;
   RunProgress _progress = const RunProgress();
+  MediaEntry? _lastPreview;
 
   bool get isRunning => _running;
 
@@ -58,13 +62,34 @@ class ProcessStore extends ChangeNotifier {
 
   bool get canStart => !_running && _queue.hasProcessableEntries;
 
+  /// The entry whose preview finished most recently, so the UI can offer to
+  /// play it. Cleared once read.
+  MediaEntry? takeFinishedPreview() {
+    final MediaEntry? entry = _lastPreview;
+    _lastPreview = null;
+    return entry;
+  }
+
   /// Processes the whole queue.
-  Future<void> start() => _run(_queue.processableEntries, detectOnly: false);
+  Future<void> start() =>
+      _run(_queue.processableEntries, kind: RunKind.full);
 
   /// Measures the silences of one file without encoding anything, so detection
   /// settings can be judged before committing to a full run.
   Future<void> analyze(MediaEntry entry) =>
-      _run(<MediaEntry>[entry], detectOnly: true);
+      _run(<MediaEntry>[entry], kind: RunKind.analyze);
+
+  /// Produces a short sample of one file, run through the full pipeline.
+  ///
+  /// Only the sampled stretch is decoded, so this costs about what processing
+  /// those seconds costs — no clip has to be cut out first.
+  Future<void> preview(MediaEntry entry) async {
+    await _run(<MediaEntry>[entry], kind: RunKind.preview);
+    if (entry.outputPath != null) {
+      _lastPreview = entry;
+      notifyListeners();
+    }
+  }
 
   Future<void> stop() async {
     if (!_running) return;
@@ -80,25 +105,20 @@ class ProcessStore extends ChangeNotifier {
 
   Future<void> _run(
     List<MediaEntry> entries, {
-    required bool detectOnly,
+    required RunKind kind,
   }) async {
     if (_running) {
-      _log.warning(_t.t('ffmpeg.alreadyRunning'));
+      _log.warning(_s.ffmpegAlreadyRunning);
       return;
     }
     if (entries.isEmpty) {
-      _log.warning(_t.t('log.queueEmpty'));
+      _log.warning(_s.logQueueEmpty);
       return;
     }
 
-    final String directory = _preferences.outputDirectory;
-    if (!await AppPaths.ensureDirectory(directory)) {
-      _log.error(
-        _t.t('log.outputDirError', <String, Object?>{
-          'path': directory,
-          'error': '',
-        }),
-      );
+    final String working = _preferences.workingDirectory;
+    if (!await AppPaths.ensureDirectory(working)) {
+      _log.error(_s.logOutputDirError(working, ''));
       return;
     }
 
@@ -110,8 +130,9 @@ class ProcessStore extends ChangeNotifier {
       await _engine.run(
         entries: entries,
         settings: _preferences.settings,
-        outputDirectory: directory,
-        detectOnly: detectOnly,
+        outputDirectoryFor: _preferences.outputDirectoryFor,
+        workingDirectory: working,
+        kind: kind,
       );
     } finally {
       _running = false;

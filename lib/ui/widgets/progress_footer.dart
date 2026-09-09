@@ -7,7 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../l10n/translator_context.dart';
+import '../../l10n/gen/app_localizations.dart';
 import '../../services/speedup_engine.dart';
 import '../../state/log_store.dart';
 import '../../state/process_store.dart';
@@ -41,9 +41,9 @@ class ProgressFooter extends StatelessWidget {
                 icon: Icon(log.visible ? Icons.terminal : Icons.terminal_outlined),
                 iconSize: 18,
                 visualDensity: VisualDensity.compact,
-                tooltip: context.t(
-                  log.visible ? 'menu.hideShell' : 'menu.showShell',
-                ),
+                tooltip: log.visible
+                    ? AppLocalizations.of(context).menuHideShell
+                    : AppLocalizations.of(context).menuShowShell,
               ),
               if (progress.total > 0)
                 Expanded(
@@ -56,12 +56,12 @@ class ProgressFooter extends StatelessWidget {
               else
                 const Spacer(),
               _Metric(
-                label: context.t('ffmpeg.time'),
+                label: AppLocalizations.of(context).ffmpegTime,
                 value: _formatPosition(progress.position),
               ),
               const SizedBox(width: 16),
               _Metric(
-                label: context.t('ffmpeg.speed'),
+                label: AppLocalizations.of(context).ffmpegSpeed,
                 value: progress.speed == null || progress.speed == 0
                     ? '-'
                     : '${progress.speed!.toStringAsFixed(1)}x',

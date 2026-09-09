@@ -20,8 +20,47 @@ class AppPaths {
   /// app so an existing install keeps exporting to the same place.
   static const String exportFolderName = 'speededup';
 
-  /// Default export directory: `~/speededup` on desktop, app documents
-  /// elsewhere.
+  /// Default directory for the intermediate fragments.
+  ///
+  /// Deliberately not under the export folder: that folder can be set to
+  /// follow each source file, leaving no single place to put scratch space.
+  /// It sits under the system temp directory, and can be moved in Preferences
+  /// when that drive is short of room.
+  static Future<String> defaultWorkingDirectory() async {
+    final Directory temp = await getTemporaryDirectory();
+    return p.join(temp.path, 'silence-speedup');
+  }
+
+  /// Bytes currently held in [directory], for the preferences dialog.
+  static Future<int> directoryBytes(String directory) async {
+    final Directory folder = Directory(directory);
+    if (!await folder.exists()) return 0;
+    int bytes = 0;
+    try {
+      await for (final FileSystemEntity entity in folder.list(recursive: true)) {
+        if (entity is File) bytes += await entity.length();
+      }
+    } on FileSystemException {
+      // A file vanishing mid-scan is not worth reporting.
+    }
+    return bytes;
+  }
+
+  /// Empties [directory] without removing it.
+  static Future<void> emptyDirectory(String directory) async {
+    final Directory folder = Directory(directory);
+    if (!await folder.exists()) return;
+    await for (final FileSystemEntity entity in folder.list()) {
+      try {
+        await entity.delete(recursive: true);
+      } on FileSystemException {
+        // Leave anything the OS still has open; the next run will retry.
+      }
+    }
+  }
+
+  /// Fallback export directory, used when the user asks for a fixed folder but
+  /// has not chosen one: `~/speededup` on desktop, app documents elsewhere.
   static Future<String> defaultOutputDirectory() async {
     final String? home = _homeDirectory();
     if (home != null) {
@@ -58,32 +97,4 @@ class AppPaths {
     }
   }
 
-  /// Total bytes sitting in the scratch directory, for the preferences dialog.
-  static Future<int> temporaryBytes(String outputDirectory) async {
-    final Directory tmp = Directory(p.join(outputDirectory, 'tmp'));
-    if (!await tmp.exists()) return 0;
-    int bytes = 0;
-    try {
-      await for (final FileSystemEntity entity in tmp.list(recursive: true)) {
-        if (entity is File) bytes += await entity.length();
-      }
-    } on FileSystemException {
-      // A file vanishing mid-scan is not worth reporting.
-    }
-    return bytes;
-  }
-
-  /// Empties the scratch directory. Only ever touches `<output>/tmp`, which
-  /// nothing but this app writes to.
-  static Future<void> clearTemporary(String outputDirectory) async {
-    final Directory tmp = Directory(p.join(outputDirectory, 'tmp'));
-    if (!await tmp.exists()) return;
-    await for (final FileSystemEntity entity in tmp.list()) {
-      try {
-        await entity.delete(recursive: true);
-      } on FileSystemException {
-        // Leave anything the OS still has open; the next run will retry.
-      }
-    }
-  }
 }

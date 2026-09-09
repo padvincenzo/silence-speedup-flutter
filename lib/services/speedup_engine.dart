@@ -9,10 +9,12 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
-import '../l10n/translator.dart';
+import '../l10n/gen/app_localizations.dart';
+import '../l10n/locale_controller.dart';
 import '../models/media_entry.dart';
 import '../models/options.dart';
 import '../models/processing_settings.dart';
+import '../models/time_window.dart';
 import '../state/log_store.dart';
 import 'ffmpeg_runner.dart';
 import 'fragment_planner.dart';
@@ -52,6 +54,18 @@ class RunProgress {
   }
 }
 
+/// What a single invocation of the engine is being asked to produce.
+enum RunKind {
+  /// The full file, written to the export folder.
+  full,
+
+  /// Detection only: measure the silences, encode nothing.
+  analyze,
+
+  /// A short sample, so the settings can be judged before a full run.
+  preview,
+}
+
 /// Turns a queue of files into shortened copies of themselves.
 ///
 /// The pipeline keeps the Electron app's shape: find the silences with
@@ -62,17 +76,21 @@ class SpeedupEngine {
   SpeedupEngine({
     required FFmpegRunner runner,
     required LogStore log,
-    required Translator translator,
+    required LocaleController locales,
     required void Function(RunProgress progress) onProgress,
   }) : _runner = runner,
        _log = log,
-       _t = translator,
+       _locales = locales,
        _onProgress = onProgress;
 
   final FFmpegRunner _runner;
   final LogStore _log;
-  final Translator _t;
+  final LocaleController _locales;
   final void Function(RunProgress progress) _onProgress;
+
+  /// Resolved on each use, so a language change mid-run is picked up by the
+  /// lines logged after it.
+  AppLocalizations get _s => _locales.strings;
 
   bool _stopRequested = false;
   MediaEntry? _current;
@@ -83,38 +101,41 @@ class SpeedupEngine {
   Future<void> stop() async {
     if (_stopRequested) return;
     _stopRequested = true;
-    _log.error(_t.t('log.stopping'));
+    _log.error(_s.logStopping);
     await _runner.cancel();
   }
 
   /// Processes [entries] in order.
   ///
-  /// With [detectOnly] set, silences are measured and reported but nothing is
-  /// encoded — the cheap way to judge the detection settings before committing
-  /// to a full run.
+  /// [outputDirectoryFor] is asked per entry rather than given once, because
+  /// the export folder can be set to follow each source file.
+  ///
+  /// [workingDirectory] holds the intermediate fragments. It is deliberately
+  /// separate from the output: with the export folder following the source,
+  /// there is no single output directory to put scratch space in.
   Future<void> run({
     required List<MediaEntry> entries,
     required ProcessingSettings settings,
-    required String outputDirectory,
-    bool detectOnly = false,
+    required String Function(MediaEntry entry) outputDirectoryFor,
+    required String workingDirectory,
+    RunKind kind = RunKind.full,
   }) async {
     _stopRequested = false;
 
     if (entries.isEmpty) {
-      _log.warning(_t.t('log.queueEmpty'));
+      _log.warning(_s.logQueueEmpty);
       return;
     }
 
-    final Directory workRoot = Directory(p.join(outputDirectory, 'tmp'));
+    final Directory workRoot = Directory(workingDirectory);
     try {
-      await Directory(outputDirectory).create(recursive: true);
       await workRoot.create(recursive: true);
     } on FileSystemException catch (error) {
       _log.error(
-        _t.t('log.outputDirError', <String, Object?>{
-          'path': outputDirectory,
-          'error': error.osError?.message ?? error.message,
-        }),
+        _s.logOutputDirError(
+          workingDirectory,
+          error.osError?.message ?? error.message,
+        ),
       );
       return;
     }
@@ -132,9 +153,9 @@ class SpeedupEngine {
       await _processEntry(
         entry: entry,
         settings: settings,
-        outputDirectory: outputDirectory,
+        outputDirectory: outputDirectoryFor(entry),
         workRoot: workRoot,
-        detectOnly: detectOnly,
+        kind: kind,
         completed: index,
         total: total,
       );
@@ -148,7 +169,7 @@ class SpeedupEngine {
     }
 
     _onProgress(RunProgress(completed: total, total: total, fraction: 0));
-    _log.success(_t.t('log.allDone'));
+    _log.success(_s.logAllDone);
   }
 
   Future<void> _processEntry({
@@ -156,47 +177,54 @@ class SpeedupEngine {
     required ProcessingSettings settings,
     required String outputDirectory,
     required Directory workRoot,
-    required bool detectOnly,
+    required RunKind kind,
     required int completed,
     required int total,
   }) async {
-    _log.info(_t.t('log.started', <String, Object?>{'name': entry.name}));
+    _log.info(_s.logStarted(entry.name));
 
     if (!await File(entry.path).exists()) {
-      _fail(
-        entry,
-        _t.t('log.fileMissing', <String, Object?>{'name': entry.name}),
-      );
+      _fail(entry, _s.logFileMissing(entry.name));
       return;
     }
 
     entry.duration ??= await _runner.probeDuration(entry.path);
     if (!entry.isProcessable) {
-      _fail(
-        entry,
-        _t.t('ffmpeg.silencedetectError', <String, Object?>{
-          'name': entry.name,
-        }),
-      );
+      _fail(entry, _s.ffmpegDurationError(entry.name));
       return;
     }
+
+    // A preview examines one stretch of the file; everything else the whole of
+    // it. Either way the rest of the pipeline works in absolute source
+    // seconds, so only these bounds change.
+    final TimeWindow window = kind == RunKind.preview
+        ? TimeWindow.preview(
+            mediaSeconds: entry.seconds,
+            seconds: settings.previewSeconds.toDouble(),
+          )
+        : TimeWindow(start: 0, end: entry.seconds);
 
     final bool analysed = await _detectSilences(
       entry: entry,
       settings: settings,
+      window: window,
+      isPartial: kind == RunKind.preview,
       completed: completed,
       total: total,
     );
     if (!analysed || _stopRequested) return;
 
     if (!entry.hasSilences) {
-      _log.info(_t.t('log.noSilenceDetected'));
+      _log.info(_s.logNoSilenceDetected);
       entry.setStatus(EntryStatus.completed);
       return;
     }
 
-    if (detectOnly) {
-      entry.setStatus(EntryStatus.completed, detail: _percentageLabel(entry));
+    if (kind == RunKind.analyze) {
+      entry.setStatus(
+        EntryStatus.completed,
+        detail: _percentageLabel(entry, window),
+      );
       return;
     }
 
@@ -208,16 +236,19 @@ class SpeedupEngine {
     await workDir.create(recursive: true);
 
     try {
+      if (!await _prepareOutputDirectory(entry, outputDirectory)) return;
+
       final List<String> fragments = await _exportFragments(
         entry: entry,
         settings: settings,
+        window: window,
         workDir: workDir,
         completed: completed,
         total: total,
       );
       if (fragments.isEmpty) {
         if (!_stopRequested && entry.status != EntryStatus.failed) {
-          _fail(entry, _t.t('log.skipNoSilences'));
+          _fail(entry, _s.logSkipNoSilences);
         }
         return;
       }
@@ -228,6 +259,7 @@ class SpeedupEngine {
         fragments: fragments,
         workDir: workDir,
         outputDirectory: outputDirectory,
+        suffix: kind == RunKind.preview ? _s.filePreviewSuffix : '',
         completed: completed,
         total: total,
       );
@@ -235,9 +267,14 @@ class SpeedupEngine {
 
       entry
         ..setOutputPath(output)
-        ..setStatus(EntryStatus.completed, detail: _percentageLabel(entry));
+        ..setStatus(
+          EntryStatus.completed,
+          detail: _percentageLabel(entry, window),
+        );
       _log.success(
-        _t.t('log.completed', <String, Object?>{'name': p.basename(output)}),
+        kind == RunKind.preview
+            ? _s.logPreviewReady(p.basename(output))
+            : _s.logCompleted(p.basename(output)),
       );
     } finally {
       // Kept on failure: the fragments are the only evidence of what went
@@ -245,19 +282,39 @@ class SpeedupEngine {
       if (entry.status == EntryStatus.completed) {
         await _deleteQuietly(workDir);
       } else if (await workDir.exists()) {
-        _log.info(
-          _t.t('log.fragmentsKept', <String, Object?>{'path': workDir.path}),
-        );
+        _log.info(_s.logFragmentsKept(workDir.path));
       }
     }
   }
 
-  /// Runs `silencedetect` and turns its output into ranges on the entry.
+  /// Creates the export folder, reporting rather than throwing when it cannot.
+  Future<bool> _prepareOutputDirectory(
+    MediaEntry entry,
+    String directory,
+  ) async {
+    try {
+      await Directory(directory).create(recursive: true);
+      return true;
+    } on FileSystemException catch (error) {
+      _fail(
+        entry,
+        _s.logOutputDirError(
+          directory,
+          error.osError?.message ?? error.message,
+        ),
+      );
+      return false;
+    }
+  }
+
+  /// Runs `silencedetect` over [window] and stores the ranges on the entry.
   ///
   /// Returns false when the entry could not be analysed.
   Future<bool> _detectSilences({
     required MediaEntry entry,
     required ProcessingSettings settings,
+    required TimeWindow window,
+    required bool isPartial,
     required int completed,
     required int total,
   }) async {
@@ -270,6 +327,7 @@ class SpeedupEngine {
       FragmentPlanner.detectArguments(
         input: entry.path,
         settings: settings,
+        window: isPartial ? window : null,
       ),
       onLine: (String line) {
         for (final RegExpMatch match
@@ -288,16 +346,20 @@ class SpeedupEngine {
         entry: entry,
         completed: completed,
         total: total,
-        position: progress.position,
+        position: Duration(
+          milliseconds:
+              (window.start * 1000).round() + progress.position.inMilliseconds,
+        ),
         speed: progress.speed,
-        fraction: progress.position.inMilliseconds / 1000.0 / entry.seconds,
+        fraction:
+            progress.position.inMilliseconds / 1000.0 / window.duration,
       ),
     );
 
     if (result.cancelled || _stopRequested) return false;
 
     if (!result.succeeded) {
-      _fail(entry, _t.t('log.skipNoSilences'), detail: result.failure);
+      _fail(entry, _s.logSkipNoSilences, detail: result.failure);
       return false;
     }
 
@@ -305,11 +367,12 @@ class SpeedupEngine {
       starts: starts,
       ends: ends,
       margin: settings.silenceMargin,
-      mediaSeconds: entry.seconds,
+      from: window.start,
+      to: window.end,
     );
 
     if (parsed.boundariesMismatched) {
-      _fail(entry, _t.t('log.dataError'));
+      _fail(entry, _s.logDataError);
       return false;
     }
 
@@ -317,20 +380,19 @@ class SpeedupEngine {
 
     if (entry.hasSilences) {
       _log.info(
-        _t.t('log.silencePercentage', <String, Object?>{
-          'percentage': ((entry.silenceRatio ?? 0) * 100).toStringAsFixed(2),
-        }),
+        _s.logSilencePercentage(_silenceShare(entry, window) * 100),
       );
     }
     return true;
   }
 
-  /// Encodes every stretch of the file at its own rate.
+  /// Encodes every stretch of [window] at its own rate.
   ///
   /// Returns an empty list when the run was stopped or a fragment failed.
   Future<List<String>> _exportFragments({
     required MediaEntry entry,
     required ProcessingSettings settings,
+    required TimeWindow window,
     required Directory workDir,
     required int completed,
     required int total,
@@ -340,7 +402,8 @@ class SpeedupEngine {
     final String extension = entry.outputExtensionFor(settings.outputFormat);
     final List<Fragment> plan = FragmentPlanner.plan(
       silences: entry.silences,
-      mediaSeconds: entry.seconds,
+      from: window.start,
+      to: window.end,
       dropSilence: settings.dropsSilence,
     );
     final List<String> written = <String>[];
@@ -373,7 +436,7 @@ class SpeedupEngine {
             total: total,
             position: Duration(milliseconds: (sourceSeconds * 1000).round()),
             speed: progress.speed,
-            fraction: sourceSeconds / entry.seconds,
+            fraction: (sourceSeconds - window.start) / window.duration,
           );
         },
       );
@@ -381,13 +444,8 @@ class SpeedupEngine {
       if (result.cancelled || _stopRequested) return const <String>[];
 
       if (!result.succeeded) {
-        _log.warning(
-          _t.t('log.fragmentError', <String, Object?>{
-            'start': fragment.start.toStringAsFixed(2),
-            'end': fragment.end.toStringAsFixed(2),
-          }),
-        );
-        _fail(entry, _t.t('status.failed'), detail: result.failure);
+        _log.warning(_s.logFragmentError(fragment.start, fragment.end));
+        _fail(entry, _s.statusFailed, detail: result.failure);
         return const <String>[];
       }
 
@@ -404,6 +462,7 @@ class SpeedupEngine {
     required List<String> fragments,
     required Directory workDir,
     required String outputDirectory,
+    required String suffix,
     required int completed,
     required int total,
   }) async {
@@ -417,7 +476,7 @@ class SpeedupEngine {
 
     final String output = await _resolveOutputPath(
       directory: outputDirectory,
-      fileName: entry.outputNameFor(settings.outputFormat),
+      fileName: entry.outputNameFor(settings.outputFormat, suffix: suffix),
       source: entry.path,
     );
 
@@ -440,7 +499,7 @@ class SpeedupEngine {
     if (result.cancelled || _stopRequested) return null;
 
     if (!result.succeeded) {
-      _fail(entry, _t.t('log.concatenationError'), detail: result.failure);
+      _fail(entry, _s.logConcatenationError, detail: result.failure);
       return null;
     }
 
@@ -449,9 +508,9 @@ class SpeedupEngine {
 
   /// Picks a free name rather than overwriting.
   ///
-  /// The Electron app passed `-y` and clobbered whatever was already there,
-  /// which destroys the source outright when the export directory happens to
-  /// be the folder the file came from.
+  /// The Electron app passed `-y` and clobbered whatever was already there.
+  /// That matters more now that the export folder can follow the source file:
+  /// keeping the original container would otherwise write over the input.
   Future<String> _resolveOutputPath({
     required String directory,
     required String fileName,
@@ -467,6 +526,12 @@ class SpeedupEngine {
       suffix++;
     }
     return candidate;
+  }
+
+  /// Share of [window] detected as silence.
+  double _silenceShare(MediaEntry entry, TimeWindow window) {
+    if (window.duration <= 0) return 0;
+    return (entry.silenceSeconds / window.duration).clamp(0.0, 1.0);
   }
 
   void _emit({
@@ -517,13 +582,8 @@ class SpeedupEngine {
     );
   }
 
-  String? _percentageLabel(MediaEntry entry) {
-    final double? ratio = entry.silenceRatio;
-    if (ratio == null) return null;
-    return _t.t('status.silenceShare', <String, Object?>{
-      'percentage': (ratio * 100).toStringAsFixed(1),
-    });
-  }
+  String _percentageLabel(MediaEntry entry, TimeWindow window) =>
+      _s.statusSilenceShare(_silenceShare(entry, window) * 100);
 
   Future<void> _deleteQuietly(Directory directory) async {
     try {

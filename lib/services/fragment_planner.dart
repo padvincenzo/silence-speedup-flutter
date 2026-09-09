@@ -9,6 +9,7 @@ import 'package:flutter/foundation.dart';
 import '../models/media_entry.dart';
 import '../models/options.dart';
 import '../models/processing_settings.dart';
+import '../models/time_window.dart';
 
 /// Fragments shorter than this are dropped: FFmpeg cannot usefully encode them
 /// and they only add seams to the concatenation.
@@ -63,16 +64,26 @@ class FragmentPlanner {
   );
 
   /// Arguments for the detection pass. Decodes audio only and writes nothing.
+  ///
+  /// Pass a [window] to examine just part of the file, which is how a preview
+  /// avoids having to cut a clip out first.
   static List<String> detectArguments({
     required String input,
     required ProcessingSettings settings,
+    TimeWindow? window,
   }) {
     return <String>[
       '-hide_banner',
       '-dn',
       '-vn',
-      '-ss', '0',
+      '-ss', timestamp(window?.start ?? 0),
+      // Input options, so FFmpeg reads only this stretch rather than decoding
+      // the whole file and discarding the rest.
+      if (window != null) ...<String>['-t', timestamp(window.duration)],
       '-i', input,
+      // The first audio track only. In a multi-track recording that is the
+      // voice; the other tracks must not decide where the pauses are.
+      '-map', '0:a:0',
       '-af', settings.silenceDetectFilter,
       '-f', 'null',
       '-',
@@ -84,18 +95,22 @@ class FragmentPlanner {
   /// Unlike the Electron original, which skipped the first boundary of each
   /// list, the margin applies to every range — that asymmetry left the first
   /// silence a margin too wide at both ends.
+  /// [from] and [to] bound the stretch that was examined, in absolute source
+  /// seconds. `silencedetect` reports positions relative to the seek it was
+  /// given, so [from] is added back to make every range absolute.
   static SilenceParseResult buildRanges({
     required List<double> starts,
     required List<double> ends,
     required double margin,
-    required double mediaSeconds,
+    required double from,
+    required double to,
   }) {
     final List<double> closes = List<double>.of(ends);
 
-    // A file that fades out into silence can end without a closing boundary;
-    // treat the end of the media as the close rather than dropping the run.
+    // A stretch that fades out into silence can end without a closing
+    // boundary; treat its end as the close rather than dropping the run.
     if (starts.isNotEmpty && closes.length == starts.length - 1) {
-      closes.add(mediaSeconds);
+      closes.add(to - from);
     }
 
     if (starts.length != closes.length) {
@@ -106,10 +121,10 @@ class FragmentPlanner {
     }
 
     final List<SilenceRange> ranges = <SilenceRange>[];
-    double previousEnd = 0;
+    double previousEnd = from;
     for (int i = 0; i < starts.length; i++) {
-      final double start = (starts[i] + margin).clamp(0.0, mediaSeconds);
-      final double end = (closes[i] - margin).clamp(0.0, mediaSeconds);
+      final double start = (from + starts[i] + margin).clamp(from, to);
+      final double end = (from + closes[i] - margin).clamp(from, to);
       if (end - start <= kMinFragmentSeconds) continue;
       // Overlapping ranges would produce fragments that replay the same audio.
       if (start < previousEnd) continue;
@@ -120,14 +135,16 @@ class FragmentPlanner {
     return SilenceParseResult(ranges, boundariesMismatched: false);
   }
 
-  /// Walks the timeline and emits alternating spoken and silent stretches.
+  /// Walks the stretch between [from] and [to], emitting alternating spoken
+  /// and silent fragments that cover it end to end.
   static List<Fragment> plan({
     required List<SilenceRange> silences,
-    required double mediaSeconds,
+    required double from,
+    required double to,
     required bool dropSilence,
   }) {
     final List<Fragment> plan = <Fragment>[];
-    double cursor = 0;
+    double cursor = from;
 
     void addPlayback(double start, double end) {
       if (end - start > kMinFragmentSeconds) {
@@ -144,7 +161,7 @@ class FragmentPlanner {
       }
       cursor = range.end;
     }
-    addPlayback(cursor, mediaSeconds);
+    addPlayback(cursor, to);
 
     return plan;
   }
@@ -169,6 +186,11 @@ class FragmentPlanner {
       '-ss', timestamp(fragment.start),
       '-to', timestamp(fragment.end),
       '-i', input,
+      // Explicit stream selection. Without it FFmpeg keeps one audio track and
+      // silently drops the others, which is what lost the second track of a
+      // multi-track recording. The `?` keeps a missing stream from being fatal.
+      '-map', '0:v:0?',
+      '-map', settings.keepAllAudioTracks ? '0:a?' : '0:a:0?',
       '-map_metadata', '-1',
       '-map_chapters', '-1',
       '-segment_time_metadata', '0',
@@ -198,6 +220,9 @@ class FragmentPlanner {
       ].join(','),
     ]);
 
+    // `-af` is `-filter:a`, a per-stream option: with several audio tracks
+    // mapped, each gets its own copy of this graph and stays in step.
+    //
     // Muting keeps the tempo filter in place: dropping it would leave the
     // audio longer than the sped-up video and desync everything after it.
     final List<String> audioFilters = <String>[
@@ -227,6 +252,9 @@ class FragmentPlanner {
       '-f', 'concat',
       '-safe', '0',
       '-i', listPath,
+      // Every stream of the fragments, not just the first of each kind, so a
+      // second audio track survives the join.
+      '-map', '0',
       '-c:a', 'copy',
       '-c:v', 'copy',
       output,

@@ -14,7 +14,7 @@ import 'package:provider/provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:window_manager/window_manager.dart';
 
-import '../l10n/translator_context.dart';
+import '../l10n/gen/app_localizations.dart';
 import '../models/media_entry.dart';
 import '../models/options.dart';
 import '../services/update_checker.dart';
@@ -30,6 +30,7 @@ import 'widgets/app_menu_bar.dart';
 import 'widgets/compact_progress_view.dart';
 import 'widgets/entry_list.dart';
 import 'widgets/log_console.dart';
+import 'widgets/output_path_bar.dart';
 import 'widgets/progress_footer.dart';
 import 'widgets/queue_toolbar.dart';
 
@@ -98,7 +99,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _openFiles() async {
     final List<PlatformFile> picked = await FilePicker.pickFiles(
-      dialogTitle: context.translator.t('file.openFile'),
+      dialogTitle: AppLocalizations.of(context).fileOpenFile,
       type: FileType.custom,
       allowedExtensions: kImportableExtensions.toList(),
     );
@@ -113,7 +114,7 @@ class _HomePageState extends State<HomePage> {
 
   Future<void> _openFolder() async {
     final String? directory = await FilePicker.getDirectoryPath(
-      dialogTitle: context.translator.t('file.openDir'),
+      dialogTitle: AppLocalizations.of(context).fileOpenDir,
     );
     if (directory == null || !mounted) return;
     await context.read<QueueStore>().addDirectory(directory);
@@ -124,9 +125,23 @@ class _HomePageState extends State<HomePage> {
     if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
       if (!mounted) return;
       _showMessage(
-        context.translator.t('log.linkError', <String, Object?>{'url': url}),
+        AppLocalizations.of(context).logLinkError(url),
       );
     }
+  }
+
+  /// Builds a short sample of [entry] and plays it.
+  ///
+  /// The point of a preview is to hear the result, so the file is opened as
+  /// soon as it exists rather than merely reported in the log.
+  Future<void> _preview(MediaEntry entry) async {
+    final ProcessStore process = context.read<ProcessStore>();
+    await process.preview(entry);
+
+    final MediaEntry? finished = process.takeFinishedPreview();
+    final String? output = finished?.outputPath;
+    if (output == null || !mounted) return;
+    await launchUrl(Uri.file(output));
   }
 
   /// Opens the folder the finished file was written to.
@@ -137,9 +152,7 @@ class _HomePageState extends State<HomePage> {
     if (!await launchUrl(uri)) {
       if (!mounted) return;
       _showMessage(
-        context.translator.t('log.linkError', <String, Object?>{
-          'url': p.dirname(output),
-        }),
+        AppLocalizations.of(context).logLinkError(p.dirname(output)),
       );
     }
   }
@@ -261,9 +274,13 @@ class _HomePageState extends State<HomePage> {
                     ),
                     const Divider(),
                     QueueToolbar(actions: _actions),
+                    const OutputPathBar(),
                     const Divider(),
                     Expanded(
-                      child: EntryList(onRevealOutput: _revealOutput),
+                      child: EntryList(
+                        onRevealOutput: _revealOutput,
+                        onPreview: _preview,
+                      ),
                     ),
                     if (_update != null) _UpdateBanner(onShow: _actions.showUpdate),
                     const Divider(),
@@ -310,7 +327,7 @@ class _DropOverlay extends StatelessWidget {
                   Icon(Icons.file_download_outlined, color: scheme.primary),
                   const SizedBox(width: 12),
                   Text(
-                    context.t('ui.dropVideo'),
+                    AppLocalizations.of(context).uiDropVideo,
                     style: Theme.of(context).textTheme.titleMedium,
                   ),
                 ],
@@ -346,7 +363,7 @@ class _UpdateBanner extends StatelessWidget {
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                context.t('menu.update'),
+                AppLocalizations.of(context).menuUpdate,
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                   color: scheme.onTertiaryContainer,
                 ),
@@ -354,7 +371,7 @@ class _UpdateBanner extends StatelessWidget {
             ),
             TextButton(
               onPressed: onShow,
-              child: Text(context.t('update.details')),
+              child: Text(AppLocalizations.of(context).updateDetails),
             ),
           ],
         ),

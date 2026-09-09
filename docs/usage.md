@@ -8,7 +8,11 @@ How to shorten a video, and what each setting actually does.
 
 1. **Add video(s)** — or drag files (or a folder) onto the window.
 2. Press **Start**.
-3. The finished files appear in your export folder, `~/speededup` by default.
+3. The finished files appear next to the originals.
+
+Before committing to a full run, the play button on a row builds a **short
+sample** through the real pipeline and opens it, so you can hear the result in
+roughly the time it takes to process a minute of video.
 
 The defaults — silences at 8×, speech untouched, medium noise floor — are a
 reasonable starting point for a recorded lecture or a screencast.
@@ -24,17 +28,21 @@ app.
 | --- | --- |
 | **Add video(s)** / folder button | Import files, or every supported file directly inside a folder. |
 | **8x / 1x** button | Current silence and speech rates. Opens Settings. |
+| **Export to** row | Where results go. Editable in place — no need to open Preferences. |
 | **Start** / **Stop** | Runs the whole queue, or interrupts it. |
 | Minimise button | Shrinks the window to a slim always-on-top progress strip. |
 | Terminal button (bottom left) | Shows or hides the log. |
 | Bottom strip | Position, encoder speed and percentage for the file being worked on. |
 
 Each queued file shows its status and, when finished, how much of it was
-silence. Two per-row actions:
+silence. Three per-row actions:
 
+- **Generate a short preview sample** — encodes a short stretch of the video
+  through the full pipeline and opens it. This is the one that answers "does
+  this *sound* right".
 - **Measure the silences without exporting** — runs only the detection pass and
-  reports the percentage found. Seconds instead of minutes; use it to check your
-  detection settings before committing to a full run.
+  reports the percentage found. Seconds rather than minutes; use it to check
+  whether the thresholds are sane.
 - **Show the exported file** — opens the output folder.
 
 Supported inputs: AVI, FLV, MKV, MOV, MP4, WebM, WMV.
@@ -48,6 +56,15 @@ Supported inputs: AVI, FLV, MKV, MOV, MP4, WebM, WMV.
 ## Settings
 
 ### Basic
+
+**Keep all audio tracks** — carries every audio track of the source into the
+output instead of only the first. Silences are still detected from the first
+track alone.
+
+> This is what a multi-track recording needs. If you record your voice to track
+> 1 and game or system audio to track 2 — OBS does this by default — the video
+> is cut according to the pauses in your voice, and every track comes out the
+> other side. With the option off, only the first track survives.
 
 **Silence speed** — how fast the quiet stretches play. `8x` keeps the pause
 audible but brief; **Remove** cuts them out completely.
@@ -114,22 +131,47 @@ almost always right.
 **Tune** — an x264 hint about the kind of content. `stillimage` suits slides,
 `film` suits camera footage. **None** (default) is fine.
 
+**Preview length** — how much of the video a preview sample covers: 30, 60
+(default) or 120 seconds. The sample is taken from a third of the way in, where
+a recording is most representative — the opening is usually titles, or someone
+settling down before they start talking.
+
 **Video format** — container for the output. **Keep** reuses the source's.
 
 ---
 
-## Export folder and temporary files
+## Where the results go
 
-Results go to `~/speededup` (`C:\Users\<you>\speededup` on Windows) unless you
-change it in **File → Preferences**.
+The **Export to** row sits on the main window, right under the toolbar, because
+this is the setting that changes most often.
+
+- **Next to the source video** (default) — each result is written into the same
+  folder as the file it came from.
+- Untick it and the folder becomes editable: type a path, or pick one with the
+  browse button. It is remembered, so switching back and forth costs nothing.
+
+A typed path is applied when you press Enter or click away, and the folder is
+created if it does not exist yet.
 
 Existing files are never overwritten: a name collision gets ` (1)` appended.
+That guarantee matters with the default setting — keeping the source container
+would otherwise mean writing over the original.
 
-While processing, the app writes intermediate fragments to
-`<export folder>/tmp/`. They are deleted after a file completes successfully, and
-**kept when something fails** — they are usually the only clue as to which part
-of the file went wrong, and the log says where they are. Preferences shows how
-much space they use and can empty them.
+Preview samples are named `<video> (preview).<ext>`, so they never compete with
+the real output.
+
+## Temporary files
+
+While processing, the app writes intermediate fragments to a working directory,
+by default inside the system temp folder. They are deleted after a file
+completes successfully, and **kept when something fails** — they are usually the
+only clue as to which part of the file went wrong, and the log says where they
+are.
+
+**File → Preferences** shows how much space they use, can empty them, and can
+move the working directory. Worth moving if the drive holding your temp folder
+is short of room: the fragments of a long video can add up to several gigabytes
+while a run is in progress.
 
 ---
 
@@ -174,6 +216,13 @@ small — short gaps are being cut. Raise both.
 
 **Audio drifts out of sync.** Set FPS explicitly to match the source; a
 variable-frame-rate input is the usual cause.
+
+**An audio track is missing from the output.** Turn on **Keep all audio tracks**
+in Settings. Without it only the first track is exported.
+
+**The preview sounds right but the full run does not.** The sample covers one
+stretch of the video. If the room noise changes partway through — a different
+speaker, a window opened — one noise preset will not fit the whole file.
 
 The log is the first place to look, and the fragments left behind after a
 failure are the second.

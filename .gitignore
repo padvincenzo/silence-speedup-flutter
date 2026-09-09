@@ -33,6 +33,12 @@ migrate_working_dir/
 /build/
 /coverage/
 
+# Packaged installers, produced by installer/build-installer.ps1
+/dist/
+
+# Report written by `flutter gen-l10n`; empty when every key is translated
+/lib/l10n/untranslated.json
+
 # Symbolication related
 app.*.symbols
 

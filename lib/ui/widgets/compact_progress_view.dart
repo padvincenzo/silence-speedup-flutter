@@ -7,7 +7,7 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
-import '../../l10n/translator_context.dart';
+import '../../l10n/gen/app_localizations.dart';
 import '../../services/speedup_engine.dart';
 import '../../state/process_store.dart';
 
@@ -69,14 +69,14 @@ class CompactProgressView extends StatelessWidget {
                   icon: const Icon(Icons.stop),
                   iconSize: 18,
                   visualDensity: VisualDensity.compact,
-                  tooltip: context.t('process.stop'),
+                  tooltip: AppLocalizations.of(context).processStop,
                 ),
                 IconButton(
                   onPressed: onExpand,
                   icon: const Icon(Icons.open_in_full),
                   iconSize: 18,
                   visualDensity: VisualDensity.compact,
-                  tooltip: context.t('menu.windowMode'),
+                  tooltip: AppLocalizations.of(context).menuWindowMode,
                 ),
               ],
             ),

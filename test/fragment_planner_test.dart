@@ -24,7 +24,8 @@ void main() {
         starts: <double>[10, 30],
         ends: <double>[20, 40],
         margin: 0.5,
-        mediaSeconds: 60,
+        from: 0,
+        to: 60,
       );
 
       expect(result.boundariesMismatched, isFalse);
@@ -40,7 +41,8 @@ void main() {
         starts: <double>[0],
         ends: <double>[5],
         margin: 1,
-        mediaSeconds: 60,
+        from: 0,
+        to: 60,
       );
 
       expect(result.ranges.single.start, closeTo(1, 1e-9));
@@ -52,7 +54,8 @@ void main() {
         starts: <double>[10, 50],
         ends: <double>[20],
         margin: 0,
-        mediaSeconds: 60,
+        from: 0,
+        to: 60,
       );
 
       expect(result.boundariesMismatched, isFalse);
@@ -65,7 +68,8 @@ void main() {
         starts: <double>[10],
         ends: <double>[20, 30, 40],
         margin: 0,
-        mediaSeconds: 60,
+        from: 0,
+        to: 60,
       );
 
       expect(result.boundariesMismatched, isTrue);
@@ -77,7 +81,8 @@ void main() {
         starts: <double>[10],
         ends: <double>[10.4],
         margin: 0.3,
-        mediaSeconds: 60,
+        from: 0,
+        to: 60,
       );
 
       expect(result.ranges, isEmpty);
@@ -93,7 +98,8 @@ void main() {
           SilenceRange(10, 20),
           SilenceRange(50, 60),
         ],
-        mediaSeconds: mediaSeconds,
+        from: 0,
+        to: mediaSeconds,
         dropSilence: false,
       );
 
@@ -119,7 +125,8 @@ void main() {
     test('omits the silent stretches when they are removed', () {
       final List<Fragment> plan = FragmentPlanner.plan(
         silences: const <SilenceRange>[SilenceRange(10, 20)],
-        mediaSeconds: mediaSeconds,
+        from: 0,
+        to: mediaSeconds,
         dropSilence: true,
       );
 
@@ -131,7 +138,8 @@ void main() {
         () {
       final List<Fragment> plan = FragmentPlanner.plan(
         silences: const <SilenceRange>[SilenceRange(0, 20)],
-        mediaSeconds: mediaSeconds,
+        from: 0,
+        to: mediaSeconds,
         dropSilence: false,
       );
 
@@ -143,7 +151,8 @@ void main() {
         () {
       final List<Fragment> plan = FragmentPlanner.plan(
         silences: const <SilenceRange>[SilenceRange(90, mediaSeconds)],
-        mediaSeconds: mediaSeconds,
+        from: 0,
+        to: mediaSeconds,
         dropSilence: false,
       );
 

@@ -5,10 +5,10 @@
 // License: GNU GPL v3 or later <http://www.gnu.org/copyleft/gpl.html>
 
 import 'package:flutter/material.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 
-import 'l10n/translator.dart';
+import 'l10n/gen/app_localizations.dart';
+import 'l10n/locale_controller.dart';
 import 'state/preferences_store.dart';
 import 'ui/home_page.dart';
 import 'ui/theme.dart';
@@ -19,7 +19,7 @@ class SilenceSpeedUpApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final PreferencesStore preferences = context.watch<PreferencesStore>();
-    final Translator translator = context.watch<Translator>();
+    final LocaleController locales = context.watch<LocaleController>();
 
     return MaterialApp(
       title: 'Silence SpeedUp',
@@ -27,13 +27,12 @@ class SilenceSpeedUpApp extends StatelessWidget {
       themeMode: preferences.themeMode,
       theme: buildAppTheme(Brightness.light),
       darkTheme: buildAppTheme(Brightness.dark),
-      locale: translator.locale,
-      supportedLocales: Translator.supportedLocales,
-      localizationsDelegates: const <LocalizationsDelegate<Object>>[
-        GlobalMaterialLocalizations.delegate,
-        GlobalWidgetsLocalizations.delegate,
-        GlobalCupertinoLocalizations.delegate,
-      ],
+      // The controller has already resolved the system language against what
+      // the app supports, so the choice is passed in rather than left to
+      // Flutter's own resolution.
+      locale: locales.activeLocale,
+      supportedLocales: AppLocalizations.supportedLocales,
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
       home: const HomePage(),
     );
   }

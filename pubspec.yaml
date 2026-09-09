@@ -40,6 +40,8 @@ dev_dependencies:
 flutter:
   uses-material-design: true
 
+  # Generates AppLocalizations from lib/l10n/arb/*.arb — see l10n.yaml.
+  generate: true
+
   assets:
-    - assets/locales/
     - assets/icons/

@@ -50,9 +50,11 @@ not yet tested. Android is scaffolded but has no UI.
 1. Launch the app.
 2. Add your videos — **Add video(s)**, a folder, or drag them onto the window.
 3. Adjust the settings if you want to (the defaults are sensible).
-4. Press **Start**.
+4. Press the play button on a row to hear a **short preview sample** first, then
+   press **Start**.
 
-Results land in `~/speededup` by default.
+Results land next to the original videos by default; the export folder sits on
+the main window, not behind a menu.
 
 Full walkthrough of every setting: [docs/usage.md](docs/usage.md).
 
@@ -64,24 +66,34 @@ Full walkthrough of every setting: [docs/usage.md](docs/usage.md).
   and a margin so words are not clipped
 - ⏩ **Speed up or remove** the silences, and optionally mute them
 - 🗣️ **Speed up the speech too**, if you want the whole thing faster
+- 🎧 **Multi-track audio** — carry every audio track through while detecting the
+  pauses from the first one, which is what an OBS capture with voice on track 1
+  and system audio on track 2 needs
+- ▶️ **Preview before you commit** — encode a short sample through the real
+  pipeline and hear the result, without waiting for the whole file
+- 🔍 **Or just measure** — a detection-only pass reports how much of a file is
+  silence in seconds rather than minutes
+- 📁 **The export folder is where you need it** — on the main window, editable
+  in place, defaulting to the source video's own folder
 - 📋 **Batch processing** with a queue, a live log and an interruptible run
-- 🔍 **Measure before you commit** — a detection-only pass reports how much of a
-  file is silence in seconds rather than minutes
 - 🎛️ **Encoder controls** — CRF, frame rate, x264 preset and tune, audio rate,
   output container
 - 🪟 **Compact progress mode** — a slim always-on-top strip for long batches
-- 🌗 **Light, dark or system theme** · 🌍 **English and Italian**
+- 🌗 **Light, dark or system theme**
+- 🌍 **English and Italian**, following the system language by default
 - 📦 **FFmpeg included** — nothing to install
 
 ---
 
 ## Requirements
 
-Nothing, for a packaged build: FFmpeg ships with the app.
+Nothing, for a packaged build: FFmpeg ships with the app. Windows 10 or newer,
+64-bit.
 
-To build from source you need Flutter 3.47+ and, on Windows, Visual Studio 2022
-with the C++ desktop workload — see
-[docs/development.md](docs/development.md).
+### Building from source
+
+Flutter 3.47+ and, on Windows, Visual Studio 2022 with the C++ desktop
+workload — see [docs/development.md](docs/development.md).
 
 ```bash
 git clone https://github.com/padvincenzo/silence-speedup-flutter
@@ -89,6 +101,17 @@ cd silence-speedup-flutter
 flutter pub get
 flutter run -d windows
 ```
+
+### Packaging the installer
+
+Additionally [Inno Setup 6](https://jrsoftware.org/isinfo.php):
+
+```powershell
+winget install --id JRSoftware.InnoSetup --source winget
+.\installer\build-installer.ps1
+```
+
+The result is `dist\SilenceSpeedUp-<version>-windows-x64-setup.exe`.
 
 ---
 
@@ -111,14 +134,15 @@ flutter run -d windows
 Welcome, in any of these forms:
 
 - Reporting bugs
-- Translating the app (copy `assets/locales/en.json`; missing keys fall back to
-  English, so a partial translation is still useful)
+- Translating the app (copy `lib/l10n/arb/app_en.arb`, change `@@locale`, and
+  run `flutter gen-l10n`; the new language appears in the menu on its own)
 - Suggesting or implementing features from [ROADMAP.md](ROADMAP.md)
 - [Buying me a coffee](https://paypal.me/VincenzoPadula)
 
 Before a pull request: `flutter analyze` clean, `flutter test` green, and any
 change to the FFmpeg calls covered by a test in
-[test/fragment_planner_test.dart](test/fragment_planner_test.dart).
+[test/fragment_planner_test.dart](test/fragment_planner_test.dart) or
+[test/preview_and_audio_test.dart](test/preview_and_audio_test.dart).
 
 ---
 
