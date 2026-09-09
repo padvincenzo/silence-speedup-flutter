@@ -27,6 +27,11 @@ class AppPaths {
   /// It sits under the system temp directory, and can be moved in Preferences
   /// when that drive is short of room.
   static Future<String> defaultWorkingDirectory() async {
+    // Desktop has a system temp directory that dart:io knows about without a
+    // plugin, which keeps this reachable from a plain unit test as well.
+    if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+      return p.join(Directory.systemTemp.path, 'silence-speedup');
+    }
     final Directory temp = await getTemporaryDirectory();
     return p.join(temp.path, 'silence-speedup');
   }

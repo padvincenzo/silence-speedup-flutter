@@ -10,7 +10,7 @@ import 'package:flutter/material.dart';
 /// two versions of the app still look related.
 const Color _seed = Color(0xFF0D6EFD);
 
-/// Colour reserved for the Start action and for finished rows.
+/// Colour reserved for finished rows.
 const Color _goColor = Color(0xFF198754);
 
 ThemeData buildAppTheme(Brightness brightness) {
@@ -22,28 +22,70 @@ ThemeData buildAppTheme(Brightness brightness) {
   return ThemeData(
     colorScheme: scheme,
     useMaterial3: true,
-    visualDensity: VisualDensity.compact,
     scaffoldBackgroundColor: scheme.surface,
+
+    // Flat and tonal rather than shadowed: the app bar sits above a list that
+    // scrolls under it, and a drop shadow there reads as a leftover from a
+    // toolkit that had one.
+    appBarTheme: AppBarTheme(
+      backgroundColor: scheme.surface,
+      surfaceTintColor: scheme.surfaceTint,
+      elevation: 0,
+      scrolledUnderElevation: 2,
+      centerTitle: false,
+      titleTextStyle: TextStyle(
+        color: scheme.onSurface,
+        fontSize: 18,
+        fontWeight: FontWeight.w500,
+      ),
+      iconTheme: IconThemeData(color: scheme.onSurfaceVariant),
+    ),
+
+    navigationDrawerTheme: NavigationDrawerThemeData(
+      backgroundColor: scheme.surfaceContainerLow,
+      elevation: 1,
+      indicatorColor: scheme.secondaryContainer,
+    ),
+
+    // The settings page is a long list of tiles; a tighter line height keeps a
+    // group readable as a group.
+    listTileTheme: const ListTileThemeData(
+      minVerticalPadding: 8,
+      subtitleTextStyle: TextStyle(fontSize: 12, height: 1.35),
+    ),
+
     dividerTheme: DividerThemeData(
       color: scheme.outlineVariant,
       thickness: 1,
       space: 1,
     ),
+
     sliderTheme: const SliderThemeData(
       trackHeight: 4,
-      showValueIndicator: ShowValueIndicator.never,
+      showValueIndicator: ShowValueIndicator.onDrag,
     ),
+
     inputDecorationTheme: const InputDecorationTheme(
       isDense: true,
       border: OutlineInputBorder(),
     ),
+
+    segmentedButtonTheme: SegmentedButtonThemeData(
+      style: ButtonStyle(
+        visualDensity: VisualDensity.compact,
+        textStyle: const WidgetStatePropertyAll<TextStyle>(
+          TextStyle(fontSize: 13),
+        ),
+      ),
+    ),
+
     snackBarTheme: const SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
     ),
-    menuButtonTheme: MenuButtonThemeData(
-      style: MenuItemButton.styleFrom(
-        minimumSize: const Size(0, 36),
-      ),
+
+    cardTheme: const CardThemeData(
+      elevation: 0,
+      margin: EdgeInsets.zero,
     ),
   );
 }

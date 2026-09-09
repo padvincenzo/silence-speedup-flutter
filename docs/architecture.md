@@ -74,9 +74,10 @@ the app imports that package.** Two things follow:
 - **The Android port is a UI-and-storage problem, not an encoding problem.** The
   plugin already runs on Android, iOS, macOS, Windows and Linux behind one
   API, so the engine, the planner and the models are already portable. What
-  needs replacing is the desktop chrome (menu bar, drag-and-drop, resizable
-  window) and `AppPaths`, since an Android app cannot write to an arbitrary
-  folder in the user's home.
+  needs replacing is the desktop chrome (drag-and-drop, the resizable window,
+  the compact always-on-top strip) and `AppPaths`, since an Android app cannot
+  write to an arbitrary folder in the user's home. The navigation drawer and
+  the settings page already work on a phone.
 - **A fake runner can drive the whole engine** without an encoder present.
 
 ### Why bundled, not a system binary
@@ -242,7 +243,7 @@ Three ways in, by layer:
   enum value breaks the build instead of rendering nothing.
 
 `LocaleController` decides the language: the first system language the app
-supports, English otherwise. A choice pinned from View → Language overrides that
+supports, English otherwise. A choice pinned from Settings → Application overrides that
 until the user picks "System" again, and `didChangeLocales` re-resolves if the
 OS language changes while the app is running.
 
@@ -262,14 +263,43 @@ same seam that will let Android answer with a MediaStore location instead.
 
 ---
 
-## Single window, two modes
+## The shape of the UI
 
-Flutter desktop runs one window, where Electron opened several. The compact
-progress bar — a slim always-on-top strip — is therefore a *mode* of the main
-window rather than a second window: `ProcessStore.compactMode` flips the widget
-tree, and `HomePage` reconciles the OS window (size, resizability, always-on-top)
-to match in a post-frame callback, restoring the previous size on the way back.
+`AppShell` is the frame: an `AppBar`, a `NavigationDrawer`, and one of three
+pages — queue, settings, about.
 
-About, Preferences, Settings, Licence and Update were separate `BrowserWindow`s
-in Electron and are dialogs here. Nothing was lost: they were all modal in
-practice.
+There is no menu bar. A File / Media / View / Help bar is a desktop-toolkit
+idiom that Material has no equivalent for, and most of what the Electron
+version kept in it was not navigation anyway:
+
+| Was in the menu | Is now |
+| --- | --- |
+| Open video(s) / folder | Buttons on the queue, plus the same shortcuts |
+| Start / Stop | The floating action button — the one thing the screen is for |
+| Settings, Preferences | One settings page, reached from the drawer or the rate chip |
+| Theme, Language | The Application group on that page |
+| Progress mode, log, clear queue | App bar actions on the queue |
+| About, Licence, links, Quit | The drawer's lower half |
+
+Two consequences worth knowing:
+
+- **The status strip is a `bottomNavigationBar`, not the last row of the page.**
+  Material floats the action button above a bottom bar, so putting the progress
+  readouts there is what keeps the button from sitting on top of the
+  percentage. `EntryList` adds `kQueueBottomInset` of bottom padding for the
+  same reason.
+- **Settings explain themselves in place.** Each row carries its description as
+  a visible subtitle. The Electron modal had the same sentences behind a help
+  icon, where nobody read them; a page has room to simply say what a setting
+  does, which is the difference between a control people adjust and one they
+  leave alone.
+
+The compact progress bar is a *mode* of the single window rather than a second
+one: `ProcessStore.compactMode` flips the widget tree, and `AppShell` reconciles
+the OS window — size, resizability, always-on-top — in a post-frame callback,
+restoring the previous size on the way back.
+
+Because the UI cannot be checked by eye from a test suite,
+[test/ui_smoke_test.dart](../test/ui_smoke_test.dart) builds the shell and each
+page against a `FakeFFmpegRunner`, navigates the drawer, and asserts nothing
+overflows at the smallest window size the app allows.

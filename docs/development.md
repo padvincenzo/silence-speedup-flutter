@@ -74,7 +74,7 @@ silence-speedup-flutter/
 │   ├── models/          # options catalogue, settings, queue entry
 │   ├── services/        # FFmpeg boundary, planner, engine, paths, updates
 │   ├── state/           # the four ChangeNotifier stores
-│   └── ui/              # home_page, widgets/, dialogs/
+│   └── ui/              # app_shell + pages/ + widgets/
 ├── test/
 ├── windows/             # Flutter desktop runner
 └── android/             # scaffolded; UI not built yet (see ROADMAP)
@@ -106,7 +106,15 @@ When adding a feature that changes what FFmpeg is asked to do, add the assertion
 to `fragment_planner_test.dart` in the same commit. It is much cheaper than
 noticing the drift in an exported file a week later.
 
-There is no widget or integration test suite yet — see [ROADMAP.md](../ROADMAP.md).
+- [test/ui_smoke_test.dart](../test/ui_smoke_test.dart) — builds the shell and
+  each page against a fake `FFmpegRunner`, navigates the drawer, checks the
+  settings page fits the smallest allowed window, and renders it in Italian.
+  This is the safety net for a UI nobody is looking at while the tests run: a
+  layout overflow surfaces as a test failure rather than as a red stripe
+  somebody notices later.
+
+There is no end-to-end test that drives a real encode — see
+[ROADMAP.md](../ROADMAP.md).
 
 ### Manual checks worth doing before a release
 
@@ -139,7 +147,8 @@ The pipeline touches real files, so a few things only a real run will show:
    `toJson` / `fromJson` handling. Clamp it in `fromJson`: a stale preferences
    file must never crash the app.
 2. If it changes the FFmpeg call, change `FragmentPlanner` and add a test.
-3. Add a `SettingRow` to `SettingsDialog`.
+3. Add a tile to the right group in `SettingsPage`, and give it a description:
+   every setting on that page explains itself in place.
 4. Add the label — and the tooltip, if the effect is not obvious — to **both**
    ARB catalogues, then run `flutter gen-l10n`.
 
@@ -168,7 +177,7 @@ separator per language, which string interpolation cannot do.
    translate the values.
 2. `flutter gen-l10n` — the locale is picked up automatically and appears in
    `AppLocalizations.supportedLocales`.
-3. Add a `_LanguageItem` to the View → Language submenu.
+3. Add a segment to the Language control in `SettingsPage`.
 
 Missing keys fall back to the template, so a partial translation degrades rather
 than breaks — but the ARB test will flag it.

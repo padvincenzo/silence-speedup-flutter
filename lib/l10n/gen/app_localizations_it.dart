@@ -10,6 +10,12 @@ class AppLocalizationsIt extends AppLocalizations {
   AppLocalizationsIt([String locale = 'it']) : super(locale);
 
   @override
+  String get aboutBuiltWith => 'Realizzata con Flutter, basata su FFmpeg';
+
+  @override
+  String get aboutCopyright => 'Copyright (C) 2025-2026 Vincenzo Padula';
+
+  @override
   String get appIntro =>
       'Importa dei video, scegli la configurazione e premi Avvia per velocizzare (o rimuovere) i loro silenzi.';
 
@@ -48,6 +54,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get fileReveal => 'Mostra il file esportato';
+
+  @override
+  String get helpAudioRate =>
+      'Ricampiona l\'audio. Mantieni lo lascia esattamente come è, che è quasi sempre la scelta giusta.';
 
   @override
   String get helpAudioTracks =>
@@ -92,6 +102,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Velocizza i tuoi video velocizzando (o rimuovendo) i silenzi, usando FFmpeg. Realizzata con Flutter.';
 
   @override
+  String get helpLanguage =>
+      'Segue la lingua del sistema, ripiegando sull\'inglese. Fissane una per forzarla.';
+
+  @override
   String get helpLicense =>
       'Questo programma non offre alcuna garanzia. È software libero e la sua ridistribuzione è consentita a determinate condizioni; per i dettagli consulta la licenza.';
 
@@ -125,6 +139,14 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get helpSilenceSpeed =>
       'Velocità delle parti silenziose. Scegli Rimuovi per tagliarle del tutto.';
+
+  @override
+  String get helpTheme =>
+      'Segui il sistema, oppure fissa il tema chiaro o scuro.';
+
+  @override
+  String get helpTune =>
+      'Un suggerimento a x264 sul tipo di contenuto: Still image per le slide, Film per le riprese.';
 
   @override
   String get logAllDone => 'Tutti i video sono stati completati.';
@@ -249,12 +271,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get menuDonate => 'Offrimi un caffè';
 
   @override
-  String get menuFile => 'File';
-
-  @override
-  String get menuHelp => 'Aiuto';
-
-  @override
   String get menuHideShell => 'Nascondi log';
 
   @override
@@ -264,16 +280,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get menuLicense => 'Mostra licenza';
 
   @override
-  String get menuMedia => 'Media';
-
-  @override
   String get menuOpenFile => 'Importa video';
 
   @override
   String get menuOpenFolder => 'Importa cartella';
-
-  @override
-  String get menuPreferences => 'Preferenze';
 
   @override
   String get menuProgress => 'Avanzamento compatto';
@@ -302,10 +312,19 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
-  String get menuView => 'Visualizza';
+  String get menuWindowMode => 'Torna alla finestra';
 
   @override
-  String get menuWindowMode => 'Torna alla finestra';
+  String get navAbout => 'Informazioni';
+
+  @override
+  String get navQueue => 'Coda';
+
+  @override
+  String get navSection => 'Altro';
+
+  @override
+  String get navSettings => 'Impostazioni';
 
   @override
   String get noiseHigh => 'Alta';
@@ -383,6 +402,18 @@ class AppLocalizationsIt extends AppLocalizations {
   String get processStop => 'Interrompi';
 
   @override
+  String queueCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count video',
+      one: '1 video',
+      zero: 'Nessun video',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get settingsAdvanced => 'Impostazioni avanzate';
 
   @override
@@ -410,6 +441,24 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsFps => 'FPS';
 
   @override
+  String get settingsGroupApp => 'Applicazione';
+
+  @override
+  String get settingsGroupAudio => 'Audio';
+
+  @override
+  String get settingsGroupDetection => 'Rilevamento dei silenzi';
+
+  @override
+  String get settingsGroupExport => 'Esportazione';
+
+  @override
+  String get settingsGroupPreview => 'Anteprima';
+
+  @override
+  String get settingsGroupSpeed => 'Velocità';
+
+  @override
   String get settingsMuteSilences => 'Muta i silenzi';
 
   @override
@@ -420,6 +469,17 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get settingsPreviewDuration => 'Durata dell\'anteprima';
+
+  @override
+  String get settingsResetDone => 'Impostazioni di elaborazione reimpostate';
+
+  @override
+  String get settingsResetProcessing =>
+      'Reimposta le impostazioni di elaborazione';
+
+  @override
+  String get settingsResetProcessingHint =>
+      'Riporta ai valori predefiniti velocità, rilevamento ed esportazione.';
 
   @override
   String get settingsSilence => 'Rilevamento dei silenzi';

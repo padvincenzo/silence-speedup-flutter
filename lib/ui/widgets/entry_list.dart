@@ -11,6 +11,7 @@ import '../../l10n/gen/app_localizations.dart';
 import '../../l10n/labels.dart';
 import '../../models/media_entry.dart';
 import '../../state/process_store.dart';
+import '../pages/queue_page.dart' show kQueueBottomInset;
 import '../../state/queue_store.dart';
 import '../theme.dart';
 
@@ -35,7 +36,12 @@ class EntryList extends StatelessWidget {
     if (queue.isEmpty) return const _EmptyQueueMessage();
 
     return ListView.separated(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+      padding: const EdgeInsets.only(
+        left: 12,
+        right: 12,
+        top: 4,
+        bottom: kQueueBottomInset,
+      ),
       itemCount: queue.entries.length,
       separatorBuilder: (BuildContext context, int index) =>
           const SizedBox(height: 4),

@@ -129,10 +129,16 @@ one less way for a hand-edit to break the app.
 
 User choices moved the other way: they are now **persisted** (see below).
 
-### Electron-specific menu items
+### The menu bar
 
-`Restart`, `Toggle Dev Tools` and the Electron reference link have no Flutter
-equivalent and are gone.
+`File / Media / View / Help` is gone entirely. A menu bar is a desktop-toolkit
+idiom with no Material equivalent, and most of what it held was not navigation:
+the queue actions belong on the queue, the settings on a settings page. What is
+genuinely application-level — about, links, quit — is in a navigation drawer.
+`docs/architecture.md` has the item-by-item mapping.
+
+`Restart` and `Toggle Dev Tools` went with it; they were development
+affordances, not features.
 
 ---
 
@@ -188,10 +194,11 @@ equivalent and are gone.
 | `src/classes/entrylist.js` | `lib/state/queue_store.dart` |
 | `src/classes/ffmpeg.js` (spawn + progress + DOM) | `lib/services/ffmpeg_runner.dart` + `lib/ui/widgets/progress_footer.dart` |
 | `src/classes/speedup.js` (pipeline + arguments) | `lib/services/speedup_engine.dart` + `lib/services/fragment_planner.dart` |
-| `src/classes/interface.js` | `lib/ui/home_page.dart` + `lib/ui/widgets/` |
+| `src/classes/interface.js` | `lib/ui/app_shell.dart` + `lib/ui/pages/` + `lib/ui/widgets/` |
+| `main.js` menu template | `lib/ui/widgets/app_drawer.dart` + app bar actions |
 | `src/classes/shell.js` | `lib/state/log_store.dart` + `lib/ui/widgets/log_console.dart` |
 | `src/i18n.js` + `locales/*/translation.json` | `lib/l10n/arb/*.arb` + generated `AppLocalizations` + `lib/l10n/locale_controller.dart` |
-| `renderer/preferences`, `about`, `update` windows | `lib/ui/dialogs/` |
+| `renderer/preferences`, `about`, `update` windows | `lib/ui/pages/settings_page.dart`, `lib/ui/pages/about_page.dart` |
 | `renderer/progress` window | `lib/ui/widgets/compact_progress_view.dart` |
 | `renderer/player` (video.js) | not ported — [ROADMAP.md](../ROADMAP.md) |
 
@@ -207,12 +214,12 @@ them is what made the pipeline testable.
 - **One window.** Electron opened separate windows for progress, about,
   preferences, licence and update. Flutter desktop has one, so the progress
   strip is a mode of the main window and the rest are dialogs.
-- **The menu bar is drawn in-app.** Flutter's `MenuBar` is a widget, not native
-  window chrome. One implementation covers Windows, Linux and macOS; the
-  trade-off is that it does not appear in the macOS system menu bar.
-- **Keyboard shortcuts are registered separately.** `MenuItemButton.shortcut`
-  only *displays* an accelerator; the bindings live in a `CallbackShortcuts` in
-  `HomePage`. Adding a shortcut means touching both places.
+- **There is no menu bar at all.** See the Removed section above. On macOS this
+  means the app has no entries in the system menu bar; that is the cost of one
+  interface that is idiomatic on all three desktops.
+- **Keyboard shortcuts are registered centrally**, in a `CallbackShortcuts` in
+  `AppShell`, since there are no menu items to hang them off. Anything not also
+  reachable by clicking is undiscoverable, so keep the two in step.
 - **No taskbar progress or completion notification.** The original set the
   Windows taskbar progress and raised a notification when a batch finished.
   Both are listed in [ROADMAP.md](../ROADMAP.md).

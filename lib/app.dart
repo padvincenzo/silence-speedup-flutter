@@ -10,7 +10,7 @@ import 'package:provider/provider.dart';
 import 'l10n/gen/app_localizations.dart';
 import 'l10n/locale_controller.dart';
 import 'state/preferences_store.dart';
-import 'ui/home_page.dart';
+import 'ui/app_shell.dart';
 import 'ui/theme.dart';
 
 class SilenceSpeedUpApp extends StatelessWidget {
@@ -33,7 +33,7 @@ class SilenceSpeedUpApp extends StatelessWidget {
       locale: locales.activeLocale,
       supportedLocales: AppLocalizations.supportedLocales,
       localizationsDelegates: AppLocalizations.localizationsDelegates,
-      home: const HomePage(),
+      home: const AppShell(),
     );
   }
 }

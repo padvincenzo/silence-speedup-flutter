@@ -104,8 +104,34 @@ UI and log text is generated from `lib/l10n/arb/app_en.arb` (the template) and
 
 [lib/l10n/locale_controller.dart](lib/l10n/locale_controller.dart) resolves the
 first system language the app supports and falls back to English. A user can
-pin one from View → Language, and "System" puts it back. `resolve` takes an
+pin one from Settings → Application, and "System" puts it back. `resolve` takes an
 optional `systemLocales` so the order can be tested.
+
+### The UI is Material, not a ported menu bar
+
+`AppShell` is the frame: an `AppBar`, a `NavigationDrawer`, and one of three
+pages (`lib/ui/pages/`). There is deliberately **no** `MenuBar` — do not
+reintroduce one, and do not add a "File" or "View" menu. New actions go where
+they belong:
+
+- something you do to the queue → a button on the queue page, or an app bar
+  action;
+- the one primary action of a screen → the floating action button;
+- a setting → a tile in the right group of `SettingsPage`, **with a
+  description**, since that page explains itself in place;
+- something application-level → the drawer.
+
+Two layout constraints that are easy to undo:
+
+- The queue's status strip is the Scaffold's `bottomNavigationBar`, not the last
+  row of the page. That is what keeps the floating action button off the
+  percentage readout, together with `kQueueBottomInset` on the list.
+- `SettingsPage` has to fit 640x480, the smallest window the app allows. A test
+  asserts it.
+
+`test/ui_smoke_test.dart` builds the shell and each page against a
+`FakeFFmpegRunner` and fails on an overflow. Run it after touching the UI; it
+is the only thing watching the layout.
 
 ### State lives in four stores
 
@@ -154,7 +180,10 @@ lib/
 │   ├── app_paths.dart         # the part Android will have to change
 │   └── update_checker.dart
 ├── state/                  # the four stores
-└── ui/                     # home_page, widgets/, dialogs/
+└── ui/
+    ├── app_shell.dart      # app bar, drawer, destination switching
+    ├── pages/              # queue, settings, about
+    └── widgets/
 installer/                  # Inno Setup script + build script
 ```
 

@@ -98,6 +98,18 @@ abstract class AppLocalizations {
     Locale('it'),
   ];
 
+  /// No description provided for @aboutBuiltWith.
+  ///
+  /// In en, this message translates to:
+  /// **'Built with Flutter, powered by FFmpeg'**
+  String get aboutBuiltWith;
+
+  /// No description provided for @aboutCopyright.
+  ///
+  /// In en, this message translates to:
+  /// **'Copyright (C) 2025-2026 Vincenzo Padula'**
+  String get aboutCopyright;
+
   /// No description provided for @appIntro.
   ///
   /// In en, this message translates to:
@@ -170,6 +182,12 @@ abstract class AppLocalizations {
   /// **'Show the exported file'**
   String get fileReveal;
 
+  /// No description provided for @helpAudioRate.
+  ///
+  /// In en, this message translates to:
+  /// **'Resample the audio. Keep leaves it exactly as it is, which is almost always right.'**
+  String get helpAudioRate;
+
   /// No description provided for @helpAudioTracks.
   ///
   /// In en, this message translates to:
@@ -236,6 +254,12 @@ abstract class AppLocalizations {
   /// **'Speed up your videos by speeding up (or removing) silences, using FFmpeg. Built with Flutter.'**
   String get helpIntro;
 
+  /// No description provided for @helpLanguage.
+  ///
+  /// In en, this message translates to:
+  /// **'Follows the system language, falling back to English. Pin one to override it.'**
+  String get helpLanguage;
+
   /// No description provided for @helpLicense.
   ///
   /// In en, this message translates to:
@@ -289,6 +313,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Rate for the quiet parts. Pick Remove to cut them out entirely.'**
   String get helpSilenceSpeed;
+
+  /// No description provided for @helpTheme.
+  ///
+  /// In en, this message translates to:
+  /// **'Follow the system, or pin light or dark.'**
+  String get helpTheme;
+
+  /// No description provided for @helpTune.
+  ///
+  /// In en, this message translates to:
+  /// **'A hint to x264 about the kind of content: Still image for slides, Film for camera footage.'**
+  String get helpTune;
 
   /// No description provided for @logAllDone.
   ///
@@ -428,18 +464,6 @@ abstract class AppLocalizations {
   /// **'Buy me a coffee'**
   String get menuDonate;
 
-  /// No description provided for @menuFile.
-  ///
-  /// In en, this message translates to:
-  /// **'File'**
-  String get menuFile;
-
-  /// No description provided for @menuHelp.
-  ///
-  /// In en, this message translates to:
-  /// **'Help'**
-  String get menuHelp;
-
   /// No description provided for @menuHideShell.
   ///
   /// In en, this message translates to:
@@ -458,12 +482,6 @@ abstract class AppLocalizations {
   /// **'View licence'**
   String get menuLicense;
 
-  /// No description provided for @menuMedia.
-  ///
-  /// In en, this message translates to:
-  /// **'Media'**
-  String get menuMedia;
-
   /// No description provided for @menuOpenFile.
   ///
   /// In en, this message translates to:
@@ -475,12 +493,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add folder'**
   String get menuOpenFolder;
-
-  /// No description provided for @menuPreferences.
-  ///
-  /// In en, this message translates to:
-  /// **'Preferences'**
-  String get menuPreferences;
 
   /// No description provided for @menuProgress.
   ///
@@ -530,17 +542,35 @@ abstract class AppLocalizations {
   /// **'Version {version}'**
   String menuVersion(String version);
 
-  /// No description provided for @menuView.
-  ///
-  /// In en, this message translates to:
-  /// **'View'**
-  String get menuView;
-
   /// No description provided for @menuWindowMode.
   ///
   /// In en, this message translates to:
   /// **'Back to window'**
   String get menuWindowMode;
+
+  /// No description provided for @navAbout.
+  ///
+  /// In en, this message translates to:
+  /// **'About'**
+  String get navAbout;
+
+  /// No description provided for @navQueue.
+  ///
+  /// In en, this message translates to:
+  /// **'Queue'**
+  String get navQueue;
+
+  /// No description provided for @navSection.
+  ///
+  /// In en, this message translates to:
+  /// **'More'**
+  String get navSection;
+
+  /// No description provided for @navSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Settings'**
+  String get navSettings;
 
   /// No description provided for @noiseHigh.
   ///
@@ -674,6 +704,12 @@ abstract class AppLocalizations {
   /// **'Stop'**
   String get processStop;
 
+  /// No description provided for @queueCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No videos} =1{1 video} other{{count} videos}}'**
+  String queueCount(int count);
+
   /// No description provided for @settingsAdvanced.
   ///
   /// In en, this message translates to:
@@ -728,6 +764,42 @@ abstract class AppLocalizations {
   /// **'FPS'**
   String get settingsFps;
 
+  /// No description provided for @settingsGroupApp.
+  ///
+  /// In en, this message translates to:
+  /// **'Application'**
+  String get settingsGroupApp;
+
+  /// No description provided for @settingsGroupAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Audio'**
+  String get settingsGroupAudio;
+
+  /// No description provided for @settingsGroupDetection.
+  ///
+  /// In en, this message translates to:
+  /// **'Silence detection'**
+  String get settingsGroupDetection;
+
+  /// No description provided for @settingsGroupExport.
+  ///
+  /// In en, this message translates to:
+  /// **'Export'**
+  String get settingsGroupExport;
+
+  /// No description provided for @settingsGroupPreview.
+  ///
+  /// In en, this message translates to:
+  /// **'Preview'**
+  String get settingsGroupPreview;
+
+  /// No description provided for @settingsGroupSpeed.
+  ///
+  /// In en, this message translates to:
+  /// **'Speed'**
+  String get settingsGroupSpeed;
+
   /// No description provided for @settingsMuteSilences.
   ///
   /// In en, this message translates to:
@@ -751,6 +823,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Preview length'**
   String get settingsPreviewDuration;
+
+  /// No description provided for @settingsResetDone.
+  ///
+  /// In en, this message translates to:
+  /// **'Processing settings reset'**
+  String get settingsResetDone;
+
+  /// No description provided for @settingsResetProcessing.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset processing settings'**
+  String get settingsResetProcessing;
+
+  /// No description provided for @settingsResetProcessingHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Puts every speed, detection and export setting back to its default.'**
+  String get settingsResetProcessingHint;
 
   /// No description provided for @settingsSilence.
   ///

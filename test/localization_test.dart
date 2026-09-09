@@ -130,12 +130,12 @@ void main() {
       // Deliberate exceptions: technical tokens, words that are the same in
       // both languages, and a value that is only a number and a unit.
       const Set<String> sharedByDesign = <String>{
-        'menuFile',
-        'menuMedia',
         'settingsCrf',
         'settingsFps',
         'settingsPreset',
+        'settingsGroupAudio',
         'previewSeconds',
+        'aboutCopyright',
       };
 
       final List<String> copied = <String>[];

@@ -10,6 +10,12 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get aboutBuiltWith => 'Built with Flutter, powered by FFmpeg';
+
+  @override
+  String get aboutCopyright => 'Copyright (C) 2025-2026 Vincenzo Padula';
+
+  @override
   String get appIntro =>
       'Import some videos, choose the configuration and then press Start to speed up (or remove) their silences.';
 
@@ -48,6 +54,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get fileReveal => 'Show the exported file';
+
+  @override
+  String get helpAudioRate =>
+      'Resample the audio. Keep leaves it exactly as it is, which is almost always right.';
 
   @override
   String get helpAudioTracks =>
@@ -92,6 +102,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Speed up your videos by speeding up (or removing) silences, using FFmpeg. Built with Flutter.';
 
   @override
+  String get helpLanguage =>
+      'Follows the system language, falling back to English. Pin one to override it.';
+
+  @override
   String get helpLicense =>
       'This program comes with absolutely no warranty. It is free software, and you are welcome to redistribute it under certain conditions; see the licence for details.';
 
@@ -125,6 +139,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get helpSilenceSpeed =>
       'Rate for the quiet parts. Pick Remove to cut them out entirely.';
+
+  @override
+  String get helpTheme => 'Follow the system, or pin light or dark.';
+
+  @override
+  String get helpTune =>
+      'A hint to x264 about the kind of content: Still image for slides, Film for camera footage.';
 
   @override
   String get logAllDone => 'All done.';
@@ -248,12 +269,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get menuDonate => 'Buy me a coffee';
 
   @override
-  String get menuFile => 'File';
-
-  @override
-  String get menuHelp => 'Help';
-
-  @override
   String get menuHideShell => 'Hide log';
 
   @override
@@ -263,16 +278,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get menuLicense => 'View licence';
 
   @override
-  String get menuMedia => 'Media';
-
-  @override
   String get menuOpenFile => 'Add video(s)';
 
   @override
   String get menuOpenFolder => 'Add folder';
-
-  @override
-  String get menuPreferences => 'Preferences';
 
   @override
   String get menuProgress => 'Compact progress';
@@ -301,10 +310,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get menuView => 'View';
+  String get menuWindowMode => 'Back to window';
 
   @override
-  String get menuWindowMode => 'Back to window';
+  String get navAbout => 'About';
+
+  @override
+  String get navQueue => 'Queue';
+
+  @override
+  String get navSection => 'More';
+
+  @override
+  String get navSettings => 'Settings';
 
   @override
   String get noiseHigh => 'High';
@@ -380,6 +398,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get processStop => 'Stop';
 
   @override
+  String queueCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count videos',
+      one: '1 video',
+      zero: 'No videos',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get settingsAdvanced => 'Advanced settings';
 
   @override
@@ -407,6 +437,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsFps => 'FPS';
 
   @override
+  String get settingsGroupApp => 'Application';
+
+  @override
+  String get settingsGroupAudio => 'Audio';
+
+  @override
+  String get settingsGroupDetection => 'Silence detection';
+
+  @override
+  String get settingsGroupExport => 'Export';
+
+  @override
+  String get settingsGroupPreview => 'Preview';
+
+  @override
+  String get settingsGroupSpeed => 'Speed';
+
+  @override
   String get settingsMuteSilences => 'Mute silences';
 
   @override
@@ -417,6 +465,16 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsPreviewDuration => 'Preview length';
+
+  @override
+  String get settingsResetDone => 'Processing settings reset';
+
+  @override
+  String get settingsResetProcessing => 'Reset processing settings';
+
+  @override
+  String get settingsResetProcessingHint =>
+      'Puts every speed, detection and export setting back to its default.';
 
   @override
   String get settingsSilence => 'Silence detection';

@@ -24,14 +24,20 @@ app.
 
 ## The window
 
+The app has three screens, reached from the menu button in the top-left corner:
+**Queue**, **Settings** and **About**.
+
+On the queue:
+
 | Part | What it is |
 | --- | --- |
-| **Add video(s)** / folder button | Import files, or every supported file directly inside a folder. |
-| **8x / 1x** button | Current silence and speech rates. Opens Settings. |
-| **Export to** row | Where results go. Editable in place — no need to open Preferences. |
-| **Start** / **Stop** | Runs the whole queue, or interrupts it. |
-| Minimise button | Shrinks the window to a slim always-on-top progress strip. |
-| Terminal button (bottom left) | Shows or hides the log. |
+| **Add video(s)** / **Add folder** | Import files, or every supported file directly inside a folder. |
+| **8x / 1x** chip | Current silence and speech rates. Tap it to open Settings. |
+| **Export to** row | Where results go. Editable in place. |
+| **Start** / **Stop** button | Runs the whole queue, or interrupts it. |
+| Terminal icon (top right) | Shows or hides the log. |
+| Picture-in-picture icon | Shrinks the window to a slim always-on-top progress strip. |
+| Playlist icon | Empties the queue. |
 | Bottom strip | Position, encoder speed and percentage for the file being worked on. |
 
 Each queued file shows its status and, when finished, how much of it was
@@ -55,16 +61,10 @@ Supported inputs: AVI, FLV, MKV, MOV, MP4, WebM, WMV.
 
 ## Settings
 
-### Basic
+Reached from the menu button, or by tapping the **8x / 1x** chip on the queue.
+Every setting says what it does on the page itself; this is the longer version.
 
-**Keep all audio tracks** — carries every audio track of the source into the
-output instead of only the first. Silences are still detected from the first
-track alone.
-
-> This is what a multi-track recording needs. If you record your voice to track
-> 1 and game or system audio to track 2 — OBS does this by default — the video
-> is cut according to the pauses in your voice, and every track comes out the
-> other side. With the option off, only the first track survives.
+### Speed
 
 **Silence speed** — how fast the quiet stretches play. `8x` keeps the pause
 audible but brief; **Remove** cuts them out completely.
@@ -75,12 +75,26 @@ audible but brief; **Remove** cuts them out completely.
 
 **Speech speed** — how fast the parts where someone is talking play. Leave at
 `1x` unless you want the whole thing faster; `1.25x` is generally still
-comfortable to listen to. This setting cannot be set to Remove.
+comfortable to listen to. This one cannot be set to Remove.
+
+### Audio
+
+**Keep all audio tracks** — carries every audio track of the source into the
+output instead of only the first. Silences are still detected from the first
+track alone.
+
+> This is what a multi-track recording needs. If you record your voice to track
+> 1 and game or system audio to track 2 — OBS does this by default — the video
+> is cut according to the pauses in your voice, and every track comes out the
+> other side. With the option off, only the first track survives.
 
 **Mute silences** — silences the audio of the quiet parts instead of letting
 sped-up room hiss through. Useful at high silence rates, where the noise floor
-becomes a chirp. Unavailable when silences are removed, since there is nothing
-left to mute.
+turns into a chirp. Unavailable when silences are removed, since there is
+nothing left to mute.
+
+**Audio rate** — resample the audio. **Keep** leaves it exactly as it is, which
+is almost always right.
 
 ### Silence detection
 
@@ -96,22 +110,25 @@ sound.
 If pauses are being missed, raise it. If words are being clipped as silence,
 lower it.
 
-**Silence min duration** — how long a pause must last to count. `0.3s` (default)
-catches ordinary pauses between sentences. Raise it to leave short hesitations
-alone; lower it to squeeze out every gap, at the cost of a choppier result.
+**Silence min duration** — how long a pause must last to count. `0.30 s`
+(default) catches ordinary pauses between sentences. Raise it to leave short
+hesitations alone; lower it to squeeze out every gap, at the cost of a choppier
+result.
 
 **Silence margin** — audio kept on each side of every silence, so words are not
-cut off at the edges. `0.1s` (default) is enough for most speech. Raise it if
+cut off at the edges. `0.10 s` (default) is enough for most speech. Raise it if
 the result sounds clipped at the start or end of sentences.
 
 > These two interact: the app searches for silences of
-> `min duration + 2 × margin`, then trims each one back by the margin, so what
-> survives is still at least the minimum you asked for. The Settings sheet shows
-> the resulting detection filter, if you want to see it.
+> `min duration + 2 x margin`, then trims each one back by the margin, so what
+> survives is still at least the minimum you asked for. The group shows the
+> resulting detection filter, if you want to see it.
 
-### Advanced
+### Export
 
 Leave these alone unless you have a reason.
+
+**Video format** — container for the output. **Keep** reuses the source's.
 
 **CRF** — quality. Lower is better and larger; `23` (default) is visually
 transparent for most screen and talking-head content. Below ~18 the files get
@@ -125,18 +142,28 @@ variable-frame-rate, or you see stutter, set it to match the source.
 the same quality. `medium` (default) is a fair trade; `veryfast` roughly halves
 the encode time at some size cost.
 
-**Audio rate** — resample the audio. **Keep** leaves it as it is, which is
-almost always right.
+**Tune** — a hint to x264 about the kind of content. `Still image` suits slides,
+`Film` suits camera footage. **None** (default) is fine.
 
-**Tune** — an x264 hint about the kind of content. `stillimage` suits slides,
-`film` suits camera footage. **None** (default) is fine.
+### Preview
 
 **Preview length** — how much of the video a preview sample covers: 30, 60
 (default) or 120 seconds. The sample is taken from a third of the way in, where
 a recording is most representative — the opening is usually titles, or someone
 settling down before they start talking.
 
-**Video format** — container for the output. **Keep** reuses the source's.
+### Application
+
+**Theme** — follow the system, or pin light or dark.
+
+**Language** — follows the system language and falls back to English; pin
+English or Italiano to override it.
+
+**Working directory** — where the intermediate fragments go while a run is in
+progress. See below.
+
+Also here: **Reset processing settings**, which puts every speed, detection and
+export setting back to its default and leaves the application ones alone.
 
 ---
 
@@ -168,8 +195,8 @@ completes successfully, and **kept when something fails** — they are usually t
 only clue as to which part of the file went wrong, and the log says where they
 are.
 
-**File → Preferences** shows how much space they use, can empty them, and can
-move the working directory. Worth moving if the drive holding your temp folder
+**Settings → Application** shows how much space they use, can empty them, and
+can move the working directory. Worth moving if the drive holding your temp folder
 is short of room: the fragments of a long video can add up to several gigabytes
 while a run is in progress.
 
@@ -240,5 +267,5 @@ failure are the second.
 
 ---
 
-Theme (light / dark / system) and language (English / Italiano) are under
-**View**.
+Theme (light / dark / system) and language (System / English / Italiano) are in
+**Settings**, under *Application* — along with the working directory.
