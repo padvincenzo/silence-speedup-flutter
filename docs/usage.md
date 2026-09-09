@@ -1,0 +1,195 @@
+# Usage guide
+
+How to shorten a video, and what each setting actually does.
+
+---
+
+## The short version
+
+1. **Add video(s)** — or drag files (or a folder) onto the window.
+2. Press **Start**.
+3. The finished files appear in your export folder, `~/speededup` by default.
+
+The defaults — silences at 8×, speech untouched, medium noise floor — are a
+reasonable starting point for a recorded lecture or a screencast.
+
+There is nothing to install and no FFmpeg path to set: FFmpeg ships inside the
+app.
+
+---
+
+## The window
+
+| Part | What it is |
+| --- | --- |
+| **Add video(s)** / folder button | Import files, or every supported file directly inside a folder. |
+| **8x / 1x** button | Current silence and speech rates. Opens Settings. |
+| **Start** / **Stop** | Runs the whole queue, or interrupts it. |
+| Minimise button | Shrinks the window to a slim always-on-top progress strip. |
+| Terminal button (bottom left) | Shows or hides the log. |
+| Bottom strip | Position, encoder speed and percentage for the file being worked on. |
+
+Each queued file shows its status and, when finished, how much of it was
+silence. Two per-row actions:
+
+- **Measure the silences without exporting** — runs only the detection pass and
+  reports the percentage found. Seconds instead of minutes; use it to check your
+  detection settings before committing to a full run.
+- **Show the exported file** — opens the output folder.
+
+Supported inputs: AVI, FLV, MKV, MOV, MP4, WebM, WMV.
+
+> The queue is keyed by file name, so two files with the same name cannot be
+> queued together even from different folders — they would collide in the export
+> folder.
+
+---
+
+## Settings
+
+### Basic
+
+**Silence speed** — how fast the quiet stretches play. `8x` keeps the pause
+audible but brief; **Remove** cuts them out completely.
+
+> Removing is not always better. A pause cut to nothing can make speech feel
+> clipped and unnatural, especially between sentences. `8x` or `16x` usually
+> sounds smoother while saving nearly as much time.
+
+**Speech speed** — how fast the parts where someone is talking play. Leave at
+`1x` unless you want the whole thing faster; `1.25x` is generally still
+comfortable to listen to. This setting cannot be set to Remove.
+
+**Mute silences** — silences the audio of the quiet parts instead of letting
+sped-up room hiss through. Useful at high silence rates, where the noise floor
+becomes a chirp. Unavailable when silences are removed, since there is nothing
+left to mute.
+
+### Silence detection
+
+**Background noise** — how loud the room is allowed to be before it counts as
+sound.
+
+| Preset | Use it for |
+| --- | --- |
+| **Low** | Quiet room, microphone close to the speaker |
+| **Mid** | A normal room with some background noise (default) |
+| **High** | Noisy room, distant or built-in microphone |
+
+If pauses are being missed, raise it. If words are being clipped as silence,
+lower it.
+
+**Silence min duration** — how long a pause must last to count. `0.3s` (default)
+catches ordinary pauses between sentences. Raise it to leave short hesitations
+alone; lower it to squeeze out every gap, at the cost of a choppier result.
+
+**Silence margin** — audio kept on each side of every silence, so words are not
+cut off at the edges. `0.1s` (default) is enough for most speech. Raise it if
+the result sounds clipped at the start or end of sentences.
+
+> These two interact: the app searches for silences of
+> `min duration + 2 × margin`, then trims each one back by the margin, so what
+> survives is still at least the minimum you asked for. The Settings sheet shows
+> the resulting detection filter, if you want to see it.
+
+### Advanced
+
+Leave these alone unless you have a reason.
+
+**CRF** — quality. Lower is better and larger; `23` (default) is visually
+transparent for most screen and talking-head content. Below ~18 the files get
+big fast; above ~28 the artefacts start to show.
+
+**FPS** — the frame rate every fragment is normalised to. This is not cosmetic:
+it is what allows the pieces to be joined without re-encoding. If your source is
+variable-frame-rate, or you see stutter, set it to match the source.
+
+**Preset** — how hard the encoder works. Slower presets give smaller files at
+the same quality. `medium` (default) is a fair trade; `veryfast` roughly halves
+the encode time at some size cost.
+
+**Audio rate** — resample the audio. **Keep** leaves it as it is, which is
+almost always right.
+
+**Tune** — an x264 hint about the kind of content. `stillimage` suits slides,
+`film` suits camera footage. **None** (default) is fine.
+
+**Video format** — container for the output. **Keep** reuses the source's.
+
+---
+
+## Export folder and temporary files
+
+Results go to `~/speededup` (`C:\Users\<you>\speededup` on Windows) unless you
+change it in **File → Preferences**.
+
+Existing files are never overwritten: a name collision gets ` (1)` appended.
+
+While processing, the app writes intermediate fragments to
+`<export folder>/tmp/`. They are deleted after a file completes successfully, and
+**kept when something fails** — they are usually the only clue as to which part
+of the file went wrong, and the log says where they are. Preferences shows how
+much space they use and can empty them.
+
+---
+
+## While it runs
+
+The bottom strip shows the position reached in the current file, the encoder's
+speed relative to real time, and the percentage done. The log (terminal button)
+carries the detail: how much of each file was detected as silence, any FFmpeg
+warnings, and where fragments were left if something failed.
+
+For long batches, the minimise button shrinks the window to a thin always-on-top
+strip that stays out of the way. It shows progress and keeps a Stop button.
+
+**Stop** interrupts after the current fragment. The file being worked on is
+marked interrupted and left unfinished; earlier files in the queue keep their
+completed outputs.
+
+Expect a full run to take a while: every fragment is re-encoded, so processing
+is slower than real time on most machines. The final join is fast, because it
+copies rather than re-encodes.
+
+---
+
+## If something goes wrong
+
+**A file shows an error as soon as it is added.** Its duration could not be read
+— the file is corrupt, or not really the format its extension claims.
+
+**"Analysis failed."** The detection pass could not run. Check the log; a file
+with no audio track at all will fail here.
+
+**"Silence boundaries do not pair up."** The detection output could not be
+interpreted. Try a different noise preset.
+
+**Nothing was detected.** No silence matched your settings; the file is copied
+through unchanged. Raise the noise preset or lower the minimum duration.
+
+**The output is choppy.** The minimum duration is too low, or the margin too
+small — short gaps are being cut. Raise both.
+
+**Words are clipped.** Raise the silence margin, or lower the noise preset.
+
+**Audio drifts out of sync.** Set FPS explicitly to match the source; a
+variable-frame-rate input is the usual cause.
+
+The log is the first place to look, and the fragments left behind after a
+failure are the second.
+
+---
+
+## Keyboard
+
+| Shortcut | Action |
+| --- | --- |
+| `Ctrl+O` | Add video(s) |
+| `Ctrl+Shift+O` | Add folder |
+| `Ctrl+D` | Stop |
+| `Ctrl+Q` | Quit |
+
+---
+
+Theme (light / dark / system) and language (English / Italiano) are under
+**View**.

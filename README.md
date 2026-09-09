@@ -1,0 +1,138 @@
+# Silence SpeedUp
+
+![Logo](assets/icons/icon.png)
+
+**Silence SpeedUp** shortens videos by finding the silent stretches and either
+speeding them up or cutting them out. FFmpeg does the encoding; this app decides
+what to ask it for.
+
+Made for lectures, interviews, podcasts and tutorials — anything where the
+speaker pauses a lot or talks slowly.
+
+This is the **Flutter rewrite** of the Electron app at
+[padvincenzo/silence-speedup](https://github.com/padvincenzo/silence-speedup).
+
+---
+
+## Why the rewrite
+
+The Electron version worked, but it asked the user to go and find `ffmpeg.exe`
+before it would do anything, and it refused to run until they had. That is a bad
+first five minutes.
+
+Here **FFmpeg is bundled**. There is no path to configure, no binary to
+download, no preference to get wrong. The plugin that provides it
+([`ffmpeg_kit_flutter_new`](https://pub.dev/packages/ffmpeg_kit_flutter_new),
+full-GPL, includes `libx264`) also covers Android, iOS, macOS and Linux behind
+the same API — so the same processing pipeline can follow the app to a phone
+later. See [ROADMAP.md](ROADMAP.md).
+
+Along the way, several bugs in the original were fixed rather than reproduced —
+the silence margin was applied unevenly, muting a silence desynced the audio,
+and the exporter could overwrite the source file. Each is listed with its
+reasoning in [docs/porting-notes.md](docs/porting-notes.md).
+
+---
+
+## Status
+
+**Pre-release (0.9.x).** The processing pipeline and the desktop UI are complete
+and the Windows build works. Held below 1.0 until the demo player from the
+Electron version is ported — see [ROADMAP.md](ROADMAP.md).
+
+Primary target is **Windows**. macOS and Linux should build from source; they are
+not yet tested. Android is scaffolded but has no UI.
+
+---
+
+## Getting started
+
+1. Launch the app.
+2. Add your videos — **Add video(s)**, a folder, or drag them onto the window.
+3. Adjust the settings if you want to (the defaults are sensible).
+4. Press **Start**.
+
+Results land in `~/speededup` by default.
+
+Full walkthrough of every setting: [docs/usage.md](docs/usage.md).
+
+---
+
+## Features
+
+- 🎙️ **Silence detection you can tune** — noise floor, minimum pause length,
+  and a margin so words are not clipped
+- ⏩ **Speed up or remove** the silences, and optionally mute them
+- 🗣️ **Speed up the speech too**, if you want the whole thing faster
+- 📋 **Batch processing** with a queue, a live log and an interruptible run
+- 🔍 **Measure before you commit** — a detection-only pass reports how much of a
+  file is silence in seconds rather than minutes
+- 🎛️ **Encoder controls** — CRF, frame rate, x264 preset and tune, audio rate,
+  output container
+- 🪟 **Compact progress mode** — a slim always-on-top strip for long batches
+- 🌗 **Light, dark or system theme** · 🌍 **English and Italian**
+- 📦 **FFmpeg included** — nothing to install
+
+---
+
+## Requirements
+
+Nothing, for a packaged build: FFmpeg ships with the app.
+
+To build from source you need Flutter 3.47+ and, on Windows, Visual Studio 2022
+with the C++ desktop workload — see
+[docs/development.md](docs/development.md).
+
+```bash
+git clone https://github.com/padvincenzo/silence-speedup-flutter
+cd silence-speedup-flutter
+flutter pub get
+flutter run -d windows
+```
+
+---
+
+## Documentation
+
+| Document | What is in it |
+| --- | --- |
+| [docs/usage.md](docs/usage.md) | Every setting, what it does, and how to fix a bad result |
+| [docs/architecture.md](docs/architecture.md) | How the code is organised and why |
+| [docs/ffmpeg-details.md](docs/ffmpeg-details.md) | The exact FFmpeg commands, flag by flag |
+| [docs/porting-notes.md](docs/porting-notes.md) | What changed from the Electron app, and why |
+| [docs/development.md](docs/development.md) | Building, testing, releasing, extending |
+| [ROADMAP.md](ROADMAP.md) | What is not built yet |
+| [CLAUDE.md](CLAUDE.md) | Working rules for AI assistants in this repo |
+
+---
+
+## Contributing
+
+Welcome, in any of these forms:
+
+- Reporting bugs
+- Translating the app (copy `assets/locales/en.json`; missing keys fall back to
+  English, so a partial translation is still useful)
+- Suggesting or implementing features from [ROADMAP.md](ROADMAP.md)
+- [Buying me a coffee](https://paypal.me/VincenzoPadula)
+
+Before a pull request: `flutter analyze` clean, `flutter test` green, and any
+change to the FFmpeg calls covered by a test in
+[test/fragment_planner_test.dart](test/fragment_planner_test.dart).
+
+---
+
+## Credits
+
+- [FFmpeg](https://ffmpeg.org/), bundled under the **GPLv3**, via
+  [ffmpeg_kit_flutter_new](https://pub.dev/packages/ffmpeg_kit_flutter_new)
+- [Flutter](https://flutter.dev/) for the interface
+- Icons from [creazilla.com](https://creazilla.com/) under
+  [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
+
+## Licence
+
+GPLv3 or later. Copyright (C) 2025-2026 Vincenzo Padula.
+
+This program comes with **absolutely no warranty**. It is free software, and you
+are welcome to redistribute it under certain conditions; see [LICENSE](LICENSE).
