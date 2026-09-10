@@ -209,6 +209,15 @@ Three layout constraints that are easy to undo:
 - The queue's status strip is the Scaffold's `bottomNavigationBar`, not the last
   row of the page. That is what keeps the floating action button off the
   percentage readout, together with `kQueueBottomInset` on the list.
+- Every readout that FFmpeg updates — the time, the speed, the percentage, in
+  the status strip and in the compact one — holds room for its widest value
+  and is right-aligned in it. Tabular figures alone are not enough: `9.00 %`
+  and `10.00 %` differ by a character, and without the reserved width the
+  whole row shuffles sideways several times a second.
+- The compact strip is `kCompactContentHeight` tall, and the window it asks
+  for is that **plus the title bar**, measured at the time — `setSize` covers
+  the whole window, and assuming otherwise left the strip twenty pixels to
+  draw in.
 - With the panel docked, the floating action button is moved inwards by
   `_ShiftedFabLocation` so it floats over the queue and not over a setting.
 - Every settings surface has to fit 640x480, the smallest window the app
@@ -234,6 +243,12 @@ directory. `PreferencesStore.outputDirectoryFor(entry)` answers per entry, and
 the engine takes that resolver rather than a path. Intermediate fragments go to
 `PreferencesStore.workingDirectory` (system temp by default), never under the
 export folder.
+
+The destination is chosen in the encoding settings, in the Export group beside
+the container and the quality — it is a setting about exporting. It is not part
+of `ProcessingSettings` (it is a preference of its own), which is why that
+group's collapsed summary is assembled at the call site rather than in
+`exportChanges`.
 
 ### Code style
 

@@ -33,7 +33,6 @@ import 'widgets/encoding_settings_panel.dart';
 /// Window size restored when leaving compact mode, if nothing else is known.
 const Size _defaultWindowSize = Size(780, 820);
 const Size _minimumWindowSize = Size(640, 480);
-const Size _compactWindowSize = Size(760, 56);
 
 /// The app's frame: an app bar, a navigation drawer, and one of three pages.
 ///
@@ -247,12 +246,29 @@ class _AppShellState extends State<AppShell> {
   }
 
   /// Shrinks the window to the progress strip, or puts it back.
+  ///
+  /// `setSize` measures the whole window, title bar included, while the strip
+  /// only knows the area it is drawn in. The difference is measured here
+  /// rather than guessed: it is not the same at every display scaling, and
+  /// guessing it low is what left the strip about twenty pixels to draw in.
   Future<void> _applyCompact(bool compact) async {
     if (!isDesktop) return;
     if (compact) {
-      _restoreSize = await windowManager.getSize();
-      await windowManager.setMinimumSize(const Size(420, 48));
-      await windowManager.setSize(_compactWindowSize);
+      final Size frame = await windowManager.getSize();
+      _restoreSize = frame;
+      if (!mounted) return;
+
+      final double chrome = (frame.height - MediaQuery.sizeOf(context).height)
+          .clamp(0.0, 200.0);
+      final Size target = Size(
+        kCompactWidth,
+        kCompactContentHeight + chrome,
+      );
+
+      await windowManager.setMinimumSize(
+        Size(kCompactMinimumWidth, target.height),
+      );
+      await windowManager.setSize(target);
       await windowManager.setResizable(false);
       await windowManager.setAlwaysOnTop(true);
     } else {

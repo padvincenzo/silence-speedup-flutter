@@ -38,6 +38,7 @@
   "helpLanguage": "Follows the system language, falling back to English. Pin one to override it.",
   "helpLicense": "This program comes with absolutely no warranty. It is free software, and you are welcome to redistribute it under certain conditions; see the licence for details.",
   "helpMuteSilences": "Silence the audio of the quiet parts instead of letting the sped-up hiss through.",
+  "helpOutputFolder": "Where a finished video is written. Beside its source keeps each one in its own folder; otherwise they all go to the folder you choose.",
   "helpPlaybackSpeed": "Rate for the parts where someone is speaking. Leave at 1x to keep speech natural.",
   "helpPreset": "How hard x264 works. Slower presets give smaller files for the same quality.",
   "helpPreviewDuration": "How much of the video a preview samples. It is taken from a third of the way in, where the recording is most representative.",

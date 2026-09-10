@@ -5,6 +5,7 @@
 // License: GNU GPL v3 or later <http://www.gnu.org/copyleft/gpl.html>
 
 import 'package:flutter/material.dart';
+import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 
 import '../../l10n/gen/app_localizations.dart';
@@ -13,6 +14,7 @@ import '../../models/options.dart';
 import '../../models/processing_settings.dart';
 import '../../state/preferences_store.dart';
 import '../../state/process_store.dart';
+import 'output_destination.dart';
 import 'settings_tiles.dart';
 
 /// Everything that decides how a video is encoded.
@@ -219,10 +221,19 @@ class EncodingSettingsView extends StatelessWidget {
         CollapsibleSettingsGroup(
           icon: Icons.movie_creation_outlined,
           title: strings.settingsGroupExport,
-          changes: exportChanges(settings, strings),
+          // The destination is not part of ProcessingSettings — it is a
+          // preference of its own — so its summary is built here, where the
+          // store is at hand, and put in front of the encoder's.
+          changes: <String>[
+            if (!preferences.exportsAlongsideSource)
+              '${strings.outputFolder} '
+                  '${p.basename(preferences.fixedDirectory)}',
+            ...exportChanges(settings, strings),
+          ],
           expanded: open.contains(groupExport),
           onExpanded: (bool value) => toggle(groupExport, value),
           children: <Widget>[
+            const OutputDestination(),
             DropdownSettingTile<String>(
               title: strings.settingsFormat,
               description: strings.helpFormat,

@@ -55,9 +55,14 @@ class ProgressFooter extends StatelessWidget {
                 )
               else
                 const Spacer(),
+              // Every readout keeps room for its widest value. FFmpeg
+              // reports a new position several times a second, and without
+              // this the three of them shuffle sideways on every report as
+              // "9.00 %" becomes "10.00 %".
               _Metric(
                 label: AppLocalizations.of(context).ffmpegTime,
                 value: _formatPosition(progress.position),
+                minValueWidth: _timeWidth,
               ),
               const SizedBox(width: 16),
               _Metric(
@@ -65,17 +70,14 @@ class ProgressFooter extends StatelessWidget {
                 value: progress.speed == null || progress.speed == 0
                     ? '-'
                     : '${progress.speed!.toStringAsFixed(1)}x',
+                minValueWidth: _speedWidth,
               ),
               const SizedBox(width: 16),
-              Text(
-                progress.fraction == null
+              _Metric(
+                value: progress.fraction == null
                     ? '-.-- %'
                     : '${(progress.fraction! * 100).toStringAsFixed(2)} %',
-                style: Theme.of(context).textTheme.labelMedium?.copyWith(
-                  fontFeatures: const <FontFeature>[
-                    FontFeature.tabularFigures(),
-                  ],
-                ),
+                minValueWidth: _percentWidth,
               ),
             ],
           ),
@@ -83,6 +85,12 @@ class ProgressFooter extends StatelessWidget {
       ],
     );
   }
+
+  /// Room for `00:00:00.00`, `999.9x` and `100.00 %` at label size. A value
+  /// wider than its share still grows rather than being clipped.
+  static const double _timeWidth = 74;
+  static const double _speedWidth = 44;
+  static const double _percentWidth = 58;
 
   static String _formatPosition(Duration? position) {
     if (position == null) return '--:--:--.--';
@@ -104,39 +112,59 @@ class ProgressFooter extends StatelessWidget {
 
 class _Metric extends StatelessWidget {
   const _Metric({
-    required this.label,
     required this.value,
+    this.label,
     this.flexible = false,
+    this.minValueWidth,
   });
 
-  final String label;
+  /// Omitted for a value that reads as its own label, like a percentage.
+  final String? label;
+
   final String value;
 
   /// Long values (a file name) get to shrink instead of overflowing.
   final bool flexible;
+
+  /// Room held for the value whatever it currently says, so a readout that
+  /// changes several times a second does not shuffle its neighbours about.
+  final double? minValueWidth;
 
   @override
   Widget build(BuildContext context) {
     final TextTheme text = Theme.of(context).textTheme;
     final ColorScheme scheme = Theme.of(context).colorScheme;
 
-    final Widget valueText = Text(
+    Widget valueText = Text(
       value,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
+      // Right-aligned inside its reserved room: digits then grow leftwards
+      // and the trailing edge stays put.
+      textAlign: minValueWidth == null ? TextAlign.start : TextAlign.end,
       style: text.labelMedium?.copyWith(
         fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
       ),
     );
 
+    if (minValueWidth != null) {
+      valueText = ConstrainedBox(
+        constraints: BoxConstraints(minWidth: minValueWidth!),
+        child: valueText,
+      );
+    }
+
+    final String? caption = label;
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: <Widget>[
-        Text(
-          label,
-          style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
-        ),
-        const SizedBox(width: 6),
+        if (caption != null) ...<Widget>[
+          Text(
+            caption,
+            style: text.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+          ),
+          const SizedBox(width: 6),
+        ],
         if (flexible) Flexible(child: valueText) else valueText,
       ],
     );

@@ -284,6 +284,12 @@ abstract class AppLocalizations {
   /// **'Silence the audio of the quiet parts instead of letting the sped-up hiss through.'**
   String get helpMuteSilences;
 
+  /// No description provided for @helpOutputFolder.
+  ///
+  /// In en, this message translates to:
+  /// **'Where a finished video is written. Beside its source keeps each one in its own folder; otherwise they all go to the folder you choose.'**
+  String get helpOutputFolder;
+
   /// No description provided for @helpPlaybackSpeed.
   ///
   /// In en, this message translates to:

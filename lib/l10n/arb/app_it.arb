@@ -31,6 +31,7 @@
   "helpLanguage": "Segue la lingua del sistema, ripiegando sull'inglese. Fissane una per forzarla.",
   "helpLicense": "Questo programma non offre alcuna garanzia. È software libero e la sua ridistribuzione è consentita a determinate condizioni; per i dettagli consulta la licenza.",
   "helpMuteSilences": "Azzera l'audio delle parti silenziose invece di far passare il fruscio accelerato.",
+  "helpOutputFolder": "Dove viene scritto il video finito. Accanto al sorgente tiene ognuno nella sua cartella; altrimenti vanno tutti nella cartella che scegli.",
   "helpPlaybackSpeed": "Velocità delle parti in cui si parla. Lascia 1x per mantenere naturale la voce.",
   "helpPreset": "Quanto lavora x264. I preset più lenti danno file più piccoli a pari qualità.",
   "helpPreviewDuration": "Quanta parte del video viene campionata dall'anteprima. Viene presa a un terzo della durata, dove la registrazione è più rappresentativa.",

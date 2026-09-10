@@ -120,6 +120,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Azzera l\'audio delle parti silenziose invece di far passare il fruscio accelerato.';
 
   @override
+  String get helpOutputFolder =>
+      'Dove viene scritto il video finito. Accanto al sorgente tiene ognuno nella sua cartella; altrimenti vanno tutti nella cartella che scegli.';
+
+  @override
   String get helpPlaybackSpeed =>
       'Velocità delle parti in cui si parla. Lascia 1x per mantenere naturale la voce.';
 

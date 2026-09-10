@@ -12,22 +12,16 @@ import '../../l10n/gen/app_localizations.dart';
 import '../../state/preferences_store.dart';
 import '../../state/process_store.dart';
 
-/// Width the typed path gets when there is a path to type.
+/// Where the finished files go, as a tile in the encoding settings.
 ///
-/// Enough for a folder name and the tail of its parent, which is what anyone
-/// checks; the whole path is in the tooltip. It used to take every pixel the
-/// window had, which said the destination was the most important thing on the
-/// screen. It is not — the queue is.
-const double _kPathWidth = 240;
-
-/// The export destination, on the main window rather than behind Preferences.
+/// It was a row of its own across the top of the queue, and before that it
+/// was buried in the Electron build's Preferences window. Neither is right:
+/// the destination is part of exporting, so it sits with the container and
+/// the quality — one click away on a narrow window, and already on screen
+/// beside the queue on a wide one, which is what the old row was for.
 ///
-/// Changing where files go is something that happens between one batch and the
-/// next, so it belongs where the batch is started — the same place every other
-/// remuxer puts it, and on the same row as the buttons that fill the queue.
-///
-/// It shrink-wraps: the chip alone while exports go beside their source, and
-/// the path and its browse button only once a fixed folder is what is wanted.
+/// The path and its browse button appear only once a fixed folder is what is
+/// wanted. A disabled field holding a path nothing is using is noise.
 class OutputDestination extends StatefulWidget {
   const OutputDestination({super.key});
 
@@ -100,71 +94,79 @@ class _OutputDestinationState extends State<OutputDestination> {
       _controller.text = _committed;
     }
 
-    return Row(
-      mainAxisSize: MainAxisSize.min,
-      children: <Widget>[
-        Icon(
-          Icons.drive_file_move_outlined,
-          size: 18,
-          color: scheme.onSurfaceVariant,
-        ),
-        const SizedBox(width: 8),
-        Text(
-          strings.outputFolder,
-          style: theme.textTheme.bodySmall?.copyWith(
-            color: scheme.onSurfaceVariant,
-          ),
-        ),
-        const SizedBox(width: 8),
-        FilterChip(
-          label: Text(strings.outputAlongsideSource),
-          selected: alongside,
-          // What the chip means when it is on. It used to be the hint inside
-          // the path field, which is not on screen in that mode any more.
-          tooltip: strings.outputFolderHint,
-          onSelected: locked
-              ? null
-              : (bool selected) =>
-                    context.read<PreferencesStore>().setOutputMode(
-                      selected
-                          ? OutputMode.alongsideSource
-                          : OutputMode.fixedDirectory,
-                    ),
-        ),
-        // Nothing to show while every file follows its source: a disabled
-        // field holding a path that is not being used is just noise.
-        if (!alongside) ...<Widget>[
-          const SizedBox(width: 8),
-          SizedBox(
-            width: _kPathWidth,
-            child: Tooltip(
-              message: _committed,
-              child: TextField(
-                controller: _controller,
-                focusNode: _focus,
-                enabled: !locked,
-                onSubmitted: (_) => _commit(),
-                style: theme.textTheme.bodySmall,
-                decoration: const InputDecoration(
-                  isDense: true,
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 10,
-                  ),
-                ),
-              ),
+    return Padding(
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 8, bottom: 10),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Text(
+            strings.outputFolder,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: locked ? theme.disabledColor : scheme.onSurface,
             ),
           ),
-          const SizedBox(width: 4),
-          IconButton.outlined(
-            onPressed: locked ? null : _browse,
-            icon: const Icon(Icons.folder_open_outlined),
-            iconSize: 18,
-            visualDensity: VisualDensity.compact,
-            tooltip: strings.outputChooseFolder,
+          const SizedBox(height: 2),
+          Text(
+            strings.helpOutputFolder,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: locked ? theme.disabledColor : scheme.onSurfaceVariant,
+            ),
           ),
+          const SizedBox(height: 10),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: FilterChip(
+              label: Text(strings.outputAlongsideSource),
+              selected: alongside,
+              // What the chip means when it is on. It used to be the hint
+              // inside the path field, which is not on screen in that mode.
+              tooltip: strings.outputFolderHint,
+              onSelected: locked
+                  ? null
+                  : (bool selected) =>
+                        context.read<PreferencesStore>().setOutputMode(
+                          selected
+                              ? OutputMode.alongsideSource
+                              : OutputMode.fixedDirectory,
+                        ),
+            ),
+          ),
+          if (!alongside) ...<Widget>[
+            const SizedBox(height: 8),
+            Row(
+              children: <Widget>[
+                Expanded(
+                  child: Tooltip(
+                    message: _committed,
+                    child: TextField(
+                      controller: _controller,
+                      focusNode: _focus,
+                      enabled: !locked,
+                      onSubmitted: (_) => _commit(),
+                      style: theme.textTheme.bodySmall,
+                      decoration: const InputDecoration(
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 10,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
+                IconButton.outlined(
+                  onPressed: locked ? null : _browse,
+                  icon: const Icon(Icons.folder_open_outlined),
+                  iconSize: 18,
+                  visualDensity: VisualDensity.compact,
+                  tooltip: strings.outputChooseFolder,
+                ),
+              ],
+            ),
+          ],
         ],
-      ],
+      ),
     );
   }
 }

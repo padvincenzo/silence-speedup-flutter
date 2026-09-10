@@ -120,6 +120,10 @@ class AppLocalizationsEn extends AppLocalizations {
       'Silence the audio of the quiet parts instead of letting the sped-up hiss through.';
 
   @override
+  String get helpOutputFolder =>
+      'Where a finished video is written. Beside its source keeps each one in its own folder; otherwise they all go to the folder you choose.';
+
+  @override
   String get helpPlaybackSpeed =>
       'Rate for the parts where someone is speaking. Leave at 1x to keep speech natural.';
 
