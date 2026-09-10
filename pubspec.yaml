@@ -4,7 +4,7 @@ publish_to: 'none'
 
 # Flutter port of the Electron app (padvincenzo/silence-speedup v2.0.0).
 # Stays below 1.0 until the demo player lands — see ROADMAP.md.
-version: 0.9.15
+version: 0.9.16
 
 environment:
   sdk: ^3.13.2
