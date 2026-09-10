@@ -23,6 +23,7 @@ import 'package:silence_speedup/ui/pages/about_page.dart';
 import 'package:silence_speedup/ui/pages/app_settings_page.dart';
 import 'package:silence_speedup/ui/pages/licenses_page.dart';
 import 'package:silence_speedup/ui/widgets/encoding_settings_panel.dart';
+import 'package:silence_speedup/ui/widgets/output_destination.dart';
 import 'package:silence_speedup/ui/widgets/encoding_settings_view.dart';
 import 'package:silence_speedup/ui/theme.dart';
 
@@ -252,6 +253,95 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('8x / 1x'), findsNothing);
       expect(find.textContaining('/ 1x'), findsOneWidget);
+    });
+  });
+
+  group('queue toolbar', () {
+    testWidgets('imports, clearing and the destination share one row', (
+      WidgetTester tester,
+    ) async {
+      // Roomy on purpose: the test font draws every glyph as a square of the
+      // font size, so these labels are half again as wide here as on screen.
+      await useDesktopSurface(tester, size: const Size(1920, 1000));
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+
+      // One level, not two: the destination used to have a row of its own.
+      final double row = tester.getCenter(find.text('Add video(s)')).dy;
+      for (final String label in <String>[
+        'Add folder',
+        'Clear queue',
+        'Export to',
+      ]) {
+        expect(tester.getCenter(find.text(label)).dy, row, reason: label);
+      }
+    });
+
+    testWidgets('the destination wraps its content instead of stretching', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester, size: const Size(1400, 900));
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      // Exports follow their source by default, so there is no path to show
+      // and no field to show it in -- the control is the chip and its label.
+      expect(find.byType(TextField), findsNothing);
+      final double narrow = tester.getSize(
+        find.byType(OutputDestination),
+      ).width;
+
+      // It used to be an Expanded field, so it was exactly as wide as the
+      // window. Widen the window by 500 pixels: the control must not move.
+      tester.view.physicalSize = const Size(1900, 900);
+      await tester.pumpAndSettle();
+      expect(tester.getSize(find.byType(OutputDestination)).width, narrow);
+
+      // Turning the chip off is what asks for a folder, and only then does
+      // the path appear.
+      await tester.tap(find.text('Next to the source video'));
+      await tester.pumpAndSettle();
+      expect(find.byType(TextField), findsOneWidget);
+    });
+
+    testWidgets('the log has one switch, and it is not in the app bar', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester);
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      // It lives in the status strip, beside the console it opens.
+      expect(find.byIcon(Icons.terminal_outlined), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.byIcon(Icons.terminal_outlined),
+        ),
+        findsNothing,
+      );
+      // And so does emptying the queue, which is a queue action.
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.byIcon(Icons.playlist_remove),
+        ),
+        findsNothing,
+      );
     });
   });
 

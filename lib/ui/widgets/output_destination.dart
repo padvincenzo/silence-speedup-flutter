@@ -12,19 +12,30 @@ import '../../l10n/gen/app_localizations.dart';
 import '../../state/preferences_store.dart';
 import '../../state/process_store.dart';
 
+/// Width the typed path gets when there is a path to type.
+///
+/// Enough for a folder name and the tail of its parent, which is what anyone
+/// checks; the whole path is in the tooltip. It used to take every pixel the
+/// window had, which said the destination was the most important thing on the
+/// screen. It is not — the queue is.
+const double _kPathWidth = 240;
+
 /// The export destination, on the main window rather than behind Preferences.
 ///
 /// Changing where files go is something that happens between one batch and the
 /// next, so it belongs where the batch is started — the same place every other
-/// remuxer puts it.
-class OutputPathBar extends StatefulWidget {
-  const OutputPathBar({super.key});
+/// remuxer puts it, and on the same row as the buttons that fill the queue.
+///
+/// It shrink-wraps: the chip alone while exports go beside their source, and
+/// the path and its browse button only once a fixed folder is what is wanted.
+class OutputDestination extends StatefulWidget {
+  const OutputDestination({super.key});
 
   @override
-  State<OutputPathBar> createState() => _OutputPathBarState();
+  State<OutputDestination> createState() => _OutputDestinationState();
 }
 
-class _OutputPathBarState extends State<OutputPathBar> {
+class _OutputDestinationState extends State<OutputDestination> {
   final TextEditingController _controller = TextEditingController();
   final FocusNode _focus = FocusNode();
 
@@ -77,6 +88,8 @@ class _OutputPathBarState extends State<OutputPathBar> {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations strings = AppLocalizations.of(context);
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
     final PreferencesStore preferences = context.watch<PreferencesStore>();
     final bool locked = context.watch<ProcessStore>().isRunning;
     final bool alongside = preferences.exportsAlongsideSource;
@@ -87,61 +100,71 @@ class _OutputPathBarState extends State<OutputPathBar> {
       _controller.text = _committed;
     }
 
-    return Padding(
-      padding: const EdgeInsets.only(left: 12, right: 12, bottom: 8),
-      child: Row(
-        children: <Widget>[
-          Icon(
-            Icons.drive_file_move_outlined,
-            size: 18,
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: <Widget>[
+        Icon(
+          Icons.drive_file_move_outlined,
+          size: 18,
+          color: scheme.onSurfaceVariant,
+        ),
+        const SizedBox(width: 8),
+        Text(
+          strings.outputFolder,
+          style: theme.textTheme.bodySmall?.copyWith(
+            color: scheme.onSurfaceVariant,
           ),
+        ),
+        const SizedBox(width: 8),
+        FilterChip(
+          label: Text(strings.outputAlongsideSource),
+          selected: alongside,
+          // What the chip means when it is on. It used to be the hint inside
+          // the path field, which is not on screen in that mode any more.
+          tooltip: strings.outputFolderHint,
+          onSelected: locked
+              ? null
+              : (bool selected) =>
+                    context.read<PreferencesStore>().setOutputMode(
+                      selected
+                          ? OutputMode.alongsideSource
+                          : OutputMode.fixedDirectory,
+                    ),
+        ),
+        // Nothing to show while every file follows its source: a disabled
+        // field holding a path that is not being used is just noise.
+        if (!alongside) ...<Widget>[
           const SizedBox(width: 8),
-          Text(
-            strings.outputFolder,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
-          const SizedBox(width: 8),
-          FilterChip(
-            label: Text(strings.outputAlongsideSource),
-            selected: alongside,
-            onSelected: locked
-                ? null
-                : (bool selected) =>
-                      context.read<PreferencesStore>().setOutputMode(
-                        selected
-                            ? OutputMode.alongsideSource
-                            : OutputMode.fixedDirectory,
-                      ),
-          ),
-          const SizedBox(width: 8),
-          Expanded(
-            child: TextField(
-              controller: _controller,
-              focusNode: _focus,
-              enabled: !alongside && !locked,
-              onSubmitted: (_) => _commit(),
-              style: Theme.of(context).textTheme.bodySmall,
-              decoration: InputDecoration(
-                isDense: true,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 10,
+          SizedBox(
+            width: _kPathWidth,
+            child: Tooltip(
+              message: _committed,
+              child: TextField(
+                controller: _controller,
+                focusNode: _focus,
+                enabled: !locked,
+                onSubmitted: (_) => _commit(),
+                style: theme.textTheme.bodySmall,
+                decoration: const InputDecoration(
+                  isDense: true,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 10,
+                  ),
                 ),
-                hintText: alongside ? strings.outputFolderHint : null,
               ),
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 4),
           IconButton.outlined(
-            onPressed: alongside || locked ? null : _browse,
+            onPressed: locked ? null : _browse,
             icon: const Icon(Icons.folder_open_outlined),
             iconSize: 18,
             visualDensity: VisualDensity.compact,
             tooltip: strings.outputChooseFolder,
           ),
         ],
-      ),
+      ],
     );
   }
 }

@@ -138,8 +138,8 @@ pages (`lib/ui/pages/`). There is deliberately **no** `MenuBar` — do not
 reintroduce one, and do not add a "File" or "View" menu. New actions go where
 they belong:
 
-- something you do to the queue → a button on the queue page, or an app bar
-  action;
+- something you do to the queue → a button on the queue's own toolbar, the one
+  row that carries the imports, the clearing and the export destination;
 - the one primary action of a screen → the floating action button;
 - a setting that changes how a video is encoded → a tile in the right group of
   `EncodingSettingsView`, **with a description**, and an entry in that group's
@@ -171,6 +171,12 @@ runs as far away as the ones they set on the first day. They are separate now:
   They were also a chip on the queue, which meant two controls doing one job.
   Do not add a second indicator: if the app bar button needs to say more, say
   it there.
+
+The app bar is down to two actions for the same reason — the encoding button
+and the compact-progress one. The log toggle belongs to the status strip
+beside the console it opens, and emptying the queue belongs to the queue's
+toolbar; both were in the app bar as well, and one of each is enough. Tests
+assert neither is there.
 - Docking is remembered in `PreferencesStore.encodingPanelDocked`, so leaving
   the panel open is a durable choice rather than per-session state.
 - `AppSettingsPage` (`lib/ui/pages/`) holds the theme, the language and the

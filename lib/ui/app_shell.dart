@@ -19,7 +19,6 @@ import '../models/media_entry.dart';
 import '../models/options.dart';
 import '../models/processing_settings.dart';
 import '../services/update_checker.dart';
-import '../state/log_store.dart';
 import '../state/preferences_store.dart';
 import '../state/process_store.dart';
 import '../state/queue_store.dart';
@@ -409,20 +408,15 @@ class _AppShellState extends State<AppShell> {
     if (destination != AppDestination.queue) return const <Widget>[];
 
     final ProcessStore process = context.watch<ProcessStore>();
-    final QueueStore queue = context.watch<QueueStore>();
-    final LogStore log = context.watch<LogStore>();
 
+    // Two actions, and neither is available anywhere else. The log toggle
+    // that used to sit here is in the status strip at the bottom, beside the
+    // console it opens, and emptying the queue is a queue action, so it is
+    // on the queue's own toolbar.
     return <Widget>[
       _EncodingSettingsAction(
         open: _showDockedEncoding,
         onPressed: _toggleEncoding,
-      ),
-      IconButton(
-        onPressed: context.read<LogStore>().toggleVisible,
-        isSelected: log.visible,
-        icon: const Icon(Icons.terminal_outlined),
-        selectedIcon: const Icon(Icons.terminal),
-        tooltip: log.visible ? strings.menuHideShell : strings.menuShowShell,
       ),
       IconButton(
         onPressed: process.isRunning
@@ -430,13 +424,6 @@ class _AppShellState extends State<AppShell> {
             : null,
         icon: const Icon(Icons.picture_in_picture_alt_outlined),
         tooltip: strings.menuProgress,
-      ),
-      IconButton(
-        onPressed: queue.canImport && !queue.isEmpty
-            ? context.read<QueueStore>().clear
-            : null,
-        icon: const Icon(Icons.playlist_remove),
-        tooltip: strings.menuClearQueue,
       ),
       const SizedBox(width: 4),
     ];
