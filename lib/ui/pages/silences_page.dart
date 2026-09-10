@@ -43,6 +43,21 @@ class _SilencesPageState extends State<SilencesPage> {
     sourceSeconds: widget.entry.seconds,
   );
 
+  /// Whether the list has been scrolled off its top.
+  ///
+  /// What the rows slide under is the block above them, not the app bar, so
+  /// that block is what lifts. An AppBar reacts to any scroll notification
+  /// that reaches it, whether or not the content is passing beneath it —
+  /// which is why this page tells it not to.
+  bool _listScrolled = false;
+
+  void _handleListScroll(ScrollNotification notification) {
+    if (notification.depth != 0) return;
+    final bool scrolled = notification.metrics.extentBefore > 0;
+    if (scrolled == _listScrolled) return;
+    setState(() => _listScrolled = scrolled);
+  }
+
   @override
   void dispose() {
     _view.dispose();
@@ -76,6 +91,9 @@ class _SilencesPageState extends State<SilencesPage> {
 
     return Scaffold(
       appBar: AppBar(
+        // Nothing scrolls under it: the list is below a fixed block, and it
+        // is that block's business to show the seam.
+        notificationPredicate: (ScrollNotification _) => false,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisSize: MainAxisSize.min,
@@ -99,26 +117,50 @@ class _SilencesPageState extends State<SilencesPage> {
           : Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
-                if (stale) _StaleNotice(entry: entry),
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                  child: SilenceTimeline(ranges: ranges, controller: _view),
-                ),
-                _Figures(entry: entry, settings: settings),
-                const SizedBox(height: 12),
-                _ListHeader(entry: entry),
-                const Divider(height: 1),
-                Expanded(
-                  child: ListView.builder(
-                    padding: const EdgeInsets.only(top: 4, bottom: 24),
-                    itemCount: ranges.length,
-                    itemBuilder: (BuildContext context, int index) =>
-                        _RangeTile(
-                          index: index,
-                          range: ranges[index],
-                          settings: settings,
-                          onReveal: () => _view.reveal(ranges[index]),
+                // A shadow at rest would be a shadow over nothing, so the
+                // seam is a line until the rows start passing under it. The
+                // elevation is animated by Material itself, which is what
+                // makes it arrive as a fade rather than a jump.
+                Material(
+                  color: theme.colorScheme.surface,
+                  surfaceTintColor: Colors.transparent,
+                  shadowColor: theme.colorScheme.shadow,
+                  elevation: _listScrolled ? 3 : 0,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: <Widget>[
+                      if (stale) _StaleNotice(entry: entry),
+                      Padding(
+                        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                        child: SilenceTimeline(
+                          ranges: ranges,
+                          controller: _view,
                         ),
+                      ),
+                      _Figures(entry: entry, settings: settings),
+                      const SizedBox(height: 12),
+                      _ListHeader(entry: entry),
+                      if (!_listScrolled) const Divider(height: 1),
+                    ],
+                  ),
+                ),
+                Expanded(
+                  child: NotificationListener<ScrollNotification>(
+                    onNotification: (ScrollNotification notification) {
+                      _handleListScroll(notification);
+                      return false;
+                    },
+                    child: ListView.builder(
+                      padding: const EdgeInsets.only(top: 4, bottom: 24),
+                      itemCount: ranges.length,
+                      itemBuilder: (BuildContext context, int index) =>
+                          _RangeTile(
+                            index: index,
+                            range: ranges[index],
+                            settings: settings,
+                            onReveal: () => _view.reveal(ranges[index]),
+                          ),
+                    ),
                   ),
                 ),
               ],

@@ -96,7 +96,11 @@ Two things it depends on:
 - The timeline and the figures do not scroll; only the list of ranges does.
   Pointing a row at the timeline is pointless if the pointing goes off
   screen, which is also why the list is not foldable: it is the substance of
-  the page.
+  the page. The block above the list is a `Material` that lifts when the rows
+  start passing under it, and that page's `AppBar` is given a
+  `notificationPredicate` of false — an app bar takes the shadow for **any**
+  scroll notification that reaches it, whether or not the content is going
+  beneath it, and here it is not.
 - `FragmentPlanner.outputSeconds` derives the estimated result from the same
   `plan` the run walks, so the figure and the file cannot disagree about what
   the settings mean. Anything else derived from a run belongs there too, and

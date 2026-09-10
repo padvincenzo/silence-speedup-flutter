@@ -811,6 +811,64 @@ void main() {
       expect(find.text('00:00  →  20:00'), findsOneWidget);
     });
 
+    testWidgets('lifts the block the rows pass under, not the app bar', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester, size: const Size(900, 520));
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      final MediaEntry busy = MediaEntry(r'C:\videos\chatty.mp4')
+        ..duration = const Duration(minutes: 20);
+      busy.setSilences(
+        List<SilenceRange>.generate(
+          100,
+          (int i) => SilenceRange(i * 12, i * 12 + 1),
+        ),
+        detectedWith: const ProcessingSettings(),
+      );
+
+      await tester.pumpWidget(harness.wrap(SilencesPage(entry: busy)));
+      await tester.pumpAndSettle();
+
+      /// The surface holding the timeline, the figures and the heading.
+      double blockElevation() => tester
+          .widget<Material>(
+            find
+                .ancestor(
+                  of: find.byType(SilenceTimeline),
+                  matching: find.byType(Material),
+                )
+                .first,
+          )
+          .elevation;
+
+      /// The app bar's own surface.
+      double barElevation() => tester
+          .widget<Material>(
+            find
+                .descendant(
+                  of: find.byType(AppBar),
+                  matching: find.byType(Material),
+                )
+                .first,
+          )
+          .elevation;
+
+      expect(blockElevation(), 0, reason: 'a shadow over nothing, at rest');
+      expect(barElevation(), 0);
+
+      await tester.drag(find.byType(ListView), const Offset(0, -400));
+      await tester.pumpAndSettle();
+
+      // The rows slide under the block, so the block is what lifts. The app
+      // bar used to take the shadow instead, having been told about a scroll
+      // that was not passing beneath it.
+      expect(blockElevation(), greaterThan(0));
+      expect(barElevation(), 0);
+    });
+
     testWidgets('the zoom buttons narrow the view and put it back', (
       WidgetTester tester,
     ) async {
