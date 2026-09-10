@@ -55,6 +55,30 @@ To build against a locally compiled FFmpeg bundle instead, set
 The first build is slow because of the download. Subsequent builds reuse it;
 `flutter clean` throws it away.
 
+## The app icon
+
+Three files are generated from `assets/icons/icon.svg`, the 600px original,
+and they have to stay in step:
+
+| File | Used for | Sizes |
+| --- | --- | --- |
+| `windows/runner/resources/app_icon.ico` | the executable, its window and its taskbar button | 16-256 |
+| `assets/icons/icon.ico` | `SetupIconFile` in the Inno Setup script | 16-256 |
+| `assets/icons/icon.png` | drawn by the interface itself, in the drawer and the about page | 256 |
+| `installer/msix/logo.png` | source the MSIX tool derives Store tiles from | 1024 |
+
+Resample each size from the vector separately rather than letting an icon
+writer downscale one bitmap: 16x16 is where the difference shows.
+
+**After changing the icon, Windows will keep showing the old one.** The
+executable is right — `[System.Drawing.Icon]::ExtractAssociatedIcon` reads the
+resource and will say so — but the shell caches icons per executable path in
+`%LOCALAPPDATA%\Microsoft\Windows\Explorer\iconcache_*.db`, and the path
+does not change when the file does. `ie4uinit.exe -show` asks for a refresh;
+Explorer also holds a copy in memory, so the reliable fixes are restarting
+`explorer.exe` or simply signing in again. Do not go looking for a build
+problem that is not there.
+
 ## Project layout
 
 ```
