@@ -612,18 +612,84 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('opens the licence text of one package', (
+    testWidgets('shows the document beside the list on a wide window', (
       WidgetTester tester,
     ) async {
-      await useDesktopSurface(tester);
+      await useDesktopSurface(tester, size: const Size(1400, 900));
       final TestHarness harness = await TestHarness.create(
         preferred: const Locale('en'),
       );
 
       await tester.pumpWidget(
-        harness.wrap(const LicensesPage(version: '0.9.3')),
+        harness.wrap(const LicensesPage(version: '0.9.4')),
       );
       await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+
+      // The first package is shown without being asked for, so the pane is
+      // never a blank half of the window. Both its notices are there.
+      expect(find.textContaining('libx264'), findsOneWidget);
+      expect(
+        find.textContaining('A second notice for the same package'),
+        findsOneWidget,
+      );
+
+      // Picking another one swaps the document and leaves the list in place:
+      // no route is pushed, so the list is still on screen.
+      final Finder inList = find.descendant(
+        of: find.byType(CustomScrollView),
+        matching: find.text('silence_speedup'),
+      );
+      await tester.tap(inList);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('GNU GPL v3 or later'), findsOneWidget);
+      expect(find.textContaining('libx264'), findsNothing);
+      expect(find.text('ffmpeg_kit_flutter_new'), findsOneWidget);
+    });
+
+    testWidgets('holds the document to a readable width', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester, size: const Size(1920, 1000));
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(
+        harness.wrap(const LicensesPage(version: '0.9.4')),
+      );
+      await tester.pumpAndSettle();
+
+      // The pane is over 1500 pixels wide here; the licence is not allowed
+      // to be, because a line that long cannot be read.
+      final Finder document = find.byWidgetPredicate(
+        (Widget widget) =>
+            widget is ConstrainedBox &&
+            widget.constraints.maxWidth == kLicensesDocumentWidth,
+      );
+      expect(
+        tester.getSize(document).width,
+        lessThanOrEqualTo(kLicensesDocumentWidth),
+      );
+    });
+
+    testWidgets('opens the licence as its own page when narrow', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester, size: const Size(640, 480));
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(
+        harness.wrap(const LicensesPage(version: '0.9.4')),
+      );
+      await tester.pumpAndSettle();
+
+      // Nothing is preselected: there is no room to show it.
+      expect(find.textContaining('libx264'), findsNothing);
 
       await tester.tap(find.text('ffmpeg_kit_flutter_new'));
       await tester.pumpAndSettle();
@@ -634,6 +700,8 @@ void main() {
         find.textContaining('A second notice for the same package'),
         findsOneWidget,
       );
+      // The list gave way to the document rather than sitting beside it.
+      expect(find.text('silence_speedup'), findsNothing);
     });
   });
 
