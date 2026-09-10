@@ -6,6 +6,7 @@
 
 import '../models/media_entry.dart';
 import '../models/options.dart';
+import '../models/processing_settings.dart';
 import 'gen/app_localizations.dart';
 
 /// Turns the models' enums into text.
@@ -52,4 +53,91 @@ String statusText(EntryStatus status, AppLocalizations strings) {
     EntryStatus.failed => strings.statusFailed,
     EntryStatus.interrupted => strings.statusInterrupted,
   };
+}
+
+/// The settings in a group that differ from what the app ships with.
+///
+/// Each list is what a collapsed group shows about itself: enough to see at a
+/// glance that something was changed, and what to. An empty list means the
+/// group is untouched, which the interface says with one word instead.
+///
+/// The comparison is against `const ProcessingSettings()` rather than a
+/// hand-written copy of the defaults, so a changed default cannot leave these
+/// summaries lying.
+const ProcessingSettings _defaults = ProcessingSettings();
+
+List<String> speedChanges(
+  ProcessingSettings settings,
+  AppLocalizations strings,
+) {
+  return <String>[
+    if (settings.silenceSpeedIndex != _defaults.silenceSpeedIndex)
+      '${strings.settingsSilenceSpeed} ${speedText(settings.silenceSpeed, strings)}',
+    if (settings.playbackSpeedIndex != _defaults.playbackSpeedIndex)
+      '${strings.settingsPlaybackSpeed} ${speedText(settings.playbackSpeed, strings)}',
+  ];
+}
+
+List<String> audioChanges(
+  ProcessingSettings settings,
+  AppLocalizations strings,
+) {
+  return <String>[
+    if (settings.keepAllAudioTracks) strings.settingsAudioTracks,
+    // The effective state, not the stored flag: muting means nothing once the
+    // silences are being cut out, and a summary that claimed otherwise would
+    // be worse than no summary.
+    if (settings.mutesSilence) strings.settingsMuteSilences,
+    if (settings.audioRateIndex != _defaults.audioRateIndex)
+      '${strings.settingsAudioRate} '
+          '${optionText(kAudioRates[settings.audioRateIndex], strings)}',
+  ];
+}
+
+List<String> detectionChanges(
+  ProcessingSettings settings,
+  AppLocalizations strings,
+) {
+  return <String>[
+    if (settings.thresholdIndex != _defaults.thresholdIndex)
+      '${strings.settingsBackgroundNoise} '
+          '${optionText(kThresholds[settings.thresholdIndex], strings)}',
+    if (settings.silenceMinDuration != _defaults.silenceMinDuration)
+      '${strings.settingsSilenceMinDuration} '
+          '${strings.settingsSecondsValue(settings.silenceMinDuration)}',
+    if (settings.silenceMargin != _defaults.silenceMargin)
+      '${strings.settingsSilenceMargin} '
+          '${strings.settingsSecondsValue(settings.silenceMargin)}',
+  ];
+}
+
+List<String> exportChanges(
+  ProcessingSettings settings,
+  AppLocalizations strings,
+) {
+  return <String>[
+    if (settings.outputFormat != _defaults.outputFormat)
+      '${strings.settingsFormat} ${settings.outputFormat}',
+    if (settings.crf != _defaults.crf) '${strings.settingsCrf} ${settings.crf}',
+    if (settings.fpsIndex != _defaults.fpsIndex)
+      '${strings.settingsFps} '
+          '${optionText(kFpsOptions[settings.fpsIndex], strings)}',
+    if (settings.presetIndex != _defaults.presetIndex)
+      '${strings.settingsPreset} '
+          '${optionText(kPresets[settings.presetIndex], strings)}',
+    if (settings.tuneIndex != _defaults.tuneIndex)
+      '${strings.settingsTune} '
+          '${optionText(kTunes[settings.tuneIndex], strings)}',
+  ];
+}
+
+List<String> previewChanges(
+  ProcessingSettings settings,
+  AppLocalizations strings,
+) {
+  return <String>[
+    if (settings.previewIndex != _defaults.previewIndex)
+      '${strings.settingsPreviewDuration} '
+          '${strings.previewSeconds(settings.previewSeconds)}',
+  ];
 }

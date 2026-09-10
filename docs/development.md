@@ -175,7 +175,11 @@ The pipeline touches real files, so a few things only a real run will show:
 3. Add a tile to the right group in `EncodingSettingsView` — or to
    `AppSettingsPage` if it is about the application rather than the encoding —
    and give it a description: every setting explains itself in place.
-4. Add the label — and the tooltip, if the effect is not obvious — to **both**
+4. Add it to that group's summary function in `lib/l10n/labels.dart`, so a
+   value that is no longer the default is visible while the group is closed.
+   Compare against `const ProcessingSettings()`, never against a copy of the
+   defaults written out by hand.
+5. Add the label — and the tooltip, if the effect is not obvious — to **both**
    ARB catalogues, then run `flutter gen-l10n`.
 
 ### A new option in a catalogue

@@ -142,7 +142,8 @@ they belong:
   action;
 - the one primary action of a screen → the floating action button;
 - a setting that changes how a video is encoded → a tile in the right group of
-  `EncodingSettingsView`, **with a description**;
+  `EncodingSettingsView`, **with a description**, and an entry in that group's
+  summary in [lib/l10n/labels.dart](lib/l10n/labels.dart);
 - a setting about the application itself → a tile on `AppSettingsPage`, again
   with a description, since both surfaces explain themselves in place;
 - something application-level → the drawer.
@@ -156,8 +157,20 @@ runs as far away as the ones they set on the first day. They are separate now:
   export and preview, plus the reset that puts them back. It is shown docked
   to the right of the queue when the window is at least
   `kEncodingPanelBreakpoint` wide, and as an end-drawer side sheet when it is
-  not. Ctrl+, the app bar's tune button and the rate chip on the queue all
-  reach it; the sheet closes on Escape, the scrim, or its own button.
+  not. The app bar's button and Ctrl+, reach it; the sheet closes on Escape,
+  the scrim, or its own button.
+- **The groups collapse, and a closed one shows only what differs from the
+  default.** The summaries are the `*Changes` functions in
+  [labels.dart](lib/l10n/labels.dart), each comparing against
+  `const ProcessingSettings()` — never against a written-out copy of the
+  defaults, which would go stale. A setting with no entry there is invisible
+  once its group is closed, so adding one is part of adding a setting. Which
+  groups are open is remembered in `PreferencesStore`; only the speeds start
+  open.
+- **The rates live on the button that opens the panel, and nowhere else.**
+  They were also a chip on the queue, which meant two controls doing one job.
+  Do not add a second indicator: if the app bar button needs to say more, say
+  it there.
 - Docking is remembered in `PreferencesStore.encodingPanelDocked`, so leaving
   the panel open is a durable choice rather than per-session state.
 - `AppSettingsPage` (`lib/ui/pages/`) holds the theme, the language and the

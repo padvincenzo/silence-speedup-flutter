@@ -221,7 +221,7 @@ void main() {
       expect(find.textContaining('Version 0.9.0'), findsWidgets);
     });
 
-    testWidgets('the speed chip reflects the settings', (
+    testWidgets('one control shows the rates and opens the settings', (
       WidgetTester tester,
     ) async {
       await useDesktopSurface(tester);
@@ -232,8 +232,24 @@ void main() {
       await tester.pumpWidget(harness.app);
       await tester.pumpAndSettle();
 
-      // The defaults are 8x for silences and 1x for speech.
+      // The defaults are 8x for silences and 1x for speech, and there is
+      // exactly one place that says so: the app bar button that opens the
+      // panel. A second control on the queue used to duplicate it.
       expect(find.text('8x / 1x'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(AppBar),
+          matching: find.text('8x / 1x'),
+        ),
+        findsOneWidget,
+      );
+
+      await harness.preferences.updateSettings(
+        harness.preferences.settings.copyWith(silenceSpeedIndex: 4),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('8x / 1x'), findsNothing);
+      expect(find.textContaining('/ 1x'), findsOneWidget);
     });
   });
 
@@ -306,6 +322,63 @@ void main() {
       expect(find.text('Silence speed'), findsNothing);
     });
 
+    testWidgets('closed groups say what was changed inside them', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester);
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(harness.wrap(const EncodingSettingsView()));
+      await tester.pumpAndSettle();
+
+      // Only the speeds start open, so the other four groups are one line
+      // each -- and with nothing changed, that line is a single word.
+      expect(find.text('Default'), findsNWidgets(4));
+      expect(find.text('CRF'), findsNothing);
+
+      await harness.preferences.updateSettings(
+        harness.preferences.settings.copyWith(crf: 20),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Default'), findsNWidgets(3));
+      expect(find.text('CRF 20'), findsOneWidget);
+      // Still closed: the summary is what it says while shut.
+      expect(find.byType(Slider), findsNWidgets(2));
+    });
+
+    testWidgets('opening a group reveals its controls, and is remembered', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester);
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(harness.wrap(const EncodingSettingsView()));
+      await tester.pumpAndSettle();
+
+      expect(harness.preferences.openEncodingGroups, <String>{'speed'});
+
+      await tester.tap(find.text('Export'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('CRF'), findsOneWidget);
+      expect(
+        harness.preferences.openEncodingGroups,
+        containsAll(<String>['speed', 'export']),
+      );
+
+      // Closing it puts the summary back and takes the controls away.
+      await tester.tap(find.text('Export'));
+      await tester.pumpAndSettle();
+      expect(find.text('CRF'), findsNothing);
+      expect(harness.preferences.openEncodingGroups, isNot(contains('export')));
+    });
+
     testWidgets('lay out every group with its explanations', (
       WidgetTester tester,
     ) async {
@@ -322,11 +395,14 @@ void main() {
         'Speed',
         'Audio',
         'Silence detection',
+        'Export',
+        'Preview',
       ]) {
         expect(find.text(group), findsOneWidget, reason: group);
       }
 
-      // Descriptions are visible text now, not tooltips.
+      // Descriptions are visible text, not tooltips -- in the group that
+      // starts open, which is the speeds.
       expect(
         find.textContaining('Pick Remove to cut them out entirely'),
         findsOneWidget,

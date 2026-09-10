@@ -441,6 +441,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsCrf => 'CRF';
 
   @override
+  String get settingsDefault => 'Predefinito';
+
+  @override
   String get settingsFilterPreview => 'Filtro di rilevamento';
 
   @override
@@ -498,6 +501,18 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get settingsResetProcessingHint =>
       'Riporta ai valori predefiniti velocità, rilevamento ed esportazione.';
+
+  @override
+  String settingsSecondsValue(double seconds) {
+    final intl.NumberFormat secondsNumberFormat =
+        intl.NumberFormat.decimalPatternDigits(
+          locale: localeName,
+          decimalDigits: 2,
+        );
+    final String secondsString = secondsNumberFormat.format(seconds);
+
+    return '$secondsString s';
+  }
 
   @override
   String get settingsSilence => 'Rilevamento dei silenzi';

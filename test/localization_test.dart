@@ -14,6 +14,7 @@ import 'package:silence_speedup/l10n/labels.dart';
 import 'package:silence_speedup/l10n/locale_controller.dart';
 import 'package:silence_speedup/models/media_entry.dart';
 import 'package:silence_speedup/models/options.dart';
+import 'package:silence_speedup/models/processing_settings.dart';
 
 /// Reads an ARB catalogue, dropping the `@`-prefixed metadata entries.
 Map<String, Object?> readArb(String languageCode) {
@@ -135,6 +136,10 @@ void main() {
         'settingsPreset',
         'settingsGroupAudio',
         'previewSeconds',
+        // Same string in both languages on purpose: what differs between them
+        // is the decimal separator, and that comes from the number format,
+        // not from the text.
+        'settingsSecondsValue',
         'aboutCopyright',
       };
 
@@ -169,6 +174,53 @@ void main() {
         expect(statusText(status, english), isNotEmpty, reason: '$status');
         expect(statusText(status, italian), isNotEmpty, reason: '$status');
       }
+    });
+
+    test('a group summary is empty until something is changed', () {
+      const ProcessingSettings defaults = ProcessingSettings();
+
+      expect(speedChanges(defaults, english), isEmpty);
+      expect(audioChanges(defaults, english), isEmpty);
+      expect(detectionChanges(defaults, english), isEmpty);
+      expect(exportChanges(defaults, english), isEmpty);
+      expect(previewChanges(defaults, english), isEmpty);
+    });
+
+    test('a group summary names the setting and its new value', () {
+      const ProcessingSettings changed = ProcessingSettings(
+        silenceSpeedIndex: 4,
+        crf: 20,
+      );
+
+      expect(
+        speedChanges(changed, english).single,
+        allOf(contains('Silence speed'), contains(kSpeedOptions[4].label)),
+      );
+      expect(exportChanges(changed, english).single, contains('20'));
+      // A change in one group says nothing about the others.
+      expect(audioChanges(changed, english), isEmpty);
+    });
+
+    test('muting is summarised only while there is silence to mute', () {
+      const ProcessingSettings muted = ProcessingSettings(muteSilences: true);
+      expect(audioChanges(muted, english).single, 'Mute silences');
+
+      // Removing the silences makes muting meaningless, and the summary has
+      // to agree with what the run will actually do.
+      final ProcessingSettings removed = muted.copyWith(
+        silenceSpeedIndex: kSpeedOptions.length - 1,
+      );
+      expect(removed.dropsSilence, isTrue);
+      expect(audioChanges(removed, english), isEmpty);
+    });
+
+    test('a duration in a summary uses the separator of the language', () {
+      const ProcessingSettings margin = ProcessingSettings(
+        silenceMargin: 0.25,
+      );
+
+      expect(detectionChanges(margin, english).single, contains('0.25'));
+      expect(detectionChanges(margin, italian).single, contains('0,25'));
     });
 
     test('rates keep their numeric label, and only remove is translated', () {

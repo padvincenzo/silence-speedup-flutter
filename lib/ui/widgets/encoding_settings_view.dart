@@ -22,10 +22,23 @@ import 'settings_tiles.dart';
 /// the queue on a wide window and as a side sheet on a narrow one. Whatever
 /// is application-level — theme, language, scratch space — lives on the app
 /// settings page instead, because it is set once and then forgotten.
+///
+/// The groups collapse, and a collapsed one states what was changed inside
+/// it. Thirteen controls do not fit a panel beside the queue, and most of
+/// them are set once; what a user wants at a glance is not every value but
+/// the ones that are no longer the default.
 class EncodingSettingsView extends StatelessWidget {
   const EncodingSettingsView({super.key, this.padding});
 
   final EdgeInsetsGeometry? padding;
+
+  /// Keys the open groups are remembered under. Stored, so they must not be
+  /// renamed lightly.
+  static const String groupSpeed = 'speed';
+  static const String groupAudio = 'audio';
+  static const String groupDetection = 'detection';
+  static const String groupExport = 'export';
+  static const String groupPreview = 'preview';
 
   @override
   Widget build(BuildContext context) {
@@ -37,14 +50,22 @@ class EncodingSettingsView extends StatelessWidget {
     void update(ProcessingSettings next) =>
         context.read<PreferencesStore>().updateSettings(next);
 
+    final Set<String> open = preferences.openEncodingGroups;
+    void toggle(String group, bool expanded) => context
+        .read<PreferencesStore>()
+        .setEncodingGroupOpen(group, expanded);
+
     return ListView(
       padding: padding ?? const EdgeInsets.only(bottom: 32),
       children: <Widget>[
         if (locked) LockedNotice(message: strings.ffmpegAlreadyRunning),
 
-        SettingsGroup(
+        CollapsibleSettingsGroup(
           icon: Icons.bolt,
           title: strings.settingsGroupSpeed,
+          changes: speedChanges(settings, strings),
+          expanded: open.contains(groupSpeed),
+          onExpanded: (bool value) => toggle(groupSpeed, value),
           children: <Widget>[
             SliderSettingTile(
               title: strings.settingsSilenceSpeed,
@@ -81,9 +102,12 @@ class EncodingSettingsView extends StatelessWidget {
           ],
         ),
 
-        SettingsGroup(
+        CollapsibleSettingsGroup(
           icon: Icons.headphones_outlined,
           title: strings.settingsGroupAudio,
+          changes: audioChanges(settings, strings),
+          expanded: open.contains(groupAudio),
+          onExpanded: (bool value) => toggle(groupAudio, value),
           children: <Widget>[
             SwitchSettingTile(
               title: strings.settingsAudioTracks,
@@ -117,9 +141,12 @@ class EncodingSettingsView extends StatelessWidget {
           ],
         ),
 
-        SettingsGroup(
+        CollapsibleSettingsGroup(
           icon: Icons.graphic_eq,
           title: strings.settingsGroupDetection,
+          changes: detectionChanges(settings, strings),
+          expanded: open.contains(groupDetection),
+          onExpanded: (bool value) => toggle(groupDetection, value),
           children: <Widget>[
             SliderSettingTile(
               title: strings.settingsBackgroundNoise,
@@ -142,7 +169,9 @@ class EncodingSettingsView extends StatelessWidget {
             SliderSettingTile(
               title: strings.settingsSilenceMinDuration,
               description: strings.helpSilenceMinDuration,
-              valueLabel: _seconds(settings.silenceMinDuration),
+              valueLabel: strings.settingsSecondsValue(
+                settings.silenceMinDuration,
+              ),
               enabled: !locked,
               slider: Slider(
                 value: settings.silenceMinDuration.clamp(
@@ -152,7 +181,9 @@ class EncodingSettingsView extends StatelessWidget {
                 min: kSilenceDurationMin,
                 max: kSilenceDurationMax,
                 divisions: _durationDivisions,
-                label: _seconds(settings.silenceMinDuration),
+                label: strings.settingsSecondsValue(
+                  settings.silenceMinDuration,
+                ),
                 onChanged: locked
                     ? null
                     : (double value) =>
@@ -162,7 +193,9 @@ class EncodingSettingsView extends StatelessWidget {
             SliderSettingTile(
               title: strings.settingsSilenceMargin,
               description: strings.helpSilenceMargin,
-              valueLabel: _seconds(settings.silenceMargin),
+              valueLabel: strings.settingsSecondsValue(
+                settings.silenceMargin,
+              ),
               enabled: !locked,
               slider: Slider(
                 value: settings.silenceMargin.clamp(
@@ -172,7 +205,7 @@ class EncodingSettingsView extends StatelessWidget {
                 min: kSilenceDurationMin,
                 max: kSilenceDurationMax,
                 divisions: _durationDivisions,
-                label: _seconds(settings.silenceMargin),
+                label: strings.settingsSecondsValue(settings.silenceMargin),
                 onChanged: locked
                     ? null
                     : (double value) =>
@@ -183,9 +216,12 @@ class EncodingSettingsView extends StatelessWidget {
           ],
         ),
 
-        SettingsGroup(
+        CollapsibleSettingsGroup(
           icon: Icons.movie_creation_outlined,
           title: strings.settingsGroupExport,
+          changes: exportChanges(settings, strings),
+          expanded: open.contains(groupExport),
+          onExpanded: (bool value) => toggle(groupExport, value),
           children: <Widget>[
             DropdownSettingTile<String>(
               title: strings.settingsFormat,
@@ -258,9 +294,12 @@ class EncodingSettingsView extends StatelessWidget {
           ],
         ),
 
-        SettingsGroup(
+        CollapsibleSettingsGroup(
           icon: Icons.play_circle_outline,
           title: strings.settingsGroupPreview,
+          changes: previewChanges(settings, strings),
+          expanded: open.contains(groupPreview),
+          onExpanded: (bool value) => toggle(groupPreview, value),
           children: <Widget>[
             DropdownSettingTile<int>(
               title: strings.settingsPreviewDuration,
@@ -286,7 +325,7 @@ class EncodingSettingsView extends StatelessWidget {
         // The reset belongs here rather than with the application settings:
         // what it puts back are the encoding settings above it.
         Padding(
-          padding: const EdgeInsets.only(top: 16),
+          padding: const EdgeInsets.only(top: 8),
           child: SettingTile(
             title: strings.settingsResetProcessing,
             description: strings.settingsResetProcessingHint,
@@ -313,8 +352,6 @@ class EncodingSettingsView extends StatelessWidget {
 
   static const int _durationDivisions =
       (kSilenceDurationMax - kSilenceDurationMin) ~/ kSilenceDurationStep;
-
-  static String _seconds(double value) => '${value.toStringAsFixed(2)} s';
 }
 
 /// Turns an option catalogue into dropdown entries addressed by index.

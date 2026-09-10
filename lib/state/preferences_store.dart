@@ -45,6 +45,7 @@ class PreferencesStore extends ChangeNotifier {
   static const String _keyWorkingDirectory = 'workingDirectory';
   static const String _keyThemeMode = 'themeMode';
   static const String _keyEncodingDocked = 'encodingPanelDocked';
+  static const String _keyEncodingGroups = 'encodingGroupsOpen';
   static const String _keySettings = 'processingSettings';
 
   final SharedPreferences _prefs;
@@ -55,6 +56,7 @@ class PreferencesStore extends ChangeNotifier {
   String _workingDirectory;
   ThemeMode _themeMode = ThemeMode.system;
   bool _encodingPanelDocked = true;
+  Set<String> _openEncodingGroups = Set<String>.of(_defaultOpenGroups);
   ProcessingSettings _settings = const ProcessingSettings();
 
   /// The language pinned in a previous session, or null to follow the system.
@@ -87,6 +89,10 @@ class PreferencesStore extends ChangeNotifier {
     );
     store._themeMode = _decodeThemeMode(prefs.getString(_keyThemeMode));
     store._encodingPanelDocked = prefs.getBool(_keyEncodingDocked) ?? true;
+    final List<String>? groups = prefs.getStringList(_keyEncodingGroups);
+    store._openEncodingGroups = groups == null
+        ? Set<String>.of(_defaultOpenGroups)
+        : groups.toSet();
 
     final String? rawSettings = prefs.getString(_keySettings);
     if (rawSettings != null) {
@@ -120,6 +126,18 @@ class PreferencesStore extends ChangeNotifier {
   /// wide enough for both. Remembered, because it is a choice about how
   /// someone works rather than a passing state.
   bool get encodingPanelDocked => _encodingPanelDocked;
+
+  /// Which groups of the encoding settings are open.
+  ///
+  /// Everything is closed to begin with except the speeds, which are what the
+  /// app is for; a closed group still states what was changed inside it, so a
+  /// fully closed panel is short without being uninformative. Remembered for
+  /// the same reason the docking is: it is how someone has arranged their
+  /// work, not a passing state.
+  Set<String> get openEncodingGroups =>
+      Set<String>.unmodifiable(_openEncodingGroups);
+
+  static const Set<String> _defaultOpenGroups = <String>{'speed'};
 
   /// The language actually in use, whoever chose it.
   Locale get activeLocale => _locales.activeLocale;
@@ -174,6 +192,19 @@ class PreferencesStore extends ChangeNotifier {
     _encodingPanelDocked = docked;
     notifyListeners();
     await _prefs.setBool(_keyEncodingDocked, docked);
+  }
+
+  Future<void> setEncodingGroupOpen(String group, bool open) async {
+    final bool changed = open
+        ? _openEncodingGroups.add(group)
+        : _openEncodingGroups.remove(group);
+    if (!changed) return;
+
+    notifyListeners();
+    await _prefs.setStringList(
+      _keyEncodingGroups,
+      _openEncodingGroups.toList(),
+    );
   }
 
   /// Pins [locale], or pass null to follow the system again.

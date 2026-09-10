@@ -10,7 +10,6 @@ import 'package:provider/provider.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../../models/media_entry.dart';
 import '../../state/log_store.dart';
-import '../../state/preferences_store.dart';
 import '../../state/queue_store.dart';
 import '../widgets/entry_list.dart';
 import '../widgets/log_console.dart';
@@ -26,20 +25,20 @@ const double kQueueBottomInset = 88;
 /// Starting and stopping live on the shell's floating action button, which is
 /// where Material puts the one action a screen is for. Progress and the log
 /// live in [QueueStatusBar], which the shell puts in the Scaffold's bottom
-/// slot so the button has somewhere to float that covers nothing.
+/// slot so the button has somewhere to float that covers nothing. The rates
+/// and the way into the encoding settings are one control in the app bar, so
+/// this page carries neither.
 class QueuePage extends StatelessWidget {
   const QueuePage({
     super.key,
     required this.onOpenFiles,
     required this.onOpenFolder,
-    required this.onOpenEncoding,
     required this.onRevealOutput,
     required this.onPreview,
   });
 
   final VoidCallback onOpenFiles;
   final VoidCallback onOpenFolder;
-  final VoidCallback onOpenEncoding;
   final void Function(MediaEntry entry) onRevealOutput;
   final void Function(MediaEntry entry) onPreview;
 
@@ -47,11 +46,7 @@ class QueuePage extends StatelessWidget {
   Widget build(BuildContext context) {
     return Column(
       children: <Widget>[
-        _ImportBar(
-          onOpenFiles: onOpenFiles,
-          onOpenFolder: onOpenFolder,
-          onOpenEncoding: onOpenEncoding,
-        ),
+        _ImportBar(onOpenFiles: onOpenFiles, onOpenFolder: onOpenFolder),
         const OutputPathBar(),
         const Divider(),
         Expanded(
@@ -85,28 +80,17 @@ class QueueStatusBar extends StatelessWidget {
   }
 }
 
-/// Import buttons, plus the current rates as a way into the settings.
+/// How videos get into the queue.
 class _ImportBar extends StatelessWidget {
-  const _ImportBar({
-    required this.onOpenFiles,
-    required this.onOpenFolder,
-    required this.onOpenEncoding,
-  });
+  const _ImportBar({required this.onOpenFiles, required this.onOpenFolder});
 
   final VoidCallback onOpenFiles;
   final VoidCallback onOpenFolder;
-  final VoidCallback onOpenEncoding;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations strings = AppLocalizations.of(context);
     final QueueStore queue = context.watch<QueueStore>();
-    final PreferencesStore preferences = context.watch<PreferencesStore>();
-
-    final String silence = preferences.settings.silenceSpeed.isRemove
-        ? strings.settingsSpeedRemoveShort
-        : preferences.settings.silenceSpeed.label;
-    final String playback = preferences.settings.playbackSpeed.label;
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
@@ -124,17 +108,6 @@ class _ImportBar extends StatelessWidget {
             onPressed: queue.canImport ? onOpenFolder : null,
             icon: const Icon(Icons.folder_open_outlined),
             label: Text(strings.menuOpenFolder),
-          ),
-          const SizedBox(width: 4),
-          // Glanceable state that doubles as the way into the encoding
-          // settings: the two rates are what a user checks before every run.
-          // It stays live during a run, when reading them still helps even
-          // though the panel will not let them be changed.
-          ActionChip(
-            avatar: const Icon(Icons.tune, size: 18),
-            label: Text('$silence / $playback'),
-            tooltip: strings.settingsEncodingTitle,
-            onPressed: onOpenEncoding,
           ),
           if (queue.entries.isNotEmpty)
             Text(

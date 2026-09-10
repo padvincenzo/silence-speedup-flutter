@@ -17,6 +17,7 @@ import 'package:window_manager/window_manager.dart';
 import '../l10n/gen/app_localizations.dart';
 import '../models/media_entry.dart';
 import '../models/options.dart';
+import '../models/processing_settings.dart';
 import '../services/update_checker.dart';
 import '../state/log_store.dart';
 import '../state/preferences_store.dart';
@@ -367,7 +368,6 @@ class _AppShellState extends State<AppShell> {
                         AppDestination.queue => QueuePage(
                           onOpenFiles: _openFiles,
                           onOpenFolder: _openFolder,
-                          onOpenEncoding: _toggleEncoding,
                           onRevealOutput: _revealOutput,
                           onPreview: _preview,
                         ),
@@ -413,14 +413,9 @@ class _AppShellState extends State<AppShell> {
     final LogStore log = context.watch<LogStore>();
 
     return <Widget>[
-      IconButton(
+      _EncodingSettingsAction(
+        open: _showDockedEncoding,
         onPressed: _toggleEncoding,
-        isSelected: _showDockedEncoding,
-        icon: const Icon(Icons.tune_outlined),
-        selectedIcon: const Icon(Icons.tune),
-        tooltip: _showDockedEncoding
-            ? strings.settingsEncodingHide
-            : strings.settingsEncodingShow,
       ),
       IconButton(
         onPressed: context.read<LogStore>().toggleVisible,
@@ -445,6 +440,54 @@ class _AppShellState extends State<AppShell> {
       ),
       const SizedBox(width: 4),
     ];
+  }
+}
+
+/// The way into the encoding settings, and the rates it would otherwise
+/// duplicate.
+///
+/// The two speeds are what a user checks before every run, and a chip on the
+/// queue that showed them was a second control doing the same job as this
+/// one. Carrying them as the button's own label is one control instead of
+/// two, and it costs the queue no room at all.
+class _EncodingSettingsAction extends StatelessWidget {
+  const _EncodingSettingsAction({required this.open, required this.onPressed});
+
+  final bool open;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations strings = AppLocalizations.of(context);
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+    final ProcessingSettings settings = context
+        .watch<PreferencesStore>()
+        .settings;
+
+    final String silence = settings.silenceSpeed.isRemove
+        ? strings.settingsSpeedRemoveShort
+        : settings.silenceSpeed.label;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Tooltip(
+        message: open
+            ? strings.settingsEncodingHide
+            : strings.settingsEncodingShow,
+        child: TextButton.icon(
+          onPressed: onPressed,
+          icon: Icon(open ? Icons.tune : Icons.tune_outlined, size: 18),
+          label: Text('$silence / ${settings.playbackSpeed.label}'),
+          style: TextButton.styleFrom(
+            visualDensity: VisualDensity.compact,
+            backgroundColor: open ? scheme.secondaryContainer : null,
+            foregroundColor: open
+                ? scheme.onSecondaryContainer
+                : scheme.onSurfaceVariant,
+          ),
+        ),
+      ),
+    );
   }
 }
 

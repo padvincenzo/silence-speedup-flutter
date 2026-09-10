@@ -764,6 +764,12 @@ abstract class AppLocalizations {
   /// **'CRF'**
   String get settingsCrf;
 
+  /// No description provided for @settingsDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Default'**
+  String get settingsDefault;
+
   /// No description provided for @settingsFilterPreview.
   ///
   /// In en, this message translates to:
@@ -877,6 +883,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Puts every speed, detection and export setting back to its default.'**
   String get settingsResetProcessingHint;
+
+  /// No description provided for @settingsSecondsValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{seconds} s'**
+  String settingsSecondsValue(double seconds);
 
   /// No description provided for @settingsSilence.
   ///

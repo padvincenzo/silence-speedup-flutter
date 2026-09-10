@@ -248,6 +248,7 @@
   "settingsBackgroundNoise": "Background noise",
   "settingsBasic": "Basic settings",
   "settingsCrf": "CRF",
+  "settingsDefault": "Default",
   "settingsFilterPreview": "Detection filter",
   "settingsFormat": "Video format",
   "settingsFps": "FPS",
@@ -267,6 +268,18 @@
   "settingsResetDone": "Processing settings reset",
   "settingsResetProcessing": "Reset processing settings",
   "settingsResetProcessingHint": "Puts every speed, detection and export setting back to its default.",
+  "settingsSecondsValue": "{seconds} s",
+  "@settingsSecondsValue": {
+    "placeholders": {
+      "seconds": {
+        "type": "double",
+        "format": "decimalPatternDigits",
+        "optionalParameters": {
+          "decimalDigits": 2
+        }
+      }
+    }
+  },
   "settingsSilence": "Silence detection",
   "settingsSilenceMargin": "Silence margin",
   "settingsSilenceMinDuration": "Silence min duration",
