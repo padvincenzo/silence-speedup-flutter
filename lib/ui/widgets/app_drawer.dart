@@ -82,9 +82,11 @@ class AppDrawer extends StatelessWidget {
           selectedIcon: const Icon(Icons.queue_music),
           label: Text(strings.navQueue),
         ),
+        // Not a tune icon: that one now belongs to the encoding panel, and
+        // this page is the application's own settings.
         NavigationDrawerDestination(
-          icon: const Icon(Icons.tune_outlined),
-          selectedIcon: const Icon(Icons.tune),
+          icon: const Icon(Icons.settings_outlined),
+          selectedIcon: const Icon(Icons.settings),
           label: Text(strings.navSettings),
         ),
         NavigationDrawerDestination(

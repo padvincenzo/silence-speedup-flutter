@@ -5,12 +5,42 @@
 // License: GNU GPL v3 or later <http://www.gnu.org/copyleft/gpl.html>
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:silence_speedup/l10n/locale_controller.dart';
 import 'package:silence_speedup/models/media_entry.dart';
 import 'package:silence_speedup/models/options.dart';
 import 'package:silence_speedup/models/processing_settings.dart';
 import 'package:silence_speedup/services/update_checker.dart';
+import 'package:silence_speedup/state/preferences_store.dart';
 
 void main() {
+  group('PreferencesStore', () {
+    // The store reaches the platform for the system language and the
+    // temporary folder, so it needs a binding even without a widget.
+    setUp(() => TestWidgetsFlutterBinding.ensureInitialized());
+
+    Future<PreferencesStore> load() async {
+      final SharedPreferences prefs = await SharedPreferences.getInstance();
+      return PreferencesStore.load(
+        prefs: prefs,
+        locales: await LocaleController.create(),
+      );
+    }
+
+    test('keeps the encoding panel docked until told otherwise', () async {
+      SharedPreferences.setMockInitialValues(<String, Object>{});
+      final PreferencesStore store = await load();
+      expect(store.encodingPanelDocked, isTrue);
+
+      await store.setEncodingPanelDocked(false);
+      expect(store.encodingPanelDocked, isFalse);
+
+      // Hiding the panel is a choice about how someone works, so it has to
+      // survive a restart rather than coming back on the next launch.
+      expect((await load()).encodingPanelDocked, isFalse);
+    });
+  });
+
   group('ProcessingSettings', () {
     test('defaults match the shipped configuration', () {
       const ProcessingSettings settings = ProcessingSettings();

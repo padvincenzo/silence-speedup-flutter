@@ -44,6 +44,7 @@ class PreferencesStore extends ChangeNotifier {
   static const String _keyOutputDirectory = 'outputDirectory';
   static const String _keyWorkingDirectory = 'workingDirectory';
   static const String _keyThemeMode = 'themeMode';
+  static const String _keyEncodingDocked = 'encodingPanelDocked';
   static const String _keySettings = 'processingSettings';
 
   final SharedPreferences _prefs;
@@ -53,6 +54,7 @@ class PreferencesStore extends ChangeNotifier {
   String _fixedDirectory;
   String _workingDirectory;
   ThemeMode _themeMode = ThemeMode.system;
+  bool _encodingPanelDocked = true;
   ProcessingSettings _settings = const ProcessingSettings();
 
   /// The language pinned in a previous session, or null to follow the system.
@@ -84,6 +86,7 @@ class PreferencesStore extends ChangeNotifier {
       orElse: () => OutputMode.alongsideSource,
     );
     store._themeMode = _decodeThemeMode(prefs.getString(_keyThemeMode));
+    store._encodingPanelDocked = prefs.getBool(_keyEncodingDocked) ?? true;
 
     final String? rawSettings = prefs.getString(_keySettings);
     if (rawSettings != null) {
@@ -112,6 +115,11 @@ class PreferencesStore extends ChangeNotifier {
   String get workingDirectory => _workingDirectory;
 
   ThemeMode get themeMode => _themeMode;
+
+  /// Whether the encoding settings stay docked beside the queue on a window
+  /// wide enough for both. Remembered, because it is a choice about how
+  /// someone works rather than a passing state.
+  bool get encodingPanelDocked => _encodingPanelDocked;
 
   /// The language actually in use, whoever chose it.
   Locale get activeLocale => _locales.activeLocale;
@@ -159,6 +167,13 @@ class PreferencesStore extends ChangeNotifier {
     _themeMode = mode;
     notifyListeners();
     await _prefs.setString(_keyThemeMode, mode.name);
+  }
+
+  Future<void> setEncodingPanelDocked(bool docked) async {
+    if (docked == _encodingPanelDocked) return;
+    _encodingPanelDocked = docked;
+    notifyListeners();
+    await _prefs.setBool(_keyEncodingDocked, docked);
   }
 
   /// Pins [locale], or pass null to follow the system again.

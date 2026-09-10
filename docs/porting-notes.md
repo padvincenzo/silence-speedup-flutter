@@ -133,7 +133,8 @@ User choices moved the other way: they are now **persisted** (see below).
 
 `File / Media / View / Help` is gone entirely. A menu bar is a desktop-toolkit
 idiom with no Material equivalent, and most of what it held was not navigation:
-the queue actions belong on the queue, the settings on a settings page. What is
+the queue actions belong on the queue, the encoding settings in a panel beside
+it and the application's own on a page. What is
 genuinely application-level — about, links, quit — is in a navigation drawer.
 `docs/architecture.md` has the item-by-item mapping.
 
@@ -198,7 +199,7 @@ affordances, not features.
 | `main.js` menu template | `lib/ui/widgets/app_drawer.dart` + app bar actions |
 | `src/classes/shell.js` | `lib/state/log_store.dart` + `lib/ui/widgets/log_console.dart` |
 | `src/i18n.js` + `locales/*/translation.json` | `lib/l10n/arb/*.arb` + generated `AppLocalizations` + `lib/l10n/locale_controller.dart` |
-| `renderer/preferences`, `about`, `update` windows | `lib/ui/pages/settings_page.dart`, `lib/ui/pages/about_page.dart` |
+| `renderer/preferences`, `about`, `update` windows | `lib/ui/widgets/encoding_settings_view.dart`, `lib/ui/pages/app_settings_page.dart`, `lib/ui/pages/about_page.dart` |
 | `renderer/progress` window | `lib/ui/widgets/compact_progress_view.dart` |
 | `renderer/player` (video.js) | not ported — [ROADMAP.md](../ROADMAP.md) |
 

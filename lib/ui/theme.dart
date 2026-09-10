@@ -19,6 +19,13 @@ ThemeData buildAppTheme(Brightness brightness) {
     brightness: brightness,
   );
 
+  // The text theme is needed to build the tile styles below, and asking the
+  // framework for it is the only way to get the platform's own typography.
+  final TextTheme text = ThemeData(
+    colorScheme: scheme,
+    useMaterial3: true,
+  ).textTheme;
+
   return ThemeData(
     colorScheme: scheme,
     useMaterial3: true,
@@ -49,9 +56,18 @@ ThemeData buildAppTheme(Brightness brightness) {
 
     // The settings page is a long list of tiles; a tighter line height keeps a
     // group readable as a group.
-    listTileTheme: const ListTileThemeData(
+    //
+    // The subtitle style has to be a complete one taken from the text theme.
+    // ListTile installs it as a DefaultTextStyle, which *replaces* the
+    // ambient style rather than merging with it: a partial TextStyle here
+    // leaves the subtitle with no colour at all, which paints it black on a
+    // dark surface and makes every description invisible.
+    listTileTheme: ListTileThemeData(
       minVerticalPadding: 8,
-      subtitleTextStyle: TextStyle(fontSize: 12, height: 1.35),
+      subtitleTextStyle: text.bodySmall!.copyWith(
+        color: scheme.onSurfaceVariant,
+        height: 1.35,
+      ),
     ),
 
     dividerTheme: DividerThemeData(

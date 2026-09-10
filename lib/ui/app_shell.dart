@@ -19,14 +19,16 @@ import '../models/media_entry.dart';
 import '../models/options.dart';
 import '../services/update_checker.dart';
 import '../state/log_store.dart';
+import '../state/preferences_store.dart';
 import '../state/process_store.dart';
 import '../state/queue_store.dart';
 import 'pages/about_page.dart';
+import 'pages/app_settings_page.dart';
 import 'pages/queue_page.dart';
-import 'pages/settings_page.dart';
 import 'platform.dart';
 import 'widgets/app_drawer.dart';
 import 'widgets/compact_progress_view.dart';
+import 'widgets/encoding_settings_panel.dart';
 
 /// Window size restored when leaving compact mode, if nothing else is known.
 const Size _defaultWindowSize = Size(780, 820);
@@ -46,6 +48,8 @@ class AppShell extends StatefulWidget {
 }
 
 class _AppShellState extends State<AppShell> {
+  final GlobalKey<ScaffoldState> _scaffold = GlobalKey<ScaffoldState>();
+
   AppDestination _destination = AppDestination.queue;
   String _version = '';
   AvailableUpdate? _update;
@@ -77,6 +81,64 @@ class _AppShellState extends State<AppShell> {
   void _go(AppDestination destination) {
     if (_destination == destination) return;
     setState(() => _destination = destination);
+  }
+
+  bool get _wideEnoughToDock =>
+      MediaQuery.sizeOf(context).width >= kEncodingPanelBreakpoint;
+
+  /// Whether the panel is currently part of the queue's layout.
+  ///
+  /// Docking is a remembered preference; whether it can be honoured is a
+  /// question about this window's width.
+  bool get _showDockedEncoding =>
+      _destination == AppDestination.queue &&
+      _wideEnoughToDock &&
+      context.read<PreferencesStore>().encodingPanelDocked;
+
+  void _setDocked(bool docked) =>
+      context.read<PreferencesStore>().setEncodingPanelDocked(docked);
+
+  /// Shows the encoding settings, or puts them away again.
+  ///
+  /// On a wide window this docks or undocks the panel; on a narrow one it
+  /// opens the side sheet, which the scrim, Escape or its close button all
+  /// dismiss. Either way the queue is one gesture away, which is the point:
+  /// these settings are changed between runs, not visited.
+  void _toggleEncoding() {
+    // Reaching them from anywhere else means going back to the queue first.
+    if (_destination != AppDestination.queue) {
+      _go(AppDestination.queue);
+      if (_wideEnoughToDock) {
+        _setDocked(true);
+        return;
+      }
+      // The end drawer belongs to the queue's Scaffold slot, so it can only
+      // be opened once that page is the one being built.
+      WidgetsBinding.instance.addPostFrameCallback(
+        (Duration _) => _scaffold.currentState?.openEndDrawer(),
+      );
+      return;
+    }
+
+    if (_wideEnoughToDock) {
+      _setDocked(!context.read<PreferencesStore>().encodingPanelDocked);
+      return;
+    }
+
+    final ScaffoldState? scaffold = _scaffold.currentState;
+    if (scaffold == null) return;
+    if (scaffold.isEndDrawerOpen) {
+      Navigator.of(context).maybePop();
+    } else {
+      scaffold.openEndDrawer();
+    }
+  }
+
+  /// Closes the side sheet if it is what is open.
+  void _closeEncodingSheet() {
+    if (_scaffold.currentState?.isEndDrawerOpen ?? false) {
+      Navigator.of(context).maybePop();
+    }
   }
 
   Future<void> _openFiles() async {
@@ -206,6 +268,9 @@ class _AppShellState extends State<AppShell> {
   Widget build(BuildContext context) {
     final AppLocalizations strings = AppLocalizations.of(context);
     final ProcessStore process = context.watch<ProcessStore>();
+    // Watched, not read: docking the encoding panel is a stored preference,
+    // and the shell is what has to rebuild when it changes.
+    context.watch<PreferencesStore>();
 
     // Keep the OS window in step with the mode the store reports.
     if (process.compactMode != _compactApplied) {
@@ -235,10 +300,16 @@ class _AppShellState extends State<AppShell> {
           if (process.isRunning) context.read<ProcessStore>().stop();
         },
         const SingleActivator(LogicalKeyboardKey.keyQ, control: true): _quit,
+        // The encoding settings are the one panel worth a key of its own.
+        const SingleActivator(LogicalKeyboardKey.comma, control: true):
+            _toggleEncoding,
+        const SingleActivator(LogicalKeyboardKey.escape):
+            _closeEncodingSheet,
       },
       child: Focus(
         autofocus: true,
         child: Scaffold(
+          key: _scaffold,
           appBar: AppBar(
             title: Text(_titleFor(_destination, strings)),
             actions: _actionsFor(_destination, strings),
@@ -251,6 +322,18 @@ class _AppShellState extends State<AppShell> {
             version: _version,
             update: _update,
           ),
+          // Only on a window too narrow to dock them: on a wide one the same
+          // panel is part of the body, and two ways in at once would be one
+          // too many.
+          endDrawer: _destination == AppDestination.queue && !_wideEnoughToDock
+              ? Drawer(
+                  width: kEncodingPanelWidth,
+                  child: EncodingSettingsPanel(
+                    docked: false,
+                    onClose: _closeEncodingSheet,
+                  ),
+                )
+              : null,
           // The status strip is a bottom bar rather than the last row of the
           // page, which is what keeps the button clear of the readouts.
           bottomNavigationBar: _destination == AppDestination.queue
@@ -262,6 +345,11 @@ class _AppShellState extends State<AppShell> {
                   onStop: () => context.read<ProcessStore>().stop(),
                 )
               : null,
+          // Kept over the queue rather than over the docked panel, where it
+          // would cover a setting instead of the empty strip below the list.
+          floatingActionButtonLocation: _showDockedEncoding
+              ? const _ShiftedFabLocation(kEncodingPanelWidth)
+              : FloatingActionButtonLocation.endFloat,
           body: DropTarget(
             enable: context.watch<QueueStore>().canImport,
             onDragEntered: (_) => setState(() => _dragging = true),
@@ -272,21 +360,31 @@ class _AppShellState extends State<AppShell> {
             },
             child: Stack(
               children: <Widget>[
-                switch (_destination) {
-                  AppDestination.queue => QueuePage(
-                    onOpenFiles: _openFiles,
-                    onOpenFolder: _openFolder,
-                    onOpenSettings: () => _go(AppDestination.settings),
-                    onRevealOutput: _revealOutput,
-                    onPreview: _preview,
-                  ),
-                  AppDestination.settings => const SettingsPage(),
-                  AppDestination.about => AboutPage(
-                    version: _version,
-                    onOpenLink: _openLink,
-                    update: _update,
-                  ),
-                },
+                Row(
+                  children: <Widget>[
+                    Expanded(
+                      child: switch (_destination) {
+                        AppDestination.queue => QueuePage(
+                          onOpenFiles: _openFiles,
+                          onOpenFolder: _openFolder,
+                          onOpenEncoding: _toggleEncoding,
+                          onRevealOutput: _revealOutput,
+                          onPreview: _preview,
+                        ),
+                        AppDestination.settings => const AppSettingsPage(),
+                        AppDestination.about => AboutPage(
+                          version: _version,
+                          onOpenLink: _openLink,
+                          update: _update,
+                        ),
+                      },
+                    ),
+                    if (_showDockedEncoding)
+                      DockedEncodingSettings(
+                        onClose: () => _setDocked(false),
+                      ),
+                  ],
+                ),
                 if (_dragging) const _DropOverlay(),
               ],
             ),
@@ -316,6 +414,15 @@ class _AppShellState extends State<AppShell> {
 
     return <Widget>[
       IconButton(
+        onPressed: _toggleEncoding,
+        isSelected: _showDockedEncoding,
+        icon: const Icon(Icons.tune_outlined),
+        selectedIcon: const Icon(Icons.tune),
+        tooltip: _showDockedEncoding
+            ? strings.settingsEncodingHide
+            : strings.settingsEncodingShow,
+      ),
+      IconButton(
         onPressed: context.read<LogStore>().toggleVisible,
         isSelected: log.visible,
         icon: const Icon(Icons.terminal_outlined),
@@ -338,6 +445,27 @@ class _AppShellState extends State<AppShell> {
       ),
       const SizedBox(width: 4),
     ];
+  }
+}
+
+/// [FloatingActionButtonLocation.endFloat], moved inwards by [inset].
+///
+/// The docked settings panel is part of the body, so the Scaffold would
+/// otherwise float the button over it.
+class _ShiftedFabLocation extends FloatingActionButtonLocation {
+  const _ShiftedFabLocation(this.inset);
+
+  final double inset;
+
+  @override
+  Offset getOffset(ScaffoldPrelayoutGeometry geometry) {
+    final Offset base = FloatingActionButtonLocation.endFloat.getOffset(
+      geometry,
+    );
+    final double shift = geometry.textDirection == TextDirection.rtl
+        ? inset
+        : -inset;
+    return Offset(base.dx + shift, base.dy);
   }
 }
 

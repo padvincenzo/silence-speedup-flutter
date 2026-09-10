@@ -16,6 +16,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutCopyright => 'Copyright (C) 2025-2026 Vincenzo Padula';
 
   @override
+  String get aboutLicenseSection => 'Licence';
+
+  @override
+  String get aboutOpenInBrowser => 'Opens in your browser';
+
+  @override
   String get appIntro =>
       'Import some videos, choose the configuration and then press Start to speed up (or remove) their silences.';
 
@@ -322,7 +328,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get navSection => 'More';
 
   @override
-  String get navSettings => 'Settings';
+  String get navSettings => 'App settings';
 
   @override
   String get noiseHigh => 'High';
@@ -357,6 +363,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get preferenceChooseExportDir => 'Select where to export videos';
+
+  @override
+  String get preferenceChangeWorkingDir => 'Change folder';
 
   @override
   String get preferenceChooseWorkingDir =>
@@ -437,6 +446,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsFps => 'FPS';
 
   @override
+  String get settingsEncodingHide => 'Hide the encoding settings';
+
+  @override
+  String get settingsEncodingShow => 'Show the encoding settings';
+
+  @override
+  String get settingsEncodingTitle => 'Encoding settings';
+
+  @override
   String get settingsGroupApp => 'Application';
 
   @override
@@ -493,9 +511,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsSpeedRemoveShort => 'cut';
-
-  @override
-  String get settingsTitle => 'Settings';
 
   @override
   String get settingsTune => 'Tune';

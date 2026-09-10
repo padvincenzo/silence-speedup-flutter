@@ -110,6 +110,18 @@ abstract class AppLocalizations {
   /// **'Copyright (C) 2025-2026 Vincenzo Padula'**
   String get aboutCopyright;
 
+  /// No description provided for @aboutLicenseSection.
+  ///
+  /// In en, this message translates to:
+  /// **'Licence'**
+  String get aboutLicenseSection;
+
+  /// No description provided for @aboutOpenInBrowser.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens in your browser'**
+  String get aboutOpenInBrowser;
+
   /// No description provided for @appIntro.
   ///
   /// In en, this message translates to:
@@ -569,7 +581,7 @@ abstract class AppLocalizations {
   /// No description provided for @navSettings.
   ///
   /// In en, this message translates to:
-  /// **'Settings'**
+  /// **'App settings'**
   String get navSettings;
 
   /// No description provided for @noiseHigh.
@@ -637,6 +649,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Select where to export videos'**
   String get preferenceChooseExportDir;
+
+  /// No description provided for @preferenceChangeWorkingDir.
+  ///
+  /// In en, this message translates to:
+  /// **'Change folder'**
+  String get preferenceChangeWorkingDir;
 
   /// No description provided for @preferenceChooseWorkingDir.
   ///
@@ -764,6 +782,24 @@ abstract class AppLocalizations {
   /// **'FPS'**
   String get settingsFps;
 
+  /// No description provided for @settingsEncodingHide.
+  ///
+  /// In en, this message translates to:
+  /// **'Hide the encoding settings'**
+  String get settingsEncodingHide;
+
+  /// No description provided for @settingsEncodingShow.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the encoding settings'**
+  String get settingsEncodingShow;
+
+  /// No description provided for @settingsEncodingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Encoding settings'**
+  String get settingsEncodingTitle;
+
   /// No description provided for @settingsGroupApp.
   ///
   /// In en, this message translates to:
@@ -877,12 +913,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'cut'**
   String get settingsSpeedRemoveShort;
-
-  /// No description provided for @settingsTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Settings'**
-  String get settingsTitle;
 
   /// No description provided for @settingsTune.
   ///

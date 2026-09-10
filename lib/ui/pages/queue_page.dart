@@ -11,7 +11,6 @@ import '../../l10n/gen/app_localizations.dart';
 import '../../models/media_entry.dart';
 import '../../state/log_store.dart';
 import '../../state/preferences_store.dart';
-import '../../state/process_store.dart';
 import '../../state/queue_store.dart';
 import '../widgets/entry_list.dart';
 import '../widgets/log_console.dart';
@@ -33,14 +32,14 @@ class QueuePage extends StatelessWidget {
     super.key,
     required this.onOpenFiles,
     required this.onOpenFolder,
-    required this.onOpenSettings,
+    required this.onOpenEncoding,
     required this.onRevealOutput,
     required this.onPreview,
   });
 
   final VoidCallback onOpenFiles;
   final VoidCallback onOpenFolder;
-  final VoidCallback onOpenSettings;
+  final VoidCallback onOpenEncoding;
   final void Function(MediaEntry entry) onRevealOutput;
   final void Function(MediaEntry entry) onPreview;
 
@@ -51,7 +50,7 @@ class QueuePage extends StatelessWidget {
         _ImportBar(
           onOpenFiles: onOpenFiles,
           onOpenFolder: onOpenFolder,
-          onOpenSettings: onOpenSettings,
+          onOpenEncoding: onOpenEncoding,
         ),
         const OutputPathBar(),
         const Divider(),
@@ -91,19 +90,18 @@ class _ImportBar extends StatelessWidget {
   const _ImportBar({
     required this.onOpenFiles,
     required this.onOpenFolder,
-    required this.onOpenSettings,
+    required this.onOpenEncoding,
   });
 
   final VoidCallback onOpenFiles;
   final VoidCallback onOpenFolder;
-  final VoidCallback onOpenSettings;
+  final VoidCallback onOpenEncoding;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations strings = AppLocalizations.of(context);
     final QueueStore queue = context.watch<QueueStore>();
     final PreferencesStore preferences = context.watch<PreferencesStore>();
-    final bool running = context.watch<ProcessStore>().isRunning;
 
     final String silence = preferences.settings.silenceSpeed.isRemove
         ? strings.settingsSpeedRemoveShort
@@ -128,13 +126,15 @@ class _ImportBar extends StatelessWidget {
             label: Text(strings.menuOpenFolder),
           ),
           const SizedBox(width: 4),
-          // Glanceable state that doubles as the way into the settings: the
-          // two rates are what a user checks before every run.
+          // Glanceable state that doubles as the way into the encoding
+          // settings: the two rates are what a user checks before every run.
+          // It stays live during a run, when reading them still helps even
+          // though the panel will not let them be changed.
           ActionChip(
             avatar: const Icon(Icons.tune, size: 18),
             label: Text('$silence / $playback'),
-            tooltip: strings.settingsTitle,
-            onPressed: running ? null : onOpenSettings,
+            tooltip: strings.settingsEncodingTitle,
+            onPressed: onOpenEncoding,
           ),
           if (queue.entries.isNotEmpty)
             Text(

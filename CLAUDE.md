@@ -104,8 +104,8 @@ UI and log text is generated from `lib/l10n/arb/app_en.arb` (the template) and
 
 [lib/l10n/locale_controller.dart](lib/l10n/locale_controller.dart) resolves the
 first system language the app supports and falls back to English. A user can
-pin one from Settings → Application, and "System" puts it back. `resolve` takes an
-optional `systemLocales` so the order can be tested.
+pin one from App settings → Application, and "System" puts it back. `resolve`
+takes an optional `systemLocales` so the order can be tested.
 
 ### The UI is Material, not a ported menu bar
 
@@ -117,17 +117,42 @@ they belong:
 - something you do to the queue → a button on the queue page, or an app bar
   action;
 - the one primary action of a screen → the floating action button;
-- a setting → a tile in the right group of `SettingsPage`, **with a
-  description**, since that page explains itself in place;
+- a setting that changes how a video is encoded → a tile in the right group of
+  `EncodingSettingsView`, **with a description**;
+- a setting about the application itself → a tile on `AppSettingsPage`, again
+  with a description, since both surfaces explain themselves in place;
 - something application-level → the drawer.
 
-Two layout constraints that are easy to undo:
+### Encoding settings are a panel, application settings are a page
+
+The two were one page once, and that made the settings people change between
+runs as far away as the ones they set on the first day. They are separate now:
+
+- `EncodingSettingsView` (`lib/ui/widgets/`) holds speed, audio, detection,
+  export and preview, plus the reset that puts them back. It is shown docked
+  to the right of the queue when the window is at least
+  `kEncodingPanelBreakpoint` wide, and as an end-drawer side sheet when it is
+  not. Ctrl+, the app bar's tune button and the rate chip on the queue all
+  reach it; the sheet closes on Escape, the scrim, or its own button.
+- Docking is remembered in `PreferencesStore.encodingPanelDocked`, so leaving
+  the panel open is a durable choice rather than per-session state.
+- `AppSettingsPage` (`lib/ui/pages/`) holds the theme, the language and the
+  working directory, and is a drawer destination.
+
+Neither one navigates away from the queue, which is the point: the list stays
+where it is, and the settings arrive beside it.
+
+Three layout constraints that are easy to undo:
 
 - The queue's status strip is the Scaffold's `bottomNavigationBar`, not the last
   row of the page. That is what keeps the floating action button off the
   percentage readout, together with `kQueueBottomInset` on the list.
-- `SettingsPage` has to fit 640x480, the smallest window the app allows. A test
-  asserts it.
+- With the panel docked, the floating action button is moved inwards by
+  `_ShiftedFabLocation` so it floats over the queue and not over a setting.
+- Every settings surface has to fit 640x480, the smallest window the app
+  allows, and the encoding tiles also have to fit `kEncodingPanelWidth`. Tests
+  assert both; that is why `DropdownSettingTile` puts its field under the label
+  when it runs out of room.
 
 `test/ui_smoke_test.dart` builds the shell and each page against a
 `FakeFFmpegRunner` and fails on an overflow. Run it after touching the UI; it
@@ -181,9 +206,10 @@ lib/
 │   └── update_checker.dart
 ├── state/                  # the four stores
 └── ui/
-    ├── app_shell.dart      # app bar, drawer, destination switching
-    ├── pages/              # queue, settings, about
-    └── widgets/
+    ├── app_shell.dart      # app bar, drawer, encoding panel, destinations
+    ├── theme.dart          # one ThemeData for both brightnesses
+    ├── pages/              # queue, app settings, about
+    └── widgets/            # incl. the encoding settings view and panel
 installer/                  # Inno Setup script + build script
 ```
 

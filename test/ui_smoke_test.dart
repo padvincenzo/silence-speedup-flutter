@@ -19,7 +19,10 @@ import 'package:silence_speedup/state/preferences_store.dart';
 import 'package:silence_speedup/state/process_store.dart';
 import 'package:silence_speedup/state/queue_store.dart';
 import 'package:silence_speedup/ui/pages/about_page.dart';
-import 'package:silence_speedup/ui/pages/settings_page.dart';
+import 'package:silence_speedup/ui/pages/app_settings_page.dart';
+import 'package:silence_speedup/ui/widgets/encoding_settings_panel.dart';
+import 'package:silence_speedup/ui/widgets/encoding_settings_view.dart';
+import 'package:silence_speedup/ui/theme.dart';
 
 /// An [FFmpegRunner] that never touches an encoder.
 ///
@@ -103,10 +106,14 @@ class TestHarness {
   ];
 
   /// Wraps [child] in the providers and a MaterialApp, for testing one page.
-  Widget wrap(Widget child) {
+  ///
+  /// The real theme is installed rather than Flutter's default: the app's
+  /// own tile and text styles are part of what these tests are watching.
+  Widget wrap(Widget child, {Brightness brightness = Brightness.light}) {
     return MultiProvider(
       providers: providers,
       child: MaterialApp(
+        theme: buildAppTheme(brightness),
         locale: locales.activeLocale,
         supportedLocales: AppLocalizations.supportedLocales,
         localizationsDelegates: AppLocalizations.localizationsDelegates,
@@ -197,10 +204,14 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(NavigationDrawer), findsOneWidget);
 
-      await tester.tap(find.text('Settings'));
+      await tester.tap(find.text('App settings'));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
-      expect(find.text('Silence speed'), findsOneWidget);
+      // The application page carries what is set once, and nothing that
+      // decides how a video is encoded.
+      expect(find.text('Theme'), findsOneWidget);
+      expect(find.text('Language'), findsOneWidget);
+      expect(find.text('Silence speed'), findsNothing);
 
       await tester.tap(find.byIcon(Icons.menu));
       await tester.pumpAndSettle();
@@ -210,7 +221,7 @@ void main() {
       expect(find.textContaining('Version 0.9.0'), findsWidgets);
     });
 
-    testWidgets('the speed chip reflects the settings and opens them', (
+    testWidgets('the speed chip reflects the settings', (
       WidgetTester tester,
     ) async {
       await useDesktopSurface(tester);
@@ -223,15 +234,79 @@ void main() {
 
       // The defaults are 8x for silences and 1x for speech.
       expect(find.text('8x / 1x'), findsOneWidget);
-
-      await tester.tap(find.text('8x / 1x'));
-      await tester.pumpAndSettle();
-      expect(find.text('Speech speed'), findsOneWidget);
     });
   });
 
-  group('settings page', () {
-    testWidgets('lays out every group with its explanations', (
+  group('encoding settings', () {
+    testWidgets('are docked beside the queue on a wide window', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester, size: const Size(1280, 900));
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      // Docked from the start: on a window this wide there is no reason to
+      // make someone ask for them.
+      expect(find.byType(DockedEncodingSettings), findsOneWidget);
+      expect(find.text('Silence speed'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+
+      // Start floats over the queue, not over a setting.
+      expect(
+        tester.getBottomRight(find.byType(FloatingActionButton)).dx,
+        lessThan(tester.getTopLeft(find.byType(DockedEncodingSettings)).dx),
+      );
+
+      // Scoped to the app bar: the panel's own header carries the same
+      // tooltip, since hiding it is exactly what its close button does.
+      Finder barButton(String tooltip) => find.descendant(
+        of: find.byType(AppBar),
+        matching: find.byTooltip(tooltip),
+      );
+
+      await tester.tap(barButton('Hide the encoding settings'));
+      await tester.pumpAndSettle();
+      expect(find.byType(DockedEncodingSettings), findsNothing);
+
+      await tester.tap(barButton('Show the encoding settings'));
+      await tester.pumpAndSettle();
+      expect(find.byType(DockedEncodingSettings), findsOneWidget);
+    });
+
+    testWidgets('open as a side sheet on a narrow window, and close again', (
+      WidgetTester tester,
+    ) async {
+      // The minimum window size the app allows.
+      await useDesktopSurface(tester, size: const Size(640, 480));
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      expect(find.byType(DockedEncodingSettings), findsNothing);
+      expect(find.text('Silence speed'), findsNothing);
+
+      // The rates chip is the shortcut in: it is what a user looks at
+      // before every run anyway.
+      await tester.tap(find.text('8x / 1x'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Encoding settings'), findsOneWidget);
+      expect(find.text('Silence speed'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Close'));
+      await tester.pumpAndSettle();
+      expect(find.text('Silence speed'), findsNothing);
+    });
+
+    testWidgets('lay out every group with its explanations', (
       WidgetTester tester,
     ) async {
       await useDesktopSurface(tester);
@@ -239,7 +314,7 @@ void main() {
         preferred: const Locale('en'),
       );
 
-      await tester.pumpWidget(harness.wrap(const SettingsPage()));
+      await tester.pumpWidget(harness.wrap(const EncodingSettingsView()));
       await tester.pumpAndSettle();
       expect(tester.takeException(), isNull);
 
@@ -258,30 +333,6 @@ void main() {
       );
     });
 
-    testWidgets('scrolls to the application group and shows the toggles', (
-      WidgetTester tester,
-    ) async {
-      await useDesktopSurface(tester);
-      final TestHarness harness = await TestHarness.create(
-        preferred: const Locale('en'),
-      );
-
-      await tester.pumpWidget(harness.wrap(const SettingsPage()));
-      await tester.pumpAndSettle();
-
-      await tester.scrollUntilVisible(
-        find.text('Application'),
-        300,
-        scrollable: find.byType(Scrollable).first,
-      );
-      await tester.pumpAndSettle();
-
-      expect(tester.takeException(), isNull);
-      expect(find.text('Theme'), findsOneWidget);
-      expect(find.text('Language'), findsOneWidget);
-      expect(find.byType(SegmentedButton<ThemeMode>), findsOneWidget);
-    });
-
     testWidgets('changing a slider writes through to the store', (
       WidgetTester tester,
     ) async {
@@ -291,10 +342,10 @@ void main() {
       );
       final int before = harness.preferences.settings.silenceSpeedIndex;
 
-      await tester.pumpWidget(harness.wrap(const SettingsPage()));
+      await tester.pumpWidget(harness.wrap(const EncodingSettingsView()));
       await tester.pumpAndSettle();
 
-      // Drag the first slider — silence speed — towards its minimum.
+      // Drag the first slider - silence speed - towards its minimum.
       await tester.drag(find.byType(Slider).first, const Offset(-400, 0));
       await tester.pumpAndSettle();
 
@@ -305,18 +356,75 @@ void main() {
       );
     });
 
-    testWidgets('renders in Italian too', (WidgetTester tester) async {
+    testWidgets('render in Italian too', (WidgetTester tester) async {
       await useDesktopSurface(tester);
       final TestHarness harness = await TestHarness.create(
         preferred: const Locale('it'),
       );
 
-      await tester.pumpWidget(harness.wrap(const SettingsPage()));
+      await tester.pumpWidget(harness.wrap(const EncodingSettingsView()));
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
       expect(find.text('Velocità'), findsOneWidget);
       expect(find.text('Velocità dei silenzi'), findsOneWidget);
+    });
+
+    testWidgets('fit the panel width without overflowing', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester, size: const Size(640, 480));
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      // The panel is the tightest place these tiles ever have to work in:
+      // a dropdown beside its label would not fit, so it goes under it.
+      await tester.pumpWidget(
+        harness.wrap(
+          Align(
+            alignment: Alignment.centerRight,
+            child: SizedBox(
+              width: kEncodingPanelWidth,
+              child: EncodingSettingsPanel(onClose: () {}),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+
+      await tester.scrollUntilVisible(
+        find.text('Export'),
+        300,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.pumpAndSettle();
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('app settings page', () {
+    testWidgets('shows the application group and the working directory', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester);
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(harness.wrap(const AppSettingsPage()));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Application'), findsOneWidget);
+      expect(find.text('Theme'), findsOneWidget);
+      expect(find.text('Language'), findsOneWidget);
+      expect(find.byType(SegmentedButton<ThemeMode>), findsOneWidget);
+      // Encoding lives in its own panel now.
+      expect(find.text('Speed'), findsNothing);
+      expect(find.text('Export'), findsNothing);
     });
 
     testWidgets('fits a narrow window without overflowing', (
@@ -328,7 +436,7 @@ void main() {
         preferred: const Locale('en'),
       );
 
-      await tester.pumpWidget(harness.wrap(const SettingsPage()));
+      await tester.pumpWidget(harness.wrap(const AppSettingsPage()));
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
@@ -356,6 +464,60 @@ void main() {
       expect(find.text('Credits'), findsOneWidget);
       expect(find.textContaining('absolutely no warranty'), findsOneWidget);
       expect(find.text('FFmpeg'), findsWidgets);
+    });
+
+    testWidgets('fits a narrow window without overflowing', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester, size: const Size(640, 480));
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(
+        harness.wrap(
+          AboutPage(version: '0.9.0', onOpenLink: (String _) {}),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('theme', () {
+    // ListTile installs its subtitle style as a DefaultTextStyle, which
+    // replaces the ambient one instead of merging with it. A subtitle style
+    // without a colour therefore paints in the engine's default black, which
+    // is invisible on a dark surface — every setting's description and every
+    // line of the about page went that way once.
+    testWidgets('gives tile subtitles a colour in both brightnesses', (
+      WidgetTester tester,
+    ) async {
+      for (final Brightness brightness in Brightness.values) {
+        await tester.pumpWidget(
+          MaterialApp(
+            theme: buildAppTheme(brightness),
+            home: const Scaffold(
+              body: ListTile(title: Text('title'), subtitle: Text('detail')),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final TextStyle style = DefaultTextStyle.of(
+          tester.element(find.text('detail')),
+        ).style;
+        expect(
+          style.color,
+          isNotNull,
+          reason: 'subtitles have no colour in $brightness',
+        );
+        expect(
+          style.color,
+          isNot(buildAppTheme(brightness).colorScheme.surface),
+        );
+      }
     });
   });
 }

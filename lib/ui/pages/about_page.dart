@@ -12,6 +12,12 @@ import '../../services/update_checker.dart';
 
 /// Credits, the licence notice GPLv3 asks a program to display, and the
 /// update check.
+///
+/// Laid out as an identity header followed by boxed sections. The information
+/// here is read once and then never again, so it has to be scannable: each
+/// block is a surface of its own with its own heading, and every line states
+/// its colour explicitly rather than inheriting whatever a tile happens to
+/// hand down.
 class AboutPage extends StatelessWidget {
   const AboutPage({
     super.key,
@@ -24,6 +30,9 @@ class AboutPage extends StatelessWidget {
   final void Function(String url) onOpenLink;
   final AvailableUpdate? update;
 
+  static const String _repository =
+      'https://github.com/padvincenzo/silence-speedup-flutter';
+
   @override
   Widget build(BuildContext context) {
     final AppLocalizations strings = AppLocalizations.of(context);
@@ -33,163 +42,434 @@ class AboutPage extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.only(bottom: 32),
       children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 24, 16, 8),
-          child: Column(
-            children: <Widget>[
-              Image.asset('assets/icons/icon.png', width: 72, height: 72),
-              const SizedBox(height: 12),
-              Text('Silence SpeedUp', style: theme.textTheme.headlineSmall),
-              const SizedBox(height: 4),
-              Text(
-                strings.menuVersion(version),
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                strings.aboutBuiltWith,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-            ],
-          ),
-        ),
+        _Identity(version: version, intro: strings.helpIntro),
 
         if (update != null)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-            child: Card(
-              color: scheme.tertiaryContainer,
-              elevation: 0,
-              child: ListTile(
-                leading: Icon(
-                  Icons.system_update_alt,
-                  color: scheme.onTertiaryContainer,
-                ),
-                title: Text(
-                  strings.menuUpdate,
-                  style: TextStyle(color: scheme.onTertiaryContainer),
-                ),
-                subtitle: Text(
-                  strings.updateAvailable(update!.version),
-                  style: TextStyle(color: scheme.onTertiaryContainer),
-                ),
-                trailing: FilledButton.icon(
-                  onPressed: () => onOpenLink(update!.url),
-                  icon: const Icon(Icons.download, size: 18),
-                  label: Text(strings.updateDownload),
-                ),
-              ),
-            ),
+          _UpdateBanner(
+            title: strings.menuUpdate,
+            detail: strings.updateAvailable(update!.version),
+            action: strings.updateDownload,
+            onDownload: () => onOpenLink(update!.url),
           ),
 
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-          child: Text(strings.helpIntro, style: theme.textTheme.bodyMedium),
+        _Section(
+          icon: Icons.favorite_outline,
+          title: strings.helpCredits,
+          children: <Widget>[
+            _InfoRow(
+              icon: Icons.memory,
+              title: 'FFmpeg',
+              badge: const _FFmpegVersion(),
+              detail: strings.helpFfmpegNotice,
+              link: 'https://ffmpeg.org/',
+              linkHint: strings.aboutOpenInBrowser,
+              onOpenLink: onOpenLink,
+            ),
+            _InfoRow(
+              icon: Icons.flutter_dash,
+              title: 'Flutter',
+              detail: strings.aboutBuiltWith,
+              link: 'https://flutter.dev/',
+              linkHint: strings.aboutOpenInBrowser,
+              onOpenLink: onOpenLink,
+            ),
+            _InfoRow(
+              icon: Icons.brush_outlined,
+              title: strings.helpIcons,
+              detail: strings.helpIconsCredit,
+              link: 'https://creazilla.com/',
+              linkHint: strings.aboutOpenInBrowser,
+              onOpenLink: onOpenLink,
+            ),
+          ],
         ),
 
-        _Heading(strings.helpCredits),
-        ListTile(
-          leading: const Icon(Icons.memory),
-          title: const _FFmpegVersion(),
-          subtitle: Text(strings.helpFfmpegNotice),
-        ),
-        ListTile(
-          leading: const Icon(Icons.brush_outlined),
-          title: Text(strings.helpIcons),
-          subtitle: Text(strings.helpIconsCredit),
-          onTap: () => onOpenLink('https://creazilla.com/'),
-        ),
-
-        _Heading(strings.menuLicense),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: <Widget>[
-              Text(
-                strings.aboutCopyright,
-                style: theme.textTheme.bodyMedium,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                strings.helpGplNotice,
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: scheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 12),
-              Wrap(
-                spacing: 8,
-                runSpacing: 8,
+        _Section(
+          icon: Icons.gavel_outlined,
+          title: strings.aboutLicenseSection,
+          children: <Widget>[
+            Padding(
+              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: <Widget>[
-                  OutlinedButton.icon(
-                    onPressed: () => onOpenLink(
-                      'https://www.gnu.org/licenses/gpl-3.0.html',
+                  Text(
+                    strings.aboutCopyright,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: scheme.onSurface,
+                      fontWeight: FontWeight.w600,
                     ),
-                    icon: const Icon(Icons.gavel_outlined, size: 18),
-                    label: Text(strings.helpReadLicense),
                   ),
-                  OutlinedButton.icon(
-                    onPressed: () => showLicensePage(
-                      context: context,
-                      applicationName: 'Silence SpeedUp',
-                      applicationVersion: version,
+                  const SizedBox(height: 8),
+                  Text(
+                    strings.helpGplNotice,
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: scheme.onSurfaceVariant,
+                      height: 1.4,
                     ),
-                    icon: const Icon(Icons.list_alt, size: 18),
-                    label: Text(strings.menuThirdPartyLicenses),
+                  ),
+                  const SizedBox(height: 16),
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: <Widget>[
+                      OutlinedButton.icon(
+                        onPressed: () => onOpenLink(
+                          'https://www.gnu.org/licenses/gpl-3.0.html',
+                        ),
+                        icon: const Icon(Icons.article_outlined, size: 18),
+                        label: Text(strings.helpReadLicense),
+                      ),
+                      OutlinedButton.icon(
+                        onPressed: () => showLicensePage(
+                          context: context,
+                          applicationName: 'Silence SpeedUp',
+                          applicationVersion: version,
+                        ),
+                        icon: const Icon(Icons.list_alt, size: 18),
+                        label: Text(strings.menuThirdPartyLicenses),
+                      ),
+                    ],
                   ),
                 ],
               ),
-            ],
-          ),
+            ),
+          ],
         ),
 
-        _Heading(strings.menuReferences),
-        ListTile(
-          leading: const Icon(Icons.code),
-          title: Text(strings.menuSourceCode),
-          subtitle: const Text('github.com/padvincenzo/silence-speedup-flutter'),
-          onTap: () => onOpenLink(
-            'https://github.com/padvincenzo/silence-speedup-flutter',
-          ),
-        ),
-        ListTile(
-          leading: const Icon(Icons.movie_filter_outlined),
-          title: const Text('FFmpeg'),
-          subtitle: const Text('ffmpeg.org'),
-          onTap: () => onOpenLink('https://ffmpeg.org/'),
-        ),
-        ListTile(
-          leading: const Icon(Icons.flutter_dash),
-          title: const Text('Flutter'),
-          subtitle: const Text('flutter.dev'),
-          onTap: () => onOpenLink('https://flutter.dev/'),
+        _Section(
+          icon: Icons.link,
+          title: strings.menuReferences,
+          children: <Widget>[
+            _InfoRow(
+              icon: Icons.code,
+              title: strings.menuSourceCode,
+              detail: 'github.com/padvincenzo/silence-speedup-flutter',
+              link: _repository,
+              linkHint: strings.aboutOpenInBrowser,
+              onOpenLink: onOpenLink,
+            ),
+            _InfoRow(
+              icon: Icons.bug_report_outlined,
+              title: strings.menuIssue,
+              detail: '$_repository/issues',
+              link: '$_repository/issues',
+              linkHint: strings.aboutOpenInBrowser,
+              onOpenLink: onOpenLink,
+            ),
+            _InfoRow(
+              icon: Icons.coffee_outlined,
+              title: strings.menuDonate,
+              detail: 'paypal.me/VincenzoPadula',
+              link: 'https://paypal.me/VincenzoPadula',
+              linkHint: strings.aboutOpenInBrowser,
+              onOpenLink: onOpenLink,
+            ),
+          ],
         ),
       ],
     );
   }
 }
 
-/// A section heading.
-class _Heading extends StatelessWidget {
-  const _Heading(this.label);
+/// The app's icon, name, version and one line about what it does.
+class _Identity extends StatelessWidget {
+  const _Identity({required this.version, required this.intro});
 
-  final String label;
+  final String version;
+  final String intro;
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 24, 16, 4),
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Image.asset('assets/icons/icon.png', width: 64, height: 64),
+          const SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  'Silence SpeedUp',
+                  style: theme.textTheme.headlineSmall?.copyWith(
+                    color: scheme.onSurface,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: <Widget>[
+                    // The version arrives from the package metadata a frame
+                    // later than the page is first built.
+                    if (version.isNotEmpty)
+                      _Badge(
+                        text: AppLocalizations.of(
+                          context,
+                        ).menuVersion(version),
+                        prominent: true,
+                      ),
+                    const _Badge(text: 'GPLv3'),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  intro,
+                  style: theme.textTheme.bodyMedium?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// A heading and a boxed group of rows below it.
+class _Section extends StatelessWidget {
+  const _Section({
+    required this.icon,
+    required this.title,
+    required this.children,
+  });
+
+  final IconData icon;
+  final String title;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: <Widget>[
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 24, 16, 8),
+          child: Row(
+            children: <Widget>[
+              Icon(icon, size: 18, color: scheme.primary),
+              const SizedBox(width: 10),
+              Text(
+                title,
+                style: theme.textTheme.titleSmall?.copyWith(
+                  color: scheme.primary,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        // A Material, so a row's ink is painted on the boxed surface itself
+        // rather than hidden behind it, and clipped to the same corners.
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Material(
+            color: scheme.surfaceContainerLow,
+            clipBehavior: Clip.antiAlias,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: BorderSide(color: scheme.outlineVariant),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: children,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+/// One line of information, optionally opening a page in the browser.
+class _InfoRow extends StatelessWidget {
+  const _InfoRow({
+    required this.icon,
+    required this.title,
+    required this.detail,
+    required this.onOpenLink,
+    this.badge,
+    this.link,
+    this.linkHint,
+  });
+
+  final IconData icon;
+  final String title;
+  final String detail;
+  final void Function(String url) onOpenLink;
+  final Widget? badge;
+  final String? link;
+  final String? linkHint;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+    final String? target = link;
+
+    final Widget row = Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: <Widget>[
+          Icon(icon, size: 22, color: scheme.primary),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  children: <Widget>[
+                    Flexible(
+                      child: Text(
+                        title,
+                        style: theme.textTheme.bodyLarge?.copyWith(
+                          color: scheme.onSurface,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ),
+                    if (badge != null) ...<Widget>[
+                      const SizedBox(width: 8),
+                      badge!,
+                    ],
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  detail,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onSurfaceVariant,
+                    height: 1.35,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (target != null) ...<Widget>[
+            const SizedBox(width: 12),
+            Icon(Icons.open_in_new, size: 18, color: scheme.onSurfaceVariant),
+          ],
+        ],
+      ),
+    );
+
+    if (target == null) return row;
+
+    return Tooltip(
+      message: linkHint ?? '',
+      child: InkWell(onTap: () => onOpenLink(target), child: row),
+    );
+  }
+}
+
+/// A pill carrying a short value beside a title.
+class _Badge extends StatelessWidget {
+  const _Badge({required this.text, this.prominent = false});
+
+  final String text;
+  final bool prominent;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      decoration: BoxDecoration(
+        color: prominent
+            ? scheme.primaryContainer
+            : scheme.surfaceContainerHighest,
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Text(
-        label,
-        style: Theme.of(context).textTheme.titleSmall?.copyWith(
-          color: Theme.of(context).colorScheme.primary,
+        text,
+        style: theme.textTheme.labelMedium?.copyWith(
+          color: prominent ? scheme.onPrimaryContainer : scheme.onSurface,
           fontWeight: FontWeight.w600,
         ),
+      ),
+    );
+  }
+}
+
+/// The update notice, shown only when the check found a newer release.
+class _UpdateBanner extends StatelessWidget {
+  const _UpdateBanner({
+    required this.title,
+    required this.detail,
+    required this.action,
+    required this.onDownload,
+  });
+
+  final String title;
+  final String detail;
+  final String action;
+  final VoidCallback onDownload;
+
+  @override
+  Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+      padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
+      decoration: BoxDecoration(
+        color: scheme.tertiaryContainer,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(Icons.system_update_alt, color: scheme.onTertiaryContainer),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Text(
+                  title,
+                  style: theme.textTheme.titleSmall?.copyWith(
+                    color: scheme.onTertiaryContainer,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+                Text(
+                  detail,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: scheme.onTertiaryContainer,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 12),
+          FilledButton.icon(
+            onPressed: onDownload,
+            icon: const Icon(Icons.download, size: 18),
+            label: Text(action),
+          ),
+        ],
       ),
     );
   }
@@ -215,7 +495,7 @@ class _FFmpegVersionState extends State<_FFmpegVersion> {
           ConnectionState.done => snapshot.data ?? '—',
           _ => '…',
         };
-        return Text('FFmpeg $value');
+        return _Badge(text: value);
       },
     );
   }

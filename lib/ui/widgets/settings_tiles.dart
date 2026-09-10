@@ -39,11 +39,13 @@ class SettingsGroup extends StatelessWidget {
             children: <Widget>[
               Icon(icon, size: 18, color: scheme.primary),
               const SizedBox(width: 10),
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                  color: scheme.primary,
-                  fontWeight: FontWeight.w600,
+              Expanded(
+                child: Text(
+                  title,
+                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                    color: scheme.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
                 ),
               ),
             ],
@@ -270,59 +272,76 @@ class DropdownSettingTile<T> extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final bool enabled = onChanged != null;
 
-    return Padding(
-      padding: const EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 10),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
-        children: <Widget>[
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: <Widget>[
-                Text(
-                  title,
-                  style: theme.textTheme.bodyLarge?.copyWith(
-                    color: enabled
-                        ? theme.colorScheme.onSurface
-                        : theme.disabledColor,
-                  ),
-                ),
-                if (description != null)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 2),
-                    child: Text(
-                      description!,
-                      style: theme.textTheme.bodySmall?.copyWith(
-                        color: enabled
-                            ? theme.colorScheme.onSurfaceVariant
-                            : theme.disabledColor,
-                      ),
-                    ),
-                  ),
-              ],
-            ),
+    final Widget label = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: <Widget>[
+        Text(
+          title,
+          style: theme.textTheme.bodyLarge?.copyWith(
+            color: enabled
+                ? theme.colorScheme.onSurface
+                : theme.disabledColor,
           ),
-          const SizedBox(width: 16),
-          SizedBox(
-            width: width,
-            child: DropdownButtonFormField<T>(
-              initialValue: value,
-              items: items,
-              onChanged: onChanged,
-              isDense: true,
-              isExpanded: true,
-              decoration: const InputDecoration(
-                contentPadding: EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 12,
-                ),
+        ),
+        if (description != null)
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: Text(
+              description!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: enabled
+                    ? theme.colorScheme.onSurfaceVariant
+                    : theme.disabledColor,
               ),
             ),
           ),
-        ],
+      ],
+    );
+
+    final Widget field = DropdownButtonFormField<T>(
+      initialValue: value,
+      items: items,
+      onChanged: onChanged,
+      isDense: true,
+      isExpanded: true,
+      decoration: const InputDecoration(
+        contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+      ),
+    );
+
+    return Padding(
+      padding: const EdgeInsets.only(left: 16, right: 16, top: 10, bottom: 10),
+      // The same tile has to work across a settings page and a side panel
+      // barely wider than the field itself, so beyond a point the control
+      // moves under its label rather than squeezing it.
+      child: LayoutBuilder(
+        builder: (BuildContext context, BoxConstraints constraints) {
+          if (constraints.maxWidth < width + _minimumLabelWidth) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: <Widget>[
+                label,
+                const SizedBox(height: 10),
+                field,
+              ],
+            );
+          }
+          return Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: <Widget>[
+              Expanded(child: label),
+              const SizedBox(width: 16),
+              SizedBox(width: width, child: field),
+            ],
+          );
+        },
       ),
     );
   }
+
+  /// Room a title and its explanation need before the field is worth putting
+  /// beside them rather than under them.
+  static const double _minimumLabelWidth = 220;
 }
 
 /// A small set of mutually exclusive choices, shown inline.
@@ -373,6 +392,42 @@ class SegmentedSettingTile<T> extends StatelessWidget {
                 showSelectedIcon: false,
                 onSelectionChanged: (Set<T> selection) =>
                     onChanged(selection.first),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Says why the settings are read-only, instead of leaving greyed-out
+/// controls to be puzzled over.
+class LockedNotice extends StatelessWidget {
+  const LockedNotice({super.key, required this.message});
+
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 0),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: scheme.tertiaryContainer,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: <Widget>[
+          Icon(Icons.lock_outline, size: 18, color: scheme.onTertiaryContainer),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                color: scheme.onTertiaryContainer,
               ),
             ),
           ),

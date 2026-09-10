@@ -76,8 +76,9 @@ the app imports that package.** Two things follow:
   API, so the engine, the planner and the models are already portable. What
   needs replacing is the desktop chrome (drag-and-drop, the resizable window,
   the compact always-on-top strip) and `AppPaths`, since an Android app cannot
-  write to an arbitrary folder in the user's home. The navigation drawer and
-  the settings page already work on a phone.
+  write to an arbitrary folder in the user's home. The navigation drawer, the
+  settings page and the encoding panel — which already becomes a side sheet
+  below `kEncodingPanelBreakpoint` — all work on a phone.
 - **A fake runner can drive the whole engine** without an encoder present.
 
 ### Why bundled, not a system binary
@@ -276,8 +277,8 @@ version kept in it was not navigation anyway:
 | --- | --- |
 | Open video(s) / folder | Buttons on the queue, plus the same shortcuts |
 | Start / Stop | The floating action button — the one thing the screen is for |
-| Settings, Preferences | One settings page, reached from the drawer or the rate chip |
-| Theme, Language | The Application group on that page |
+| Settings, Preferences | The encoding panel beside the queue, from the rate chip, the app bar or Ctrl+, |
+| Theme, Language | The app settings page, a drawer destination |
 | Progress mode, log, clear queue | App bar actions on the queue |
 | About, Licence, links, Quit | The drawer's lower half |
 
