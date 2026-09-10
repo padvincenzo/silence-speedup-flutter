@@ -646,6 +646,43 @@ void main() {
       expect(find.text('Silence speed'), findsOneWidget);
     });
 
+    testWidgets('a pinned heading lifts once its controls pass under it', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester, size: const Size(1400, 700));
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      final Finder title = find.descendant(
+        of: find.byType(DockedEncodingSettings),
+        matching: find.text('Speed'),
+      );
+      double headingElevation() => tester
+          .widget<Material>(
+            find.ancestor(of: title, matching: find.byType(Material)).first,
+          )
+          .elevation;
+
+      // At the top of the panel the heading has controls below it, not
+      // under it.
+      expect(headingElevation(), 0);
+
+      await tester.drag(
+        find.byType(CustomScrollView).last,
+        const Offset(0, -60),
+      );
+      await tester.pumpAndSettle();
+
+      // The framework cannot tell a pinned header this: the overlapsContent
+      // it is handed means another pinned sliver is over it, which is a
+      // different thing and false here.
+      expect(headingElevation(), greaterThan(0));
+    });
+
     testWidgets('open headings take turns rather than piling up', (
       WidgetTester tester,
     ) async {

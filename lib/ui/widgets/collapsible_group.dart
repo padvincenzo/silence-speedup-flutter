@@ -137,6 +137,7 @@ List<Widget> collapsibleGroupSlivers({
   required bool expanded,
   required ValueChanged<bool> onExpanded,
   required List<Widget> children,
+  bool lifted = false,
 }) {
   final ColorScheme scheme = Theme.of(context).colorScheme;
 
@@ -167,7 +168,11 @@ List<Widget> collapsibleGroupSlivers({
       slivers: <Widget>[
         SliverPersistentHeader(
           pinned: true,
-          delegate: _PinnedGroupHeader(child: header, background: scheme),
+          delegate: _PinnedGroupHeader(
+            child: header,
+            background: scheme,
+            lifted: lifted,
+          ),
         ),
         SliverList(delegate: SliverChildListDelegate(children)),
       ],
@@ -177,10 +182,23 @@ List<Widget> collapsibleGroupSlivers({
 }
 
 class _PinnedGroupHeader extends SliverPersistentHeaderDelegate {
-  const _PinnedGroupHeader({required this.child, required this.background});
+  const _PinnedGroupHeader({
+    required this.child,
+    required this.background,
+    required this.lifted,
+  });
 
   final Widget child;
   final ColorScheme background;
+
+  /// Whether the list this heading belongs to has been scrolled at all.
+  ///
+  /// Told from outside, because a pinned header is never told from inside.
+  /// The `overlapsContent` the framework hands the delegate means something
+  /// else entirely — that *another* pinned sliver is over this one — and it
+  /// is false in the case that matters here, which is a group's own controls
+  /// sliding beneath its heading.
+  final bool lifted;
 
   @override
   double get minExtent => kGroupHeaderHeight;
@@ -195,14 +213,14 @@ class _PinnedGroupHeader extends SliverPersistentHeaderDelegate {
     bool overlapsContent,
   ) {
     // Opaque, and the same colour as the panel: pinned means the controls
-    // pass behind it. The shadow is drawn only while they actually are —
-    // above its own group it is just a heading, and a shadow over nothing
-    // is not a seam.
+    // pass behind it. The shadow is drawn only while something actually is —
+    // at the top of an unscrolled panel a heading has content below it, not
+    // under it, and a shadow over nothing is not a seam.
     return Material(
       color: background.surfaceContainerLow,
       surfaceTintColor: Colors.transparent,
       shadowColor: background.shadow,
-      elevation: overlapsContent ? 3 : 0,
+      elevation: lifted || overlapsContent ? 3 : 0,
       // Filled to the extent the delegate promises. A pinned header reports
       // paintExtent from what its child actually measures and layoutExtent
       // from maxExtent, so a child that does not fill the height it was
@@ -213,5 +231,7 @@ class _PinnedGroupHeader extends SliverPersistentHeaderDelegate {
 
   @override
   bool shouldRebuild(_PinnedGroupHeader old) =>
-      old.child != child || old.background != background;
+      old.child != child ||
+      old.background != background ||
+      old.lifted != lifted;
 }

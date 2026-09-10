@@ -17,6 +17,7 @@ import '../../state/process_store.dart';
 import '../messages.dart';
 import 'collapsible_group.dart';
 import 'output_destination.dart';
+import 'scrolled_under.dart';
 import 'settings_tiles.dart';
 
 /// Everything that decides how a video is encoded.
@@ -31,7 +32,7 @@ import 'settings_tiles.dart';
 /// it. Thirteen controls do not fit a panel beside the queue, and most of
 /// them are set once; what a user wants at a glance is not every value but
 /// the ones that are no longer the default.
-class EncodingSettingsView extends StatelessWidget {
+class EncodingSettingsView extends StatefulWidget {
   const EncodingSettingsView({super.key, this.bottomInset = 32});
 
   /// Room left under the last control.
@@ -44,6 +45,17 @@ class EncodingSettingsView extends StatelessWidget {
   static const String groupDetection = 'detection';
   static const String groupExport = 'export';
   static const String groupPreview = 'preview';
+
+  @override
+  State<EncodingSettingsView> createState() => _EncodingSettingsViewState();
+}
+
+class _EncodingSettingsViewState extends State<EncodingSettingsView> {
+  /// Whether the panel has been scrolled off its top.
+  ///
+  /// Whichever heading is pinned then has controls passing under it, and a
+  /// pinned header cannot work that out for itself.
+  bool _scrolled = false;
 
   @override
   Widget build(BuildContext context) {
@@ -59,310 +71,333 @@ class EncodingSettingsView extends StatelessWidget {
     void toggle(String group, bool expanded) =>
         context.read<PreferencesStore>().setEncodingGroupOpen(group, expanded);
 
-    return CustomScrollView(
-      slivers: <Widget>[
-        if (locked)
-          SliverToBoxAdapter(
-            child: LockedNotice(message: strings.ffmpegAlreadyRunning),
+    return NotificationListener<ScrollNotification>(
+      onNotification: (ScrollNotification notification) {
+        final bool scrolled = ScrolledUnder.isScrolled(notification);
+        if (scrolled != _scrolled) setState(() => _scrolled = scrolled);
+        return false;
+      },
+      child: CustomScrollView(
+        slivers: <Widget>[
+          if (locked)
+            SliverToBoxAdapter(
+              child: LockedNotice(message: strings.ffmpegAlreadyRunning),
+            ),
+
+          ...collapsibleGroupSlivers(
+            context: context,
+            lifted: _scrolled,
+            icon: Icons.bolt,
+            title: strings.settingsGroupSpeed,
+            summary: speedChanges(settings, strings),
+            expanded: open.contains(EncodingSettingsView.groupSpeed),
+            onExpanded: (bool value) =>
+                toggle(EncodingSettingsView.groupSpeed, value),
+            children: <Widget>[
+              SliderSettingTile(
+                title: strings.settingsSilenceSpeed,
+                description: strings.helpSilenceSpeed,
+                valueLabel: speedText(settings.silenceSpeed, strings),
+                enabled: !locked,
+                slider: IndexSlider(
+                  value: settings.silenceSpeedIndex,
+                  max: kSpeedOptions.length - 1,
+                  label: speedText(settings.silenceSpeed, strings),
+                  onChanged: locked
+                      ? null
+                      : (int index) =>
+                            update(settings.copyWith(silenceSpeedIndex: index)),
+                ),
+              ),
+              SliderSettingTile(
+                title: strings.settingsPlaybackSpeed,
+                description: strings.helpPlaybackSpeed,
+                valueLabel: speedText(settings.playbackSpeed, strings),
+                enabled: !locked,
+                slider: IndexSlider(
+                  // Stops one short of `remove`: dropping the spoken parts would
+                  // leave nothing behind.
+                  value: settings.playbackSpeedIndex,
+                  max: kLastKeptSpeedIndex,
+                  label: speedText(settings.playbackSpeed, strings),
+                  onChanged: locked
+                      ? null
+                      : (int index) => update(
+                          settings.copyWith(playbackSpeedIndex: index),
+                        ),
+                ),
+              ),
+            ],
           ),
 
-        ...collapsibleGroupSlivers(
-          context: context,
-          icon: Icons.bolt,
-          title: strings.settingsGroupSpeed,
-          summary: speedChanges(settings, strings),
-          expanded: open.contains(groupSpeed),
-          onExpanded: (bool value) => toggle(groupSpeed, value),
-          children: <Widget>[
-            SliderSettingTile(
-              title: strings.settingsSilenceSpeed,
-              description: strings.helpSilenceSpeed,
-              valueLabel: speedText(settings.silenceSpeed, strings),
-              enabled: !locked,
-              slider: IndexSlider(
-                value: settings.silenceSpeedIndex,
-                max: kSpeedOptions.length - 1,
-                label: speedText(settings.silenceSpeed, strings),
+          ...collapsibleGroupSlivers(
+            context: context,
+            lifted: _scrolled,
+            icon: Icons.headphones_outlined,
+            title: strings.settingsGroupAudio,
+            summary: audioChanges(settings, strings),
+            expanded: open.contains(EncodingSettingsView.groupAudio),
+            onExpanded: (bool value) =>
+                toggle(EncodingSettingsView.groupAudio, value),
+            children: <Widget>[
+              SwitchSettingTile(
+                title: strings.settingsAudioTracks,
+                description: strings.helpAudioTracks,
+                value: settings.keepAllAudioTracks,
                 onChanged: locked
                     ? null
-                    : (int index) =>
-                          update(settings.copyWith(silenceSpeedIndex: index)),
+                    : (bool value) =>
+                          update(settings.copyWith(keepAllAudioTracks: value)),
               ),
-            ),
-            SliderSettingTile(
-              title: strings.settingsPlaybackSpeed,
-              description: strings.helpPlaybackSpeed,
-              valueLabel: speedText(settings.playbackSpeed, strings),
-              enabled: !locked,
-              slider: IndexSlider(
-                // Stops one short of `remove`: dropping the spoken parts would
-                // leave nothing behind.
-                value: settings.playbackSpeedIndex,
-                max: kLastKeptSpeedIndex,
-                label: speedText(settings.playbackSpeed, strings),
+              SwitchSettingTile(
+                title: strings.settingsMuteSilences,
+                description: strings.helpMuteSilences,
+                value: settings.mutesSilence,
+                onChanged: locked || settings.dropsSilence
+                    ? null
+                    : (bool value) =>
+                          update(settings.copyWith(muteSilences: value)),
+              ),
+              DropdownSettingTile<int>(
+                title: strings.settingsAudioRate,
+                description: strings.helpAudioRate,
+                value: settings.audioRateIndex,
+                items: indexItems(kAudioRates, strings),
                 onChanged: locked
                     ? null
-                    : (int index) =>
-                          update(settings.copyWith(playbackSpeedIndex: index)),
+                    : (int? index) => index == null
+                          ? null
+                          : update(settings.copyWith(audioRateIndex: index)),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
 
-        ...collapsibleGroupSlivers(
-          context: context,
-          icon: Icons.headphones_outlined,
-          title: strings.settingsGroupAudio,
-          summary: audioChanges(settings, strings),
-          expanded: open.contains(groupAudio),
-          onExpanded: (bool value) => toggle(groupAudio, value),
-          children: <Widget>[
-            SwitchSettingTile(
-              title: strings.settingsAudioTracks,
-              description: strings.helpAudioTracks,
-              value: settings.keepAllAudioTracks,
-              onChanged: locked
-                  ? null
-                  : (bool value) =>
-                        update(settings.copyWith(keepAllAudioTracks: value)),
-            ),
-            SwitchSettingTile(
-              title: strings.settingsMuteSilences,
-              description: strings.helpMuteSilences,
-              value: settings.mutesSilence,
-              onChanged: locked || settings.dropsSilence
-                  ? null
-                  : (bool value) =>
-                        update(settings.copyWith(muteSilences: value)),
-            ),
-            DropdownSettingTile<int>(
-              title: strings.settingsAudioRate,
-              description: strings.helpAudioRate,
-              value: settings.audioRateIndex,
-              items: indexItems(kAudioRates, strings),
-              onChanged: locked
-                  ? null
-                  : (int? index) => index == null
-                        ? null
-                        : update(settings.copyWith(audioRateIndex: index)),
-            ),
-          ],
-        ),
-
-        ...collapsibleGroupSlivers(
-          context: context,
-          icon: Icons.graphic_eq,
-          title: strings.settingsGroupDetection,
-          summary: detectionChanges(settings, strings),
-          expanded: open.contains(groupDetection),
-          onExpanded: (bool value) => toggle(groupDetection, value),
-          children: <Widget>[
-            SliderSettingTile(
-              title: strings.settingsBackgroundNoise,
-              description: strings.helpBackgroundNoise,
-              valueLabel: optionText(
-                kThresholds[settings.thresholdIndex],
-                strings,
-              ),
-              enabled: !locked,
-              slider: IndexSlider(
-                value: settings.thresholdIndex,
-                max: kThresholds.length - 1,
-                label: optionText(
+          ...collapsibleGroupSlivers(
+            context: context,
+            lifted: _scrolled,
+            icon: Icons.graphic_eq,
+            title: strings.settingsGroupDetection,
+            summary: detectionChanges(settings, strings),
+            expanded: open.contains(EncodingSettingsView.groupDetection),
+            onExpanded: (bool value) =>
+                toggle(EncodingSettingsView.groupDetection, value),
+            children: <Widget>[
+              SliderSettingTile(
+                title: strings.settingsBackgroundNoise,
+                description: strings.helpBackgroundNoise,
+                valueLabel: optionText(
                   kThresholds[settings.thresholdIndex],
                   strings,
                 ),
-                onChanged: locked
-                    ? null
-                    : (int index) =>
-                          update(settings.copyWith(thresholdIndex: index)),
-              ),
-            ),
-            SliderSettingTile(
-              title: strings.settingsSilenceMinDuration,
-              description: strings.helpSilenceMinDuration,
-              valueLabel: strings.settingsSecondsValue(
-                settings.silenceMinDuration,
-              ),
-              enabled: !locked,
-              slider: Slider(
-                value: settings.silenceMinDuration.clamp(
-                  kSilenceDurationMin,
-                  kSilenceDurationMax,
+                enabled: !locked,
+                slider: IndexSlider(
+                  value: settings.thresholdIndex,
+                  max: kThresholds.length - 1,
+                  label: optionText(
+                    kThresholds[settings.thresholdIndex],
+                    strings,
+                  ),
+                  onChanged: locked
+                      ? null
+                      : (int index) =>
+                            update(settings.copyWith(thresholdIndex: index)),
                 ),
-                min: kSilenceDurationMin,
-                max: kSilenceDurationMax,
-                divisions: _durationDivisions,
-                label: strings.settingsSecondsValue(
+              ),
+              SliderSettingTile(
+                title: strings.settingsSilenceMinDuration,
+                description: strings.helpSilenceMinDuration,
+                valueLabel: strings.settingsSecondsValue(
                   settings.silenceMinDuration,
                 ),
-                onChanged: locked
-                    ? null
-                    : (double value) =>
-                          update(settings.copyWith(silenceMinDuration: value)),
-              ),
-            ),
-            SliderSettingTile(
-              title: strings.settingsSilenceMargin,
-              description: strings.helpSilenceMargin,
-              valueLabel: strings.settingsSecondsValue(settings.silenceMargin),
-              enabled: !locked,
-              slider: Slider(
-                value: settings.silenceMargin.clamp(
-                  kSilenceDurationMin,
-                  kSilenceDurationMax,
+                enabled: !locked,
+                slider: Slider(
+                  value: settings.silenceMinDuration.clamp(
+                    kSilenceDurationMin,
+                    kSilenceDurationMax,
+                  ),
+                  min: kSilenceDurationMin,
+                  max: kSilenceDurationMax,
+                  divisions: _durationDivisions,
+                  label: strings.settingsSecondsValue(
+                    settings.silenceMinDuration,
+                  ),
+                  onChanged: locked
+                      ? null
+                      : (double value) => update(
+                          settings.copyWith(silenceMinDuration: value),
+                        ),
                 ),
-                min: kSilenceDurationMin,
-                max: kSilenceDurationMax,
-                divisions: _durationDivisions,
-                label: strings.settingsSecondsValue(settings.silenceMargin),
+              ),
+              SliderSettingTile(
+                title: strings.settingsSilenceMargin,
+                description: strings.helpSilenceMargin,
+                valueLabel: strings.settingsSecondsValue(
+                  settings.silenceMargin,
+                ),
+                enabled: !locked,
+                slider: Slider(
+                  value: settings.silenceMargin.clamp(
+                    kSilenceDurationMin,
+                    kSilenceDurationMax,
+                  ),
+                  min: kSilenceDurationMin,
+                  max: kSilenceDurationMax,
+                  divisions: _durationDivisions,
+                  label: strings.settingsSecondsValue(settings.silenceMargin),
+                  onChanged: locked
+                      ? null
+                      : (double value) =>
+                            update(settings.copyWith(silenceMargin: value)),
+                ),
+              ),
+              _FilterPreview(settings: settings),
+            ],
+          ),
+
+          ...collapsibleGroupSlivers(
+            context: context,
+            lifted: _scrolled,
+            icon: Icons.movie_creation_outlined,
+            title: strings.settingsGroupExport,
+            // The destination is not part of ProcessingSettings — it is a
+            // preference of its own — so its summary is built here, where the
+            // store is at hand, and put in front of the encoder's.
+            summary: <String>[
+              if (!preferences.exportsAlongsideSource)
+                '${strings.outputFolder} '
+                    '${p.basename(preferences.fixedDirectory)}',
+              ...exportChanges(settings, strings),
+            ],
+            expanded: open.contains(EncodingSettingsView.groupExport),
+            onExpanded: (bool value) =>
+                toggle(EncodingSettingsView.groupExport, value),
+            children: <Widget>[
+              const OutputDestination(),
+              DropdownSettingTile<String>(
+                title: strings.settingsFormat,
+                description: strings.helpFormat,
+                value: settings.outputFormat,
+                items: kFormats
+                    .map(
+                      (LabeledOption format) => DropdownMenuItem<String>(
+                        value: format.value,
+                        child: Text(optionText(format, strings)),
+                      ),
+                    )
+                    .toList(),
                 onChanged: locked
                     ? null
-                    : (double value) =>
-                          update(settings.copyWith(silenceMargin: value)),
+                    : (String? format) => format == null
+                          ? null
+                          : update(settings.copyWith(outputFormat: format)),
               ),
-            ),
-            _FilterPreview(settings: settings),
-          ],
-        ),
+              SliderSettingTile(
+                title: strings.settingsCrf,
+                description: strings.helpCrf,
+                valueLabel: '${settings.crf}',
+                enabled: !locked,
+                slider: Slider(
+                  value: settings.crf.toDouble(),
+                  min: kCrfMin.toDouble(),
+                  max: kCrfMax.toDouble(),
+                  divisions: kCrfMax - kCrfMin,
+                  label: '${settings.crf}',
+                  onChanged: locked
+                      ? null
+                      : (double value) =>
+                            update(settings.copyWith(crf: value.round())),
+                ),
+              ),
+              DropdownSettingTile<int>(
+                title: strings.settingsFps,
+                description: strings.helpFps,
+                value: settings.fpsIndex,
+                items: indexItems(kFpsOptions, strings),
+                onChanged: locked
+                    ? null
+                    : (int? index) => index == null
+                          ? null
+                          : update(settings.copyWith(fpsIndex: index)),
+              ),
+              DropdownSettingTile<int>(
+                title: strings.settingsPreset,
+                description: strings.helpPreset,
+                value: settings.presetIndex,
+                items: indexItems(kPresets, strings),
+                onChanged: locked
+                    ? null
+                    : (int? index) => index == null
+                          ? null
+                          : update(settings.copyWith(presetIndex: index)),
+              ),
+              DropdownSettingTile<int>(
+                title: strings.settingsTune,
+                description: strings.helpTune,
+                value: settings.tuneIndex,
+                items: indexItems(kTunes, strings),
+                onChanged: locked
+                    ? null
+                    : (int? index) => index == null
+                          ? null
+                          : update(settings.copyWith(tuneIndex: index)),
+              ),
+            ],
+          ),
 
-        ...collapsibleGroupSlivers(
-          context: context,
-          icon: Icons.movie_creation_outlined,
-          title: strings.settingsGroupExport,
-          // The destination is not part of ProcessingSettings — it is a
-          // preference of its own — so its summary is built here, where the
-          // store is at hand, and put in front of the encoder's.
-          summary: <String>[
-            if (!preferences.exportsAlongsideSource)
-              '${strings.outputFolder} '
-                  '${p.basename(preferences.fixedDirectory)}',
-            ...exportChanges(settings, strings),
-          ],
-          expanded: open.contains(groupExport),
-          onExpanded: (bool value) => toggle(groupExport, value),
-          children: <Widget>[
-            const OutputDestination(),
-            DropdownSettingTile<String>(
-              title: strings.settingsFormat,
-              description: strings.helpFormat,
-              value: settings.outputFormat,
-              items: kFormats
-                  .map(
-                    (LabeledOption format) => DropdownMenuItem<String>(
-                      value: format.value,
-                      child: Text(optionText(format, strings)),
+          ...collapsibleGroupSlivers(
+            context: context,
+            lifted: _scrolled,
+            icon: Icons.play_circle_outline,
+            title: strings.settingsGroupPreview,
+            summary: previewChanges(settings, strings),
+            expanded: open.contains(EncodingSettingsView.groupPreview),
+            onExpanded: (bool value) =>
+                toggle(EncodingSettingsView.groupPreview, value),
+            children: <Widget>[
+              DropdownSettingTile<int>(
+                title: strings.settingsPreviewDuration,
+                description: strings.helpPreviewDuration,
+                value: settings.previewIndex,
+                width: 120,
+                items: List<DropdownMenuItem<int>>.generate(
+                  kPreviewDurations.length,
+                  (int index) => DropdownMenuItem<int>(
+                    value: index,
+                    child: Text(
+                      strings.previewSeconds(kPreviewDurations[index]),
                     ),
-                  )
-                  .toList(),
-              onChanged: locked
-                  ? null
-                  : (String? format) => format == null
-                        ? null
-                        : update(settings.copyWith(outputFormat: format)),
-            ),
-            SliderSettingTile(
-              title: strings.settingsCrf,
-              description: strings.helpCrf,
-              valueLabel: '${settings.crf}',
-              enabled: !locked,
-              slider: Slider(
-                value: settings.crf.toDouble(),
-                min: kCrfMin.toDouble(),
-                max: kCrfMax.toDouble(),
-                divisions: kCrfMax - kCrfMin,
-                label: '${settings.crf}',
+                  ),
+                ),
                 onChanged: locked
                     ? null
-                    : (double value) =>
-                          update(settings.copyWith(crf: value.round())),
+                    : (int? index) => index == null
+                          ? null
+                          : update(settings.copyWith(previewIndex: index)),
               ),
-            ),
-            DropdownSettingTile<int>(
-              title: strings.settingsFps,
-              description: strings.helpFps,
-              value: settings.fpsIndex,
-              items: indexItems(kFpsOptions, strings),
-              onChanged: locked
-                  ? null
-                  : (int? index) => index == null
-                        ? null
-                        : update(settings.copyWith(fpsIndex: index)),
-            ),
-            DropdownSettingTile<int>(
-              title: strings.settingsPreset,
-              description: strings.helpPreset,
-              value: settings.presetIndex,
-              items: indexItems(kPresets, strings),
-              onChanged: locked
-                  ? null
-                  : (int? index) => index == null
-                        ? null
-                        : update(settings.copyWith(presetIndex: index)),
-            ),
-            DropdownSettingTile<int>(
-              title: strings.settingsTune,
-              description: strings.helpTune,
-              value: settings.tuneIndex,
-              items: indexItems(kTunes, strings),
-              onChanged: locked
-                  ? null
-                  : (int? index) => index == null
-                        ? null
-                        : update(settings.copyWith(tuneIndex: index)),
-            ),
-          ],
-        ),
+            ],
+          ),
 
-        ...collapsibleGroupSlivers(
-          context: context,
-          icon: Icons.play_circle_outline,
-          title: strings.settingsGroupPreview,
-          summary: previewChanges(settings, strings),
-          expanded: open.contains(groupPreview),
-          onExpanded: (bool value) => toggle(groupPreview, value),
-          children: <Widget>[
-            DropdownSettingTile<int>(
-              title: strings.settingsPreviewDuration,
-              description: strings.helpPreviewDuration,
-              value: settings.previewIndex,
-              width: 120,
-              items: List<DropdownMenuItem<int>>.generate(
-                kPreviewDurations.length,
-                (int index) => DropdownMenuItem<int>(
-                  value: index,
-                  child: Text(strings.previewSeconds(kPreviewDurations[index])),
+          // The reset belongs here rather than with the application settings:
+          // what it puts back are the encoding settings above it. It is an
+          // action, not a setting, so it is a small button and not a tile --
+          // as a tile its title was the largest text in the panel, louder
+          // than the groups it undoes.
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: locked ? null : () => _confirmReset(context),
+                  icon: const Icon(Icons.restart_alt, size: 18),
+                  label: Text(strings.settingsReset),
                 ),
-              ),
-              onChanged: locked
-                  ? null
-                  : (int? index) => index == null
-                        ? null
-                        : update(settings.copyWith(previewIndex: index)),
-            ),
-          ],
-        ),
-
-        // The reset belongs here rather than with the application settings:
-        // what it puts back are the encoding settings above it. It is an
-        // action, not a setting, so it is a small button and not a tile --
-        // as a tile its title was the largest text in the panel, louder
-        // than the groups it undoes.
-        SliverToBoxAdapter(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton.icon(
-                onPressed: locked ? null : () => _confirmReset(context),
-                icon: const Icon(Icons.restart_alt, size: 18),
-                label: Text(strings.settingsReset),
               ),
             ),
           ),
-        ),
-        SliverToBoxAdapter(child: SizedBox(height: bottomInset)),
-      ],
+          SliverToBoxAdapter(child: SizedBox(height: widget.bottomInset)),
+        ],
+      ),
     );
   }
 
@@ -434,7 +469,9 @@ class _FilterPreview extends StatelessWidget {
     final ColorScheme scheme = Theme.of(context).colorScheme;
 
     return Container(
-      margin: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+      // Room underneath as well: it is the last thing in its group, and
+      // without it the card sat against the heading of the next one.
+      margin: const EdgeInsets.fromLTRB(16, 8, 16, 12),
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
         color: scheme.surfaceContainerHighest,
