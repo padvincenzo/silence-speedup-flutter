@@ -49,14 +49,47 @@ void main() {
       expect(settings.playbackSpeed.label, '1x');
       expect(settings.preset, 'medium');
       expect(settings.fps, 'fps=30:round=near');
-      expect(settings.threshold, '0.02');
+      expect(settings.threshold, '-34dB');
       expect(settings.crf, 23);
       expect(settings.dropsSilence, isFalse);
     });
 
+    test('writes the threshold as decibels for silencedetect', () {
+      const ProcessingSettings settings = ProcessingSettings(
+        thresholdDb: -34,
+      );
+
+      expect(settings.threshold, '-34dB');
+      expect(settings.silenceDetectFilter, contains('n=-34dB'));
+    });
+
+    test('keeps the room a saved index used to name', () {
+      // Three named steps, saved as 0, 1 or 2: they were amplitude ratios
+      // of 0.002, 0.02 and 0.1, which are these decibels.
+      for (int i = 0; i < kNoiseAnchors.length; i++) {
+        final ProcessingSettings restored = ProcessingSettings.fromJson(
+          <String, dynamic>{'thresholdIndex': i},
+        );
+        expect(restored.thresholdDb, kNoiseAnchors[i].db, reason: 'index $i');
+      }
+    });
+
+    test('refuses a threshold off the scale', () {
+      const ProcessingSettings defaults = ProcessingSettings();
+      for (final int db in <int>[0, -200, 5]) {
+        expect(
+          ProcessingSettings.fromJson(<String, dynamic>{
+            'thresholdDb': db,
+          }).thresholdDb,
+          defaults.thresholdDb,
+          reason: '$db',
+        );
+      }
+    });
+
     test('round-trips through JSON', () {
       const ProcessingSettings original = ProcessingSettings(
-        thresholdIndex: 2,
+        thresholdDb: -20,
         silenceMinDuration: 0.45,
         silenceMargin: 0.2,
         silenceSpeedIndex: 11,
@@ -90,7 +123,7 @@ void main() {
       );
 
       const ProcessingSettings defaults = ProcessingSettings();
-      expect(restored.thresholdIndex, defaults.thresholdIndex);
+      expect(restored.thresholdDb, defaults.thresholdDb);
       expect(restored.silenceSpeedIndex, defaults.silenceSpeedIndex);
       expect(restored.playbackSpeedIndex, defaults.playbackSpeedIndex);
       expect(restored.silenceMinDuration, defaults.silenceMinDuration);

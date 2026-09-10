@@ -521,6 +521,34 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMuteSilences => 'Mute silences';
 
   @override
+  String get settingsNoiseFailed => 'This video has no audio to measure.';
+
+  @override
+  String get settingsNoiseMeasure => 'Measure a video';
+
+  @override
+  String settingsNoiseMeasured(String name, int floor, int voice) {
+    return '$name: hiss at $floor dB, voice at $voice dB';
+  }
+
+  @override
+  String get settingsNoiseMeasuring => 'Measuring...';
+
+  @override
+  String get settingsNoiseTooClose =>
+      'The hiss is nearly as loud as the voice here, so no threshold separates them cleanly.';
+
+  @override
+  String settingsNoiseUse(int db) {
+    return 'Use $db dB';
+  }
+
+  @override
+  String settingsNoiseValue(int db) {
+    return '$db dB';
+  }
+
+  @override
   String get settingsPlaybackSpeed => 'Speech speed';
 
   @override

@@ -116,6 +116,29 @@ Two things it depends on:
 replacement list, so that is a matter of building controls, not of changing the
 model.
 
+### The noise threshold is a measurement, not a taste
+
+It is decibels below full scale — `thresholdDb`, negative, written into the
+filter as `n=-34dB` — over the range `kThresholdDbMin`..`kThresholdDbMax`.
+It used to be three named steps twenty decibels apart, and a setting saved
+by that version is converted on load: the three were the amplitude ratios
+0.002, 0.02 and 0.1, which are -54, -34 and -20 dB. `kNoiseAnchors` keeps
+the names as what those numbers mean.
+
+The number cannot be chosen by taste, because it depends on the recording.
+`FragmentPlanner.levelArguments` measures a file with `astats` and
+`parseLevels` reads the noise floor and the RMS out of what it printed —
+taking the last of each, which is the `Overall` block rather than the first
+channel. `AudioLevels.suggestedThresholdDb` is halfway between the two in
+decibels, and `isUsable` is false when they are within 6 dB of each other,
+because nothing separates a hiss as loud as the voice and offering a number
+for it would be a pretence.
+
+The measurement is not a run: `ProcessStore.measure` refuses while the
+encoder is busy, touches no status and produces no file. It is stored on the
+entry, and `prepare()` leaves it alone — it describes the file, and the file
+does not change between runs.
+
 ### Positions are absolute source seconds
 
 `Fragment` and `SilenceRange` are in seconds from the start of the source file,

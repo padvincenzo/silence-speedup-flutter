@@ -8,6 +8,7 @@ import 'package:flutter/foundation.dart';
 
 import '../l10n/gen/app_localizations.dart';
 import '../l10n/locale_controller.dart';
+import '../models/audio_levels.dart';
 import '../models/media_entry.dart';
 import '../services/app_paths.dart';
 import '../services/ffmpeg_runner.dart';
@@ -60,6 +61,8 @@ class ProcessStore extends ChangeNotifier {
 
   RunProgress get progress => _progress;
 
+  bool _measuring = false;
+
   bool get canStart => !_running && _queue.hasProcessableEntries;
 
   /// The entry whose preview finished most recently, so the UI can offer to
@@ -87,6 +90,26 @@ class ProcessStore extends ChangeNotifier {
     await _run(<MediaEntry>[entry], kind: RunKind.preview);
     if (entry.outputPath != null) {
       _lastPreview = entry;
+      notifyListeners();
+    }
+  }
+
+  /// True while a file is being measured.
+  bool get isMeasuring => _measuring;
+
+  /// Measures how loud [entry] is, so a noise threshold can be chosen
+  /// against a reading rather than against nothing.
+  ///
+  /// Refused while a run is in progress: the encoder is busy, and a
+  /// measurement is never urgent.
+  Future<AudioLevels?> measure(MediaEntry entry) async {
+    if (_running || _measuring) return null;
+    _measuring = true;
+    notifyListeners();
+    try {
+      return await _engine.measureLevels(entry);
+    } finally {
+      _measuring = false;
       notifyListeners();
     }
   }

@@ -5,6 +5,7 @@
 // License: GNU GPL v3 or later <http://www.gnu.org/copyleft/gpl.html>
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:silence_speedup/models/audio_levels.dart';
 import 'package:silence_speedup/models/media_entry.dart';
 import 'package:silence_speedup/models/options.dart';
 import 'package:silence_speedup/models/processing_settings.dart';
@@ -100,7 +101,7 @@ void main() {
 
     test('notices the three that can', () {
       const ProcessingSettings a = ProcessingSettings();
-      expect(a.detectsLike(a.copyWith(thresholdIndex: 0)), isFalse);
+      expect(a.detectsLike(a.copyWith(thresholdDb: -40)), isFalse);
       expect(a.detectsLike(a.copyWith(silenceMinDuration: 0.5)), isFalse);
       expect(a.detectsLike(a.copyWith(silenceMargin: 0.2)), isFalse);
     });
@@ -389,12 +390,88 @@ void main() {
     });
   });
 
+  group('levelArguments and parseLevels', () {
+    /// What astats prints for a stereo file: each channel, then the overall
+    /// figures for all of them together.
+    const String output = '''
+[Parsed_astats_0 @ 000001] Channel: 1
+[Parsed_astats_0 @ 000001] Peak level dB: -4.100000
+[Parsed_astats_0 @ 000001] RMS level dB: -19.700000
+[Parsed_astats_0 @ 000001] Noise floor dB: -46.100000
+[Parsed_astats_0 @ 000001] Channel: 2
+[Parsed_astats_0 @ 000001] Peak level dB: -4.900000
+[Parsed_astats_0 @ 000001] RMS level dB: -20.300000
+[Parsed_astats_0 @ 000001] Noise floor dB: -47.900000
+[Parsed_astats_0 @ 000001] Overall
+[Parsed_astats_0 @ 000001] Peak level dB: -4.100000
+[Parsed_astats_0 @ 000001] RMS level dB: -20.000000
+[Parsed_astats_0 @ 000001] Noise floor dB: -47.000000
+''';
+
+    test('decodes the audio of the voice track and writes nothing', () {
+      final List<String> arguments = FragmentPlanner.levelArguments(
+        input: 'in.mp4',
+      );
+
+      expect(argumentAfter(arguments, '-i'), 'in.mp4');
+      // The same track the silences are detected on, or the reading would
+      // describe a different sound than the one being cut.
+      expect(argumentAfter(arguments, '-map'), '0:a:0');
+      expect(argumentAfter(arguments, '-af'), 'astats=metadata=1:reset=0');
+      expect(arguments, contains('-vn'));
+      expect(argumentAfter(arguments, '-f'), 'null');
+    });
+
+    test('reads the overall figures, not the first channel', () {
+      final AudioLevels? levels = FragmentPlanner.parseLevels(
+        output.split('\n'),
+      );
+
+      expect(levels, isNotNull);
+      expect(levels!.noiseFloorDb, closeTo(-47, 0.001));
+      expect(levels.rmsDb, closeTo(-20, 0.001));
+    });
+
+    test('suggests a threshold between the hiss and the voice', () {
+      final AudioLevels levels = FragmentPlanner.parseLevels(
+        output.split('\n'),
+      )!;
+
+      // Halfway in decibels, which is the scale the ear and the filter both
+      // work on.
+      expect(levels.isUsable, isTrue);
+      expect(levels.suggestedThresholdDb, -34);
+    });
+
+    test('says nothing about a file it could not measure', () {
+      expect(FragmentPlanner.parseLevels(const <String>[]), isNull);
+      expect(
+        FragmentPlanner.parseLevels(const <String>[
+          '[Parsed_astats_0 @ 000001] RMS level dB: -20.000000',
+        ]),
+        isNull,
+        reason: 'one of the two figures is not a reading',
+      );
+    });
+
+    test('will not choose for a recording whose hiss is as loud as its voice',
+        () {
+      const AudioLevels noisy = AudioLevels(
+        noiseFloorDb: -22,
+        rmsDb: -20,
+      );
+
+      // Nothing separates them, so offering a number would be a pretence.
+      expect(noisy.isUsable, isFalse);
+    });
+  });
+
   group('detectArguments', () {
     test('widens the detection window by twice the margin', () {
       const ProcessingSettings settings = ProcessingSettings(
         silenceMinDuration: 0.3,
         silenceMargin: 0.1,
-        thresholdIndex: 1,
+        thresholdDb: -34,
       );
 
       final List<String> arguments = FragmentPlanner.detectArguments(
@@ -403,7 +480,7 @@ void main() {
       );
 
       // 0.3 + 2 * 0.1: what survives the trim is still the requested minimum.
-      expect(argumentAfter(arguments, '-af'), 'silencedetect=n=0.02:d=0.5');
+      expect(argumentAfter(arguments, '-af'), 'silencedetect=n=-34dB:d=0.5');
       expect(arguments.contains('-vn'), isTrue);
       expect(argumentAfter(arguments, '-f'), 'null');
     });

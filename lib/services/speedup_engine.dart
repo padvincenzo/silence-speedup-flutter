@@ -11,6 +11,7 @@ import 'package:path/path.dart' as p;
 
 import '../l10n/gen/app_localizations.dart';
 import '../l10n/locale_controller.dart';
+import '../models/audio_levels.dart';
 import '../models/media_entry.dart';
 import '../models/options.dart';
 import '../models/processing_settings.dart';
@@ -310,6 +311,32 @@ class SpeedupEngine {
   /// Runs `silencedetect` over [window] and stores the ranges on the entry.
   ///
   /// Returns false when the entry could not be analysed.
+  /// Measures how loud [entry] is, and remembers it on the entry.
+  ///
+  /// Not part of a run: nothing is produced, the queue is not touched, and
+  /// it can be asked for while choosing a threshold rather than before
+  /// starting. Returns null when the file has no audio to measure.
+  Future<AudioLevels?> measureLevels(MediaEntry entry) async {
+    final List<String> lines = <String>[];
+
+    final FFmpegResult result = await _runner.run(
+      FragmentPlanner.levelArguments(input: entry.path),
+      onLine: (String line) {
+        lines.add(line);
+        _reportFfmpegLine(line);
+      },
+    );
+
+    if (!result.succeeded) {
+      entry.setLevels(null);
+      return null;
+    }
+
+    final AudioLevels? levels = FragmentPlanner.parseLevels(lines);
+    entry.setLevels(levels);
+    return levels;
+  }
+
   Future<bool> _detectSilences({
     required MediaEntry entry,
     required ProcessingSettings settings,

@@ -7,6 +7,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
+import 'audio_levels.dart';
 import 'processing_settings.dart';
 
 import 'options.dart';
@@ -60,6 +61,7 @@ class MediaEntry extends ChangeNotifier {
   String? _detail;
   List<SilenceRange> _silences = const <SilenceRange>[];
   ProcessingSettings? _detectedWith;
+  AudioLevels? _levels;
   String? _outputPath;
 
   Duration? get duration => _duration;
@@ -77,6 +79,12 @@ class MediaEntry extends ChangeNotifier {
   /// already trimmed by the margin that was set at the time, and redrawing
   /// them against a margin that has since changed would be a quiet lie.
   ProcessingSettings? get detectedWith => _detectedWith;
+
+  /// How loud this file is, once it has been measured. Null until then.
+  ///
+  /// Not cleared by [prepare]: it describes the file, not the run, and the
+  /// file does not change between runs.
+  AudioLevels? get levels => _levels;
 
   /// Where the finished file landed, once it has.
   String? get outputPath => _outputPath;
@@ -107,6 +115,11 @@ class MediaEntry extends ChangeNotifier {
   }) {
     _silences = silences;
     _detectedWith = detectedWith;
+    notifyListeners();
+  }
+
+  void setLevels(AudioLevels? value) {
+    _levels = value;
     notifyListeners();
   }
 

@@ -14,6 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:silence_speedup/app.dart';
 import 'package:silence_speedup/l10n/gen/app_localizations.dart';
 import 'package:silence_speedup/l10n/locale_controller.dart';
+import 'package:silence_speedup/models/audio_levels.dart';
 import 'package:silence_speedup/models/media_entry.dart';
 import 'package:silence_speedup/models/processing_settings.dart';
 import 'package:silence_speedup/services/ffmpeg_runner.dart';
@@ -783,6 +784,43 @@ void main() {
 
       expect(headings, greaterThan(0));
       expect(headings, lessThanOrEqualTo(2));
+    });
+
+    testWidgets('the noise threshold is a scale, measured against a file', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester);
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+      await harness.preferences.setEncodingGroupOpen('detection', true);
+      await harness.queue.addFiles(<String>['C:\\videos\\talk.mp4']);
+
+      await tester.pumpWidget(harness.wrap(const EncodingSettingsView()));
+      await tester.pumpAndSettle();
+
+      // A number with a unit, not one of three names twenty decibels apart.
+      expect(find.text('-34 dB'), findsOneWidget);
+      expect(find.text('Measure a video'), findsOneWidget);
+
+      // What a measurement of that file would leave behind.
+      harness.queue.entries.first.setLevels(
+        const AudioLevels(noiseFloorDb: -48, rmsDb: -18),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('talk.mp4: hiss at -48 dB, voice at -18 dB'),
+        findsOneWidget,
+      );
+
+      // Halfway between the two, and one press away.
+      await tester.tap(find.text('Use -33 dB'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(harness.preferences.settings.thresholdDb, -33);
+      expect(find.text('-33 dB'), findsOneWidget);
     });
 
     testWidgets('the reset asks first, and only then puts everything back', (

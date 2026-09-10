@@ -15,7 +15,7 @@ import 'options.dart';
 @immutable
 class ProcessingSettings {
   const ProcessingSettings({
-    this.thresholdIndex = 1,
+    this.thresholdDb = -34,
     this.silenceMinDuration = 0.3,
     this.silenceMargin = 0.1,
     this.silenceSpeedIndex = 9,
@@ -31,8 +31,13 @@ class ProcessingSettings {
     this.previewIndex = 1,
   });
 
-  /// Index into [kThresholds]: how loud the room is allowed to be.
-  final int thresholdIndex;
+  /// How loud the room is allowed to be before it stops counting as
+  /// silence, in decibels below full scale. Always negative.
+  ///
+  /// It used to be an index into three named steps twenty decibels apart,
+  /// which left nothing between a studio and a living room — where most
+  /// recordings actually sit.
+  final int thresholdDb;
 
   /// Seconds a quiet stretch must last before it counts as silence.
   final double silenceMinDuration;
@@ -77,7 +82,8 @@ class ProcessingSettings {
   /// Muting only means something while the silence is still there.
   bool get mutesSilence => !dropsSilence && muteSilences;
 
-  String get threshold => kThresholds[thresholdIndex].value;
+  /// The threshold as `silencedetect` wants it written.
+  String get threshold => '${thresholdDb}dB';
 
   String get preset => kPresets[presetIndex].value;
 
@@ -97,7 +103,7 @@ class ProcessingSettings {
   /// of them has moved and not otherwise — changing the export container
   /// does not invalidate a detection.
   bool detectsLike(ProcessingSettings other) =>
-      thresholdIndex == other.thresholdIndex &&
+      thresholdDb == other.thresholdDb &&
       silenceMinDuration == other.silenceMinDuration &&
       silenceMargin == other.silenceMargin;
 
@@ -111,7 +117,7 @@ class ProcessingSettings {
       'silencedetect=n=$threshold:d=${_trim(detectionDuration)}';
 
   ProcessingSettings copyWith({
-    int? thresholdIndex,
+    int? thresholdDb,
     double? silenceMinDuration,
     double? silenceMargin,
     int? silenceSpeedIndex,
@@ -127,7 +133,7 @@ class ProcessingSettings {
     int? previewIndex,
   }) {
     return ProcessingSettings(
-      thresholdIndex: thresholdIndex ?? this.thresholdIndex,
+      thresholdDb: thresholdDb ?? this.thresholdDb,
       silenceMinDuration: silenceMinDuration ?? this.silenceMinDuration,
       silenceMargin: silenceMargin ?? this.silenceMargin,
       silenceSpeedIndex: silenceSpeedIndex ?? this.silenceSpeedIndex,
@@ -145,7 +151,7 @@ class ProcessingSettings {
   }
 
   Map<String, dynamic> toJson() => <String, dynamic>{
-    'thresholdIndex': thresholdIndex,
+    'thresholdDb': thresholdDb,
     'silenceMinDuration': silenceMinDuration,
     'silenceMargin': silenceMargin,
     'silenceSpeedIndex': silenceSpeedIndex,
@@ -166,11 +172,7 @@ class ProcessingSettings {
   factory ProcessingSettings.fromJson(Map<String, dynamic> json) {
     const ProcessingSettings defaults = ProcessingSettings();
     return ProcessingSettings(
-      thresholdIndex: _clampInt(
-        json['thresholdIndex'],
-        defaults.thresholdIndex,
-        kThresholds.length - 1,
-      ),
+      thresholdDb: _readThresholdDb(json, defaults.thresholdDb),
       silenceMinDuration: _clampDouble(
         json['silenceMinDuration'],
         defaults.silenceMinDuration,
@@ -228,6 +230,28 @@ class ProcessingSettings {
         kPreviewDurations.length - 1,
       ),
     );
+  }
+
+  /// Reads the noise threshold, converting a setting saved by a version
+  /// that had three named steps instead of a scale.
+  ///
+  /// The three were amplitude ratios -- 0.002, 0.02 and 0.1 -- which are
+  /// -54, -34 and -20 decibels. Someone who had picked one of them keeps
+  /// the room they picked.
+  static int _readThresholdDb(Map<String, dynamic> json, int fallback) {
+    final Object? db = json['thresholdDb'];
+    if (db is num) {
+      final int value = db.toInt();
+      if (value >= kThresholdDbMin && value <= kThresholdDbMax) return value;
+      return fallback;
+    }
+
+    final Object? index = json['thresholdIndex'];
+    if (index is num) {
+      final int at = index.toInt();
+      if (at >= 0 && at < kNoiseAnchors.length) return kNoiseAnchors[at].db;
+    }
+    return fallback;
   }
 
   static int _clampInt(Object? raw, int fallback, int max) {

@@ -99,9 +99,9 @@ List<String> detectionChanges(
   AppLocalizations strings,
 ) {
   return <String>[
-    if (settings.thresholdIndex != _defaults.thresholdIndex)
+    if (settings.thresholdDb != _defaults.thresholdDb)
       '${strings.settingsBackgroundNoise} '
-          '${optionText(kThresholds[settings.thresholdIndex], strings)}',
+          '${strings.settingsNoiseValue(settings.thresholdDb)}',
     if (settings.silenceMinDuration != _defaults.silenceMinDuration)
       '${strings.settingsSilenceMinDuration} '
           '${strings.settingsSecondsValue(settings.silenceMinDuration)}',

@@ -896,6 +896,48 @@ abstract class AppLocalizations {
   /// **'Mute silences'**
   String get settingsMuteSilences;
 
+  /// No description provided for @settingsNoiseFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'This video has no audio to measure.'**
+  String get settingsNoiseFailed;
+
+  /// No description provided for @settingsNoiseMeasure.
+  ///
+  /// In en, this message translates to:
+  /// **'Measure a video'**
+  String get settingsNoiseMeasure;
+
+  /// No description provided for @settingsNoiseMeasured.
+  ///
+  /// In en, this message translates to:
+  /// **'{name}: hiss at {floor} dB, voice at {voice} dB'**
+  String settingsNoiseMeasured(String name, int floor, int voice);
+
+  /// No description provided for @settingsNoiseMeasuring.
+  ///
+  /// In en, this message translates to:
+  /// **'Measuring...'**
+  String get settingsNoiseMeasuring;
+
+  /// No description provided for @settingsNoiseTooClose.
+  ///
+  /// In en, this message translates to:
+  /// **'The hiss is nearly as loud as the voice here, so no threshold separates them cleanly.'**
+  String get settingsNoiseTooClose;
+
+  /// No description provided for @settingsNoiseUse.
+  ///
+  /// In en, this message translates to:
+  /// **'Use {db} dB'**
+  String settingsNoiseUse(int db);
+
+  /// No description provided for @settingsNoiseValue.
+  ///
+  /// In en, this message translates to:
+  /// **'{db} dB'**
+  String settingsNoiseValue(int db);
+
   /// No description provided for @settingsPlaybackSpeed.
   ///
   /// In en, this message translates to:

@@ -141,6 +141,7 @@ void main() {
         // not from the text.
         'settingsSecondsValue',
         'silencesPercent',
+        'settingsNoiseValue',
         'aboutCopyright',
       };
 

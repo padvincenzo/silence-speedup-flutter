@@ -16,6 +16,7 @@ import '../../state/preferences_store.dart';
 import '../../state/process_store.dart';
 import '../messages.dart';
 import 'collapsible_group.dart';
+import 'noise_threshold_tile.dart';
 import 'output_destination.dart';
 import 'settings_tiles.dart';
 
@@ -157,26 +158,12 @@ class EncodingSettingsView extends StatelessWidget {
           expanded: open.contains(groupDetection),
           onExpanded: (bool value) => toggle(groupDetection, value),
           children: <Widget>[
-            SliderSettingTile(
-              title: strings.settingsBackgroundNoise,
-              description: strings.helpBackgroundNoise,
-              valueLabel: optionText(
-                kThresholds[settings.thresholdIndex],
-                strings,
-              ),
+            NoiseThresholdTile(
+              thresholdDb: settings.thresholdDb,
               enabled: !locked,
-              slider: IndexSlider(
-                value: settings.thresholdIndex,
-                max: kThresholds.length - 1,
-                label: optionText(
-                  kThresholds[settings.thresholdIndex],
-                  strings,
-                ),
-                onChanged: locked
-                    ? null
-                    : (int index) =>
-                          update(settings.copyWith(thresholdIndex: index)),
-              ),
+              onChanged: locked
+                  ? null
+                  : (int db) => update(settings.copyWith(thresholdDb: db)),
             ),
             SliderSettingTile(
               title: strings.settingsSilenceMinDuration,

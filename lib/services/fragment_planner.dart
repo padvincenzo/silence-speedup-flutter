@@ -6,6 +6,8 @@
 
 import 'package:flutter/foundation.dart';
 
+import '../models/audio_levels.dart';
+
 import '../models/media_entry.dart';
 import '../models/options.dart';
 import '../models/processing_settings.dart';
@@ -89,6 +91,60 @@ class FragmentPlanner {
       '-',
     ];
   }
+
+  /// Arguments that measure how loud a file is, decoding audio and writing
+  /// nothing.
+  ///
+  /// The whole file rather than a sample: the quietest stretch is what the
+  /// noise floor is measured from, and there is no telling where it falls.
+  /// Only the audio is decoded, which is cheap even for a long recording.
+  static List<String> levelArguments({required String input}) {
+    return <String>[
+      '-hide_banner',
+      '-dn',
+      '-vn',
+      '-i', input,
+      // The voice track, the same one the silences are detected on.
+      '-map', '0:a:0',
+      // metadata=1 makes it print the summary; reset=0 measures the whole
+      // file as one stretch rather than starting again every so often.
+      '-af', 'astats=metadata=1:reset=0',
+      '-f', 'null',
+      '-',
+    ];
+  }
+
+  /// Reads the levels out of what `astats` printed.
+  ///
+  /// The filter reports each channel and then an `Overall` block that says
+  /// the same things about all of them together. Taking the last of each
+  /// line therefore takes the overall figure, whatever the channel count.
+  /// Returns null when the output held neither number, which is what a file
+  /// with no audio at all produces.
+  static AudioLevels? parseLevels(Iterable<String> lines) {
+    double? floor;
+    double? rms;
+
+    for (final String line in lines) {
+      final RegExpMatch? match = _statPattern.firstMatch(line);
+      if (match == null) continue;
+      final double? value = double.tryParse(match.group(2)!);
+      if (value == null || !value.isFinite) continue;
+      if (match.group(1) == 'Noise floor') {
+        floor = value;
+      } else {
+        rms = value;
+      }
+    }
+
+    if (floor == null || rms == null) return null;
+    return AudioLevels(noiseFloorDb: floor, rmsDb: rms);
+  }
+
+  /// Matches the two `astats` lines worth reading.
+  static final RegExp _statPattern = RegExp(
+    r'(Noise floor|RMS level) dB:\s*(-?\d+(?:\.\d+)?)',
+  );
 
   /// Pairs detected boundaries and trims each range by the margin.
   ///

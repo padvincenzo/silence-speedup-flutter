@@ -179,11 +179,36 @@ class LabeledOption {
 }
 
 /// `silencedetect` noise floors, as linear amplitude ratios.
-const List<LabeledOption> kThresholds = <LabeledOption>[
-  LabeledOption.translated(OptionLabel.noiseLow, '0.002'),
-  LabeledOption.translated(OptionLabel.noiseMid, '0.02'),
-  LabeledOption.translated(OptionLabel.noiseHigh, '0.1'),
+/// Quietest and loudest a room may be called, in decibels below full scale.
+///
+/// Under -60 dB is below the noise floor of most recordings, so a threshold
+/// there finds no silence at all; above -10 dB the threshold is up among the
+/// speech and everything counts as silence. Neither end is useful, and the
+/// slider stops there.
+const int kThresholdDbMin = -60;
+const int kThresholdDbMax = -10;
+
+/// Named points on that scale, kept from when it had only these three.
+///
+/// They are what the numbers mean: a studio, a room, a café. The scale is
+/// continuous now, but a reading of "-34 dB" says nothing on its own to
+/// someone who has not measured a room before.
+const List<NoiseAnchor> kNoiseAnchors = <NoiseAnchor>[
+  NoiseAnchor(OptionLabel.noiseLow, -54),
+  NoiseAnchor(OptionLabel.noiseMid, -34),
+  NoiseAnchor(OptionLabel.noiseHigh, -20),
 ];
+
+/// A named place on the noise scale.
+@immutable
+class NoiseAnchor {
+  const NoiseAnchor(this.label, this.db);
+
+  final OptionLabel label;
+
+  /// Decibels below full scale, always negative.
+  final int db;
+}
 
 const List<LabeledOption> kFormats = <LabeledOption>[
   LabeledOption.translated(OptionLabel.keep, kKeepFormat),
