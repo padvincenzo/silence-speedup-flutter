@@ -388,16 +388,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get optionNone => 'None';
 
   @override
-  String get outputAlongsideSource => 'Next to the source video';
+  String get outputAlongsideSource => 'Beside the source';
+
+  @override
+  String get outputFixedDirectory => 'A folder I pick';
 
   @override
   String get outputChooseFolder => 'Choose the export folder';
 
   @override
   String get outputFolder => 'Export to';
-
-  @override
-  String get outputFolderHint => 'Each video is written to its own folder';
 
   @override
   String get preferenceBundledFfmpeg =>

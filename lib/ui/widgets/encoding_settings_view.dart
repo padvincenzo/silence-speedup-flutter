@@ -14,6 +14,7 @@ import '../../models/options.dart';
 import '../../models/processing_settings.dart';
 import '../../state/preferences_store.dart';
 import '../../state/process_store.dart';
+import '../messages.dart';
 import 'collapsible_group.dart';
 import 'output_destination.dart';
 import 'settings_tiles.dart';
@@ -31,9 +32,10 @@ import 'settings_tiles.dart';
 /// them are set once; what a user wants at a glance is not every value but
 /// the ones that are no longer the default.
 class EncodingSettingsView extends StatelessWidget {
-  const EncodingSettingsView({super.key, this.padding});
+  const EncodingSettingsView({super.key, this.bottomInset = 32});
 
-  final EdgeInsetsGeometry? padding;
+  /// Room left under the last control.
+  final double bottomInset;
 
   /// Keys the open groups are remembered under. Stored, so they must not be
   /// renamed lightly.
@@ -57,12 +59,15 @@ class EncodingSettingsView extends StatelessWidget {
     void toggle(String group, bool expanded) =>
         context.read<PreferencesStore>().setEncodingGroupOpen(group, expanded);
 
-    return ListView(
-      padding: padding ?? const EdgeInsets.only(bottom: 32),
-      children: <Widget>[
-        if (locked) LockedNotice(message: strings.ffmpegAlreadyRunning),
+    return CustomScrollView(
+      slivers: <Widget>[
+        if (locked)
+          SliverToBoxAdapter(
+            child: LockedNotice(message: strings.ffmpegAlreadyRunning),
+          ),
 
-        CollapsibleGroup(
+        ...collapsibleGroupSlivers(
+          context: context,
           icon: Icons.bolt,
           title: strings.settingsGroupSpeed,
           summary: speedChanges(settings, strings),
@@ -104,7 +109,8 @@ class EncodingSettingsView extends StatelessWidget {
           ],
         ),
 
-        CollapsibleGroup(
+        ...collapsibleGroupSlivers(
+          context: context,
           icon: Icons.headphones_outlined,
           title: strings.settingsGroupAudio,
           summary: audioChanges(settings, strings),
@@ -143,7 +149,8 @@ class EncodingSettingsView extends StatelessWidget {
           ],
         ),
 
-        CollapsibleGroup(
+        ...collapsibleGroupSlivers(
+          context: context,
           icon: Icons.graphic_eq,
           title: strings.settingsGroupDetection,
           summary: detectionChanges(settings, strings),
@@ -219,7 +226,8 @@ class EncodingSettingsView extends StatelessWidget {
           ],
         ),
 
-        CollapsibleGroup(
+        ...collapsibleGroupSlivers(
+          context: context,
           icon: Icons.movie_creation_outlined,
           title: strings.settingsGroupExport,
           // The destination is not part of ProcessingSettings — it is a
@@ -306,7 +314,8 @@ class EncodingSettingsView extends StatelessWidget {
           ],
         ),
 
-        CollapsibleGroup(
+        ...collapsibleGroupSlivers(
+          context: context,
           icon: Icons.play_circle_outline,
           title: strings.settingsGroupPreview,
           summary: previewChanges(settings, strings),
@@ -339,17 +348,20 @@ class EncodingSettingsView extends StatelessWidget {
         // action, not a setting, so it is a small button and not a tile --
         // as a tile its title was the largest text in the panel, louder
         // than the groups it undoes.
-        Padding(
-          padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
-          child: Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: locked ? null : () => _confirmReset(context),
-              icon: const Icon(Icons.restart_alt, size: 18),
-              label: Text(strings.settingsReset),
+        SliverToBoxAdapter(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: locked ? null : () => _confirmReset(context),
+                icon: const Icon(Icons.restart_alt, size: 18),
+                label: Text(strings.settingsReset),
+              ),
             ),
           ),
         ),
+        SliverToBoxAdapter(child: SizedBox(height: bottomInset)),
       ],
     );
   }
@@ -389,8 +401,7 @@ class EncodingSettingsView extends StatelessWidget {
     if (!confirmed) return;
     await preferences.resetSettings();
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context)
-        .showSnackBar(SnackBar(content: Text(strings.settingsResetDone)));
+    showAppMessage(context, strings.settingsResetDone);
   }
 }
 

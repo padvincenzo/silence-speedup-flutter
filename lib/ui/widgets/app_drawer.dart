@@ -118,6 +118,7 @@ class AppDrawer extends StatelessWidget {
         _DrawerAction(
           icon: Icons.code,
           label: strings.menuSourceCode,
+          leaves: true,
           onTap: () => onOpenLink(
             'https://github.com/padvincenzo/silence-speedup-flutter',
           ),
@@ -125,6 +126,7 @@ class AppDrawer extends StatelessWidget {
         _DrawerAction(
           icon: Icons.bug_report_outlined,
           label: strings.menuIssue,
+          leaves: true,
           onTap: () => onOpenLink(
             'https://github.com/padvincenzo/silence-speedup-flutter/issues',
           ),
@@ -132,6 +134,7 @@ class AppDrawer extends StatelessWidget {
         _DrawerAction(
           icon: Icons.coffee_outlined,
           label: strings.menuDonate,
+          leaves: true,
           onTap: () => onOpenLink('https://paypal.me/VincenzoPadula'),
         ),
         _DrawerAction(
@@ -155,22 +158,37 @@ class _DrawerAction extends StatelessWidget {
     required this.icon,
     required this.label,
     required this.onTap,
+    this.leaves = false,
   });
 
   final IconData icon;
   final String label;
   final VoidCallback onTap;
 
+  /// True for a row that opens a browser. Marked on the trailing edge, the
+  /// same way the about page marks its links: a row that leaves the app
+  /// should say so before it is pressed.
+  final bool leaves;
+
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: ListTile(
         leading: Icon(icon),
         title: Text(
           label,
-          style: Theme.of(context).textTheme.labelLarge,
+          style: theme.textTheme.labelLarge,
         ),
+        trailing: leaves
+            ? Icon(
+                Icons.open_in_new,
+                size: 16,
+                color: theme.colorScheme.onSurfaceVariant,
+              )
+            : null,
         shape: const StadiumBorder(),
         dense: true,
         onTap: onTap,

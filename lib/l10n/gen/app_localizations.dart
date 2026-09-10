@@ -665,8 +665,14 @@ abstract class AppLocalizations {
   /// No description provided for @outputAlongsideSource.
   ///
   /// In en, this message translates to:
-  /// **'Next to the source video'**
+  /// **'Beside the source'**
   String get outputAlongsideSource;
+
+  /// No description provided for @outputFixedDirectory.
+  ///
+  /// In en, this message translates to:
+  /// **'A folder I pick'**
+  String get outputFixedDirectory;
 
   /// No description provided for @outputChooseFolder.
   ///
@@ -679,12 +685,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Export to'**
   String get outputFolder;
-
-  /// No description provided for @outputFolderHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Each video is written to its own folder'**
-  String get outputFolderHint;
 
   /// No description provided for @preferenceBundledFfmpeg.
   ///

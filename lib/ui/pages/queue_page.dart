@@ -11,6 +11,7 @@ import '../../l10n/gen/app_localizations.dart';
 import '../../models/media_entry.dart';
 import '../../state/log_store.dart';
 import '../../state/queue_store.dart';
+import '../layout.dart';
 import '../shortcuts.dart';
 import '../widgets/entry_list.dart';
 import '../widgets/log_console.dart';
@@ -98,34 +99,39 @@ class _Toolbar extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final QueueStore queue = context.watch<QueueStore>();
 
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-      child: Row(
-        children: <Widget>[
-          _AddMenu(
-            enabled: queue.canImport,
-            onOpenFiles: onOpenFiles,
-            onOpenFolder: onOpenFolder,
-          ),
-          const Spacer(),
-          if (queue.entries.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(right: 8),
-              child: Text(
-                strings.queueCount(queue.entries.length),
-                style: theme.textTheme.bodySmall?.copyWith(
-                  color: theme.colorScheme.onSurfaceVariant,
+    return SizedBox(
+      // As tall as the encoding panel's title bar beside it, so the rules
+      // under the two line up.
+      height: kHeaderStripHeight,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: Row(
+          children: <Widget>[
+            _AddMenu(
+              enabled: queue.canImport,
+              onOpenFiles: onOpenFiles,
+              onOpenFolder: onOpenFolder,
+            ),
+            const Spacer(),
+            if (queue.entries.isNotEmpty)
+              Padding(
+                padding: const EdgeInsets.only(right: 8),
+                child: Text(
+                  strings.queueCount(queue.entries.length),
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    color: theme.colorScheme.onSurfaceVariant,
+                  ),
                 ),
               ),
+            IconButton(
+              onPressed: queue.canImport && !queue.isEmpty
+                  ? context.read<QueueStore>().clear
+                  : null,
+              icon: const Icon(Icons.playlist_remove),
+              tooltip: strings.menuClearQueue,
             ),
-          IconButton(
-            onPressed: queue.canImport && !queue.isEmpty
-                ? context.read<QueueStore>().clear
-                : null,
-            icon: const Icon(Icons.playlist_remove),
-            tooltip: strings.menuClearQueue,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -169,11 +175,7 @@ class _AddMenu extends StatelessWidget {
         ),
       ],
       builder:
-          (
-            BuildContext context,
-            MenuController controller,
-            Widget? child,
-          ) {
+          (BuildContext context, MenuController controller, Widget? child) {
             return FilledButton.icon(
               onPressed: !enabled
                   ? null

@@ -276,6 +276,34 @@ void main() {
     });
   });
 
+  group('two strips, one rule', () {
+    testWidgets('the queue toolbar and the panel title bar line up', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester, size: const Size(1400, 900));
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      double ruleUnder(Finder strip) => tester
+          .getRect(
+            find.descendant(of: strip, matching: find.byType(Divider)).first,
+          )
+          .top;
+
+      // Side by side on a wide window, so a four-pixel difference between
+      // the two rules is invisible until it is seen, and then it is all
+      // that can be seen.
+      expect(
+        ruleUnder(find.byType(QueuePage)),
+        ruleUnder(find.byType(DockedEncodingSettings)),
+      );
+    });
+  });
+
   group('queue toolbar', () {
     testWidgets('filling and emptying sit at opposite ends of one row', (
       WidgetTester tester,
@@ -336,6 +364,17 @@ void main() {
       expect(find.byType(OutputDestination), findsOneWidget);
       // The path is editable once a folder is what is wanted.
       expect(find.byType(TextField), findsOneWidget);
+
+      // Both choices are named and on screen, with the live one pressed:
+      // as a single chip, the off state meant something without saying
+      // what. Going back to the source hides the path with it.
+      expect(find.text('Beside the source'), findsOneWidget);
+      expect(find.text('A folder I pick'), findsOneWidget);
+
+      await tester.tap(find.text('Beside the source'));
+      await tester.pumpAndSettle();
+      expect(find.byType(TextField), findsNothing);
+      expect(find.text('Export to Renders'), findsNothing);
     });
 
     testWidgets('the log has one switch, and it is not in the app bar', (
@@ -493,6 +532,41 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('CRF'), findsNothing);
       expect(harness.preferences.openEncodingGroups, isNot(contains('export')));
+    });
+
+    testWidgets('an open group keeps its heading in view while it scrolls', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester, size: const Size(1400, 700));
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      // Two groups open, so there is a heading to be pushed off by another.
+      await harness.preferences.setEncodingGroupOpen('detection', true);
+
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      // Scoped to the panel: the status strip has a Speed readout of its
+      // own, which is a different Speed entirely.
+      final Finder heading = find.descendant(
+        of: find.byType(DockedEncodingSettings),
+        matching: find.text('Speed'),
+      );
+      final double headingTop = tester.getRect(heading).top;
+
+      await tester.drag(
+        find.byType(CustomScrollView).last,
+        const Offset(0, -120),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      // Its own controls have moved up under it; the heading has not moved.
+      expect(heading, findsOneWidget);
+      expect(tester.getRect(heading).top, headingTop);
+      expect(find.text('Silence speed'), findsOneWidget);
     });
 
     testWidgets('the reset asks first, and only then puts everything back', (

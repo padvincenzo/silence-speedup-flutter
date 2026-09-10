@@ -7,6 +7,7 @@
 import 'package:flutter/material.dart';
 
 import '../../l10n/gen/app_localizations.dart';
+import '../layout.dart';
 import 'encoding_settings_view.dart';
 
 /// Width the encoding settings get, docked or as a side sheet.
@@ -43,35 +44,38 @@ class EncodingSettingsPanel extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
-          child: Row(
-            children: <Widget>[
-              Icon(Icons.tune, size: 20, color: scheme.primary),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Text(
-                  strings.settingsEncodingTitle,
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: scheme.onSurface,
-                    fontWeight: FontWeight.w600,
+        SizedBox(
+          // As tall as the queue's toolbar beside it, so the rules under
+          // the two line up.
+          height: kHeaderStripHeight,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 8, 0),
+            child: Row(
+              children: <Widget>[
+                Icon(Icons.tune, size: 20, color: scheme.primary),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    strings.settingsEncodingTitle,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: scheme.onSurface,
+                      fontWeight: FontWeight.w600,
+                    ),
                   ),
                 ),
-              ),
-              IconButton(
-                onPressed: onClose,
-                icon: Icon(docked ? Icons.close_fullscreen : Icons.close),
-                tooltip: docked ? strings.settingsEncodingHide : strings.uiClose,
-              ),
-            ],
+                IconButton(
+                  onPressed: onClose,
+                  icon: Icon(docked ? Icons.close_fullscreen : Icons.close),
+                  tooltip: docked
+                      ? strings.settingsEncodingHide
+                      : strings.uiClose,
+                ),
+              ],
+            ),
           ),
         ),
         const Divider(height: 1),
-        const Expanded(
-          child: EncodingSettingsView(
-            padding: EdgeInsets.only(bottom: 24),
-          ),
-        ),
+        const Expanded(child: EncodingSettingsView(bottomInset: 24)),
       ],
     );
   }

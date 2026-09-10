@@ -4,6 +4,8 @@
 // Author: Vincenzo Padula <padvincenzo@gmail.com>
 // License: GNU GPL v3 or later <http://www.gnu.org/copyleft/gpl.html>
 
+import 'dart:math' as math;
+
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
@@ -25,6 +27,7 @@ import '../state/queue_store.dart';
 import 'pages/about_page.dart';
 import 'pages/app_settings_page.dart';
 import 'pages/queue_page.dart';
+import 'messages.dart';
 import 'platform.dart';
 import 'shortcuts.dart';
 import 'widgets/app_drawer.dart';
@@ -240,11 +243,7 @@ class _AppShellState extends State<AppShell> {
     }
   }
 
-  void _showMessage(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
-    );
-  }
+  void _showMessage(String message) => showAppMessage(context, message);
 
   /// Shrinks the window to the progress strip, or puts it back.
   ///
@@ -261,10 +260,7 @@ class _AppShellState extends State<AppShell> {
 
       final double chrome = (frame.height - MediaQuery.sizeOf(context).height)
           .clamp(0.0, 200.0);
-      final Size target = Size(
-        kCompactWidth,
-        kCompactContentHeight + chrome,
-      );
+      final Size target = Size(kCompactWidth, kCompactContentHeight + chrome);
 
       await windowManager.setMinimumSize(
         Size(kCompactMinimumWidth, target.height),
@@ -315,8 +311,7 @@ class _AppShellState extends State<AppShell> {
         },
         kQuitShortcut: _quit,
         kEncodingSettingsShortcut: _toggleEncoding,
-        const SingleActivator(LogicalKeyboardKey.escape):
-            _closeEncodingSheet,
+        const SingleActivator(LogicalKeyboardKey.escape): _closeEncodingSheet,
       },
       child: Focus(
         autofocus: true,
@@ -391,9 +386,7 @@ class _AppShellState extends State<AppShell> {
                       },
                     ),
                     if (_showDockedEncoding)
-                      DockedEncodingSettings(
-                        onClose: () => _setDocked(false),
-                      ),
+                      DockedEncodingSettings(onClose: () => _setDocked(false)),
                   ],
                 ),
                 if (_dragging) const _DropOverlay(),
@@ -497,17 +490,33 @@ class _EncodingSettingsAction extends StatelessWidget {
 class _ShiftedFabLocation extends FloatingActionButtonLocation {
   const _ShiftedFabLocation(this.inset);
 
+  /// How far in from the trailing edge, past whatever is docked there.
   final double inset;
 
   @override
   Offset getOffset(ScaffoldPrelayoutGeometry geometry) {
-    final Offset base = FloatingActionButtonLocation.endFloat.getOffset(
-      geometry,
-    );
-    final double shift = geometry.textDirection == TextDirection.rtl
-        ? inset
-        : -inset;
-    return Offset(base.dx + shift, base.dy);
+    final double x = geometry.textDirection == TextDirection.rtl
+        ? kFloatingActionButtonMargin + geometry.minInsets.left + inset
+        : geometry.scaffoldSize.width -
+              kFloatingActionButtonMargin -
+              geometry.minInsets.right -
+              geometry.floatingActionButtonSize.width -
+              inset;
+
+    // Deliberately not endFloat: that one lifts the button by the height of
+    // a floating snack bar, and here a message is laid out beside the
+    // button instead of under it. The one control the screen is for should
+    // not jump because something was said.
+    final double bottom =
+        geometry.contentBottom -
+        kFloatingActionButtonMargin -
+        geometry.floatingActionButtonSize.height;
+    final double lowest =
+        geometry.scaffoldSize.height -
+        geometry.floatingActionButtonSize.height -
+        (geometry.scaffoldSize.height - geometry.contentBottom);
+
+    return Offset(x, math.min(bottom, lowest));
   }
 }
 
@@ -526,6 +535,7 @@ class _StartStopButton extends StatelessWidget {
 
     if (process.isRunning) {
       return FloatingActionButton.extended(
+        key: startButtonKey,
         onPressed: onStop,
         backgroundColor: scheme.errorContainer,
         foregroundColor: scheme.onErrorContainer,
@@ -538,6 +548,7 @@ class _StartStopButton extends StatelessWidget {
     // point of the screen even before anything is queued.
     final bool enabled = process.canStart;
     return FloatingActionButton.extended(
+      key: startButtonKey,
       onPressed: enabled ? onStart : null,
       backgroundColor: enabled ? null : scheme.surfaceContainerHighest,
       foregroundColor: enabled ? null : Theme.of(context).disabledColor,
@@ -561,10 +572,7 @@ class _DropOverlay extends StatelessWidget {
           color: scheme.primary.withValues(alpha: 0.12),
           child: Center(
             child: Container(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 16,
-              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
               decoration: BoxDecoration(
                 color: scheme.surface,
                 borderRadius: BorderRadius.circular(16),

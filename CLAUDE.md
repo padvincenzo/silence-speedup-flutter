@@ -227,6 +227,12 @@ runs as far away as the ones they set on the first day. They are separate now:
   `kEncodingPanelBreakpoint` wide, and as an end-drawer side sheet when it is
   not. The app bar's button and Ctrl+, reach it; the sheet closes on Escape,
   the scrim, or its own button.
+- **An open group's heading is pinned** while its own controls are on screen,
+  and the next one pushes it off. That is why the panel is a `CustomScrollView`
+  and `collapsibleGroupSlivers` returns slivers: a pinned header has to state
+  its extent up front, which an open heading can do — it shows only its title,
+  since the summary is for when the group is shut, and a shut group has nothing
+  under it to stick above.
 - **The groups collapse, and a closed one shows only what differs from the
   default.** The summaries are the `*Changes` functions in
   [labels.dart](lib/l10n/labels.dart), each comparing against
@@ -276,6 +282,18 @@ Two pieces of chrome that were chosen against the framework's default:
   document framed and held to `kLicensesDocumentWidth`, since a licence line
   as wide as a monitor cannot be read. It reads `LicenseRegistry` directly, so
   a new dependency appears in it without anything being wired up.
+
+- Anything that sits under the app bar on the queue screen is
+  `kHeaderStripHeight` tall ([lib/ui/layout.dart](lib/ui/layout.dart)). The
+  queue's toolbar and the encoding panel's title bar are side by side on a
+  wide window, and built out of their own padding they came out four pixels
+  apart.
+- A message is shown with `showAppMessage`
+  ([lib/ui/messages.dart](lib/ui/messages.dart)), never `showSnackBar`
+  directly: it lays the snack bar out beside the Start button and stops short
+  of it. The button's own location deliberately ignores the snack bar's
+  height, so the one control the screen is for does not jump because
+  something was said.
 
 Three layout constraints that are easy to undo:
 

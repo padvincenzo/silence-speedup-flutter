@@ -391,17 +391,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get optionNone => 'Nessuno';
 
   @override
-  String get outputAlongsideSource => 'Accanto al video di origine';
+  String get outputAlongsideSource => 'Accanto al sorgente';
+
+  @override
+  String get outputFixedDirectory => 'Una cartella che scelgo';
 
   @override
   String get outputChooseFolder => 'Scegli la cartella di esportazione';
 
   @override
   String get outputFolder => 'Esporta in';
-
-  @override
-  String get outputFolderHint =>
-      'Ogni video viene scritto nella propria cartella';
 
   @override
   String get preferenceBundledFfmpeg =>

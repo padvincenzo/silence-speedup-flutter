@@ -113,22 +113,34 @@ class _OutputDestinationState extends State<OutputDestination> {
             ),
           ),
           const SizedBox(height: 10),
+          // Both choices on screen, with one of them pressed. As a single
+          // chip it was a switch whose off state had no name: turning off
+          // "beside the source" plainly meant something, but not what.
           Align(
             alignment: Alignment.centerLeft,
-            child: FilterChip(
-              label: Text(strings.outputAlongsideSource),
-              selected: alongside,
-              // What the chip means when it is on. It used to be the hint
-              // inside the path field, which is not on screen in that mode.
-              tooltip: strings.outputFolderHint,
-              onSelected: locked
-                  ? null
-                  : (bool selected) =>
-                        context.read<PreferencesStore>().setOutputMode(
-                          selected
-                              ? OutputMode.alongsideSource
-                              : OutputMode.fixedDirectory,
-                        ),
+            child: SingleChildScrollView(
+              scrollDirection: Axis.horizontal,
+              child: SegmentedButton<OutputMode>(
+                segments: <ButtonSegment<OutputMode>>[
+                  ButtonSegment<OutputMode>(
+                    value: OutputMode.alongsideSource,
+                    label: Text(strings.outputAlongsideSource),
+                    icon: const Icon(Icons.subdirectory_arrow_right),
+                  ),
+                  ButtonSegment<OutputMode>(
+                    value: OutputMode.fixedDirectory,
+                    label: Text(strings.outputFixedDirectory),
+                    icon: const Icon(Icons.folder_outlined),
+                  ),
+                ],
+                selected: <OutputMode>{preferences.outputMode},
+                showSelectedIcon: false,
+                onSelectionChanged: locked
+                    ? null
+                    : (Set<OutputMode> selection) => context
+                          .read<PreferencesStore>()
+                          .setOutputMode(selection.first),
+              ),
             ),
           ),
           if (!alongside) ...<Widget>[
