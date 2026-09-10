@@ -88,7 +88,15 @@ Two things it depends on:
   painters map only that stretch onto the width. It is not a scaled-up canvas:
   seeing a tenth of a second in an hour needs a thousandfold magnification,
   and a canvas a thousand windows wide is not a thing to ask a compositor
-  for. The controller is pure and tested; the gestures are not.
+  for. The controller is pure and tested; the gestures are not. The strip
+  under the track is both the overview and the scrollbar — its marked part
+  drags, and a press outside it jumps there — and `minimumSpan` is where the
+  zoom stops: two seconds across the width, close enough to aim at a
+  twentieth of a second and far enough to still see what surrounds it.
+- The timeline and the figures do not scroll; only the list of ranges does.
+  Pointing a row at the timeline is pointless if the pointing goes off
+  screen, which is also why the list is not foldable: it is the substance of
+  the page.
 - `FragmentPlanner.outputSeconds` derives the estimated result from the same
   `plan` the run walks, so the figure and the file cannot disagree about what
   the settings mean. Anything else derived from a run belongs there too, and

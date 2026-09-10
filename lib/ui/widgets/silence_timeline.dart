@@ -35,9 +35,12 @@ class SilenceTimelineController extends ChangeNotifier {
 
   /// Shortest stretch the view will narrow to.
   ///
-  /// Half a second across the width: a tenth-of-a-second pause is a fifth of
-  /// the window, which is what "find the small ones" is asking for.
-  static const double minimumSpan = 0.5;
+  /// Two seconds across the width. The detector reports in steps of
+  /// `kSilenceDurationStep`, a twentieth of a second, and at this span that
+  /// step is still a fiftieth of the width — enough to see and to aim at.
+  /// Closer than this the view stops being a timeline and becomes a
+  /// microscope: one pause, and no idea what is around it.
+  static const double minimumSpan = 2;
 
   /// How much of a revealed range's own length to show around it.
   static const double _revealContext = 6;
@@ -80,6 +83,13 @@ class SilenceTimelineController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Puts [seconds] in the middle of the view, as far as the ends allow.
+  void centreOn(double seconds) {
+    _start = seconds - _span / 2;
+    _clamp();
+    notifyListeners();
+  }
+
   /// Frames one range, with some of the video around it for context.
   void reveal(SilenceRange range) {
     _span = math.min(
@@ -117,7 +127,7 @@ class SilenceTimeline extends StatelessWidget {
 
   static const double _trackHeight = 56;
   static const double _rulerHeight = 22;
-  static const double _minimapHeight = 14;
+  static const double _minimapHeight = 18;
 
   @override
   Widget build(BuildContext context) {
@@ -224,20 +234,13 @@ class SilenceTimeline extends StatelessWidget {
             const SizedBox(height: 6),
             // The whole video, always, with the visible part marked: zoomed
             // in far enough to see a tenth of a second, everything else is
-            // off screen, and this is what says where you are.
-            SizedBox(
+            // off screen, and this is what says where you are. It is also
+            // the scrollbar: the marked part can be dragged, and a press
+            // outside it jumps there.
+            _Minimap(
+              ranges: ranges,
+              controller: controller,
               height: _minimapHeight,
-              child: CustomPaint(
-                painter: _MinimapPainter(
-                  ranges: ranges,
-                  sourceSeconds: controller.sourceSeconds,
-                  start: controller.start,
-                  span: controller.span,
-                  track: scheme.surfaceContainerHighest,
-                  silence: scheme.primary.withValues(alpha: 0.45),
-                  window: scheme.primary,
-                ),
-              ),
             ),
           ],
         );
@@ -263,6 +266,86 @@ class SilenceTimeline extends StatelessWidget {
 
   static String _at(double seconds) =>
       formatDuration(Duration(milliseconds: (seconds * 1000).round()));
+}
+
+/// The whole video as a strip, and the scrollbar for the track above it.
+class _Minimap extends StatefulWidget {
+  const _Minimap({
+    required this.ranges,
+    required this.controller,
+    required this.height,
+  });
+
+  final List<SilenceRange> ranges;
+  final SilenceTimelineController controller;
+  final double height;
+
+  @override
+  State<_Minimap> createState() => _MinimapState();
+}
+
+class _MinimapState extends State<_Minimap> {
+  /// Where inside the window the drag started, in seconds from its middle.
+  ///
+  /// Grabbing the marked part moves it from wherever it was taken hold of,
+  /// the way a scrollbar thumb does; pressing outside it centres on the
+  /// press first, so a click jumps.
+  double _grip = 0;
+
+  double _seconds(double dx, double width) {
+    if (width <= 0) return 0;
+    return (dx / width).clamp(0.0, 1.0) * widget.controller.sourceSeconds;
+  }
+
+  void _press(double dx, double width) {
+    final SilenceTimelineController view = widget.controller;
+    final double at = _seconds(dx, width);
+    final bool inside = at >= view.start && at <= view.end;
+    _grip = inside ? at - (view.start + view.span / 2) : 0;
+    if (!inside) view.centreOn(at);
+  }
+
+  void _move(double dx, double width) {
+    widget.controller.centreOn(_seconds(dx, width) - _grip);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final ColorScheme scheme = Theme.of(context).colorScheme;
+
+    return LayoutBuilder(
+      builder: (BuildContext context, BoxConstraints constraints) {
+        final double width = constraints.maxWidth;
+
+        return MouseRegion(
+          cursor: SystemMouseCursors.grab,
+          child: GestureDetector(
+            behavior: HitTestBehavior.opaque,
+            onTapDown: (TapDownDetails details) =>
+                _press(details.localPosition.dx, width),
+            onHorizontalDragStart: (DragStartDetails details) =>
+                _press(details.localPosition.dx, width),
+            onHorizontalDragUpdate: (DragUpdateDetails details) =>
+                _move(details.localPosition.dx, width),
+            child: SizedBox(
+              height: widget.height,
+              child: CustomPaint(
+                painter: _MinimapPainter(
+                  ranges: widget.ranges,
+                  sourceSeconds: widget.controller.sourceSeconds,
+                  start: widget.controller.start,
+                  span: widget.controller.span,
+                  track: scheme.surfaceContainerHighest,
+                  silence: scheme.primary.withValues(alpha: 0.45),
+                  window: scheme.primary,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
 }
 
 /// Maps a stretch of the source onto a width.

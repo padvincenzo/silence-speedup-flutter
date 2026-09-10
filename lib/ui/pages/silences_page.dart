@@ -15,7 +15,6 @@ import '../../services/fragment_planner.dart';
 import '../../state/preferences_store.dart';
 import '../../state/process_store.dart';
 import '../format.dart';
-import '../widgets/collapsible_group.dart';
 import '../widgets/silence_timeline.dart';
 
 /// What the detection found in one video, drawn.
@@ -92,10 +91,13 @@ class _SilencesPageState extends State<SilencesPage> {
           ],
         ),
       ),
+      // The timeline never scrolls away: it is what the list is about, and
+      // pointing a row at it is pointless if the pointing goes off screen.
+      // Only the list moves.
       body: ranges.isEmpty
           ? _Empty(message: strings.silencesEmpty)
-          : ListView(
-              padding: const EdgeInsets.only(bottom: 32),
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: <Widget>[
                 if (stale) _StaleNotice(entry: entry),
                 Padding(
@@ -103,11 +105,21 @@ class _SilencesPageState extends State<SilencesPage> {
                   child: SilenceTimeline(ranges: ranges, controller: _view),
                 ),
                 _Figures(entry: entry, settings: settings),
-                const SizedBox(height: 8),
-                _RangeList(
-                  entry: entry,
-                  settings: settings,
-                  onReveal: _view.reveal,
+                const SizedBox(height: 12),
+                _ListHeader(entry: entry),
+                const Divider(height: 1),
+                Expanded(
+                  child: ListView.builder(
+                    padding: const EdgeInsets.only(top: 4, bottom: 24),
+                    itemCount: ranges.length,
+                    itemBuilder: (BuildContext context, int index) =>
+                        _RangeTile(
+                          index: index,
+                          range: ranges[index],
+                          settings: settings,
+                          onReveal: () => _view.reveal(ranges[index]),
+                        ),
+                  ),
                 ),
               ],
             ),
@@ -193,51 +205,41 @@ class _Figure extends StatelessWidget {
   }
 }
 
-/// Every range, behind a heading that reports on them.
+/// Says how many ranges the list below holds.
 ///
-/// Closed by default: the drawing above answers "how are they spread" in one
-/// look, and the list is for when the answer is "one of them is wrong".
-class _RangeList extends StatefulWidget {
-  const _RangeList({
-    required this.entry,
-    required this.settings,
-    required this.onReveal,
-  });
+/// Not a group that opens and closes any more: the list is the substance of
+/// the page, and a page whose substance starts folded away asks to be
+/// unfolded every single time.
+class _ListHeader extends StatelessWidget {
+  const _ListHeader({required this.entry});
 
   final MediaEntry entry;
-  final ProcessingSettings settings;
-  final void Function(SilenceRange range) onReveal;
-
-  @override
-  State<_RangeList> createState() => _RangeListState();
-}
-
-class _RangeListState extends State<_RangeList> {
-  bool _open = false;
 
   @override
   Widget build(BuildContext context) {
     final AppLocalizations strings = AppLocalizations.of(context);
-    final List<SilenceRange> ranges = widget.entry.silences;
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
 
-    return CollapsibleGroup(
-      icon: Icons.list_alt,
-      title: strings.silencesRanges(ranges.length),
-      summary: <String>[
-        '${strings.silencesTotal} '
-            '${formatDuration(Duration(milliseconds: (widget.entry.silenceSeconds * 1000).round()))}',
-      ],
-      expanded: _open,
-      onExpanded: (bool value) => setState(() => _open = value),
-      children: <Widget>[
-        for (int i = 0; i < ranges.length; i++)
-          _RangeTile(
-            index: i,
-            range: ranges[i],
-            settings: widget.settings,
-            onReveal: () => widget.onReveal(ranges[i]),
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 8),
+      child: Row(
+        children: <Widget>[
+          Icon(Icons.list_alt, size: 18, color: scheme.primary),
+          const SizedBox(width: 12),
+          // No total here: it is one of the figures three lines above, and
+          // saying it twice on one screen only invites them to disagree.
+          Expanded(
+            child: Text(
+              strings.silencesRanges(entry.silences.length),
+              style: theme.textTheme.titleSmall?.copyWith(
+                color: scheme.primary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
-      ],
+        ],
+      ),
     );
   }
 }

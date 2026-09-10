@@ -757,7 +757,7 @@ void main() {
       expect(find.text('00:00  →  01:00'), findsOneWidget);
     });
 
-    testWidgets('keeps the list closed until it is asked for', (
+    testWidgets('lists every range without being asked', (
       WidgetTester tester,
     ) async {
       await useDesktopSurface(tester);
@@ -770,17 +770,45 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('2 silences'), findsOneWidget);
-      expect(find.text('00:10  →  00:20'), findsNothing);
-
-      await tester.tap(find.text('2 silences'));
-      await tester.pumpAndSettle();
-
       expect(tester.takeException(), isNull);
+      expect(find.text('2 silences'), findsOneWidget);
       // One row per range, each saying where it is and what happens to it.
       expect(find.text('00:10  →  00:20'), findsOneWidget);
       expect(find.text('00:40  →  00:50'), findsOneWidget);
       expect(find.text('8x'), findsNWidgets(2));
+    });
+
+    testWidgets('scrolls the list and leaves the timeline where it is', (
+      WidgetTester tester,
+    ) async {
+      // Short enough that a hundred rows cannot possibly fit.
+      await useDesktopSurface(tester, size: const Size(900, 520));
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      final MediaEntry busy = MediaEntry(r'C:\videos\chatty.mp4')
+        ..duration = const Duration(minutes: 20);
+      busy.setSilences(
+        List<SilenceRange>.generate(
+          100,
+          (int i) => SilenceRange(i * 12, i * 12 + 1),
+        ),
+        detectedWith: const ProcessingSettings(),
+      );
+
+      await tester.pumpWidget(harness.wrap(SilencesPage(entry: busy)));
+      await tester.pumpAndSettle();
+
+      final Rect before = tester.getRect(find.byType(SilenceTimeline));
+
+      await tester.drag(find.byType(ListView), const Offset(0, -600));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      // The list moved; what the list is about did not.
+      expect(tester.getRect(find.byType(SilenceTimeline)), before);
+      expect(find.text('00:00  →  20:00'), findsOneWidget);
     });
 
     testWidgets('the zoom buttons narrow the view and put it back', (
@@ -925,7 +953,7 @@ void main() {
       expect(view.start + view.span * 0.75, closeTo(450, 0.001));
     });
 
-    test('narrows far enough to see a tenth of a second', () {
+    test('narrows far enough to see a tenth of a second, and no further', () {
       final SilenceTimelineController view = SilenceTimelineController(
         sourceSeconds: 3600,
       );
@@ -934,10 +962,28 @@ void main() {
         view.zoom(0.5);
       }
 
-      // A tenth of a second is a fifth of the width at this span, which is
-      // the whole point of zooming an hour-long video.
+      // All the way in, a tenth of a second is a twentieth of the width:
+      // visible and easy to aim at, without the view having turned into a
+      // microscope that shows one pause and none of its surroundings.
       expect(view.span, SilenceTimelineController.minimumSpan);
-      expect(0.1 / view.span, greaterThan(0.15));
+      expect(0.1 / view.span, greaterThan(0.02));
+      expect(0.1 / view.span, lessThan(0.2));
+    });
+
+    test('a press outside the visible part centres on it', () {
+      final SilenceTimelineController view = SilenceTimelineController(
+        sourceSeconds: 600,
+      );
+
+      view.zoom(0.1);
+      view.centreOn(500);
+      expect(view.start + view.span / 2, closeTo(500, 0.001));
+
+      // And it stops at the ends rather than showing past them.
+      view.centreOn(0);
+      expect(view.start, 0);
+      view.centreOn(600);
+      expect(view.end, closeTo(600, 0.001));
     });
 
     test('never leaves the video', () {
