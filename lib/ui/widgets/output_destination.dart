@@ -116,31 +116,38 @@ class _OutputDestinationState extends State<OutputDestination> {
           // Both choices on screen, with one of them pressed. As a single
           // chip it was a switch whose off state had no name: turning off
           // "beside the source" plainly meant something, but not what.
-          Align(
-            alignment: Alignment.centerLeft,
-            child: SingleChildScrollView(
-              scrollDirection: Axis.horizontal,
-              child: SegmentedButton<OutputMode>(
-                segments: <ButtonSegment<OutputMode>>[
-                  ButtonSegment<OutputMode>(
-                    value: OutputMode.alongsideSource,
-                    label: Text(strings.outputAlongsideSource),
-                    icon: const Icon(Icons.subdirectory_arrow_right),
+          //
+          // Given the whole width and no icons, because the panel is 380
+          // pixels wide: with icons it ran past the edge, and a control you
+          // have to scroll sideways to read is worse than a short label.
+          SizedBox(
+            width: double.infinity,
+            child: SegmentedButton<OutputMode>(
+              segments: <ButtonSegment<OutputMode>>[
+                ButtonSegment<OutputMode>(
+                  value: OutputMode.alongsideSource,
+                  label: Text(
+                    strings.outputAlongsideSource,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                  ButtonSegment<OutputMode>(
-                    value: OutputMode.fixedDirectory,
-                    label: Text(strings.outputFixedDirectory),
-                    icon: const Icon(Icons.folder_outlined),
+                ),
+                ButtonSegment<OutputMode>(
+                  value: OutputMode.fixedDirectory,
+                  label: Text(
+                    strings.outputFixedDirectory,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                ],
-                selected: <OutputMode>{preferences.outputMode},
-                showSelectedIcon: false,
-                onSelectionChanged: locked
-                    ? null
-                    : (Set<OutputMode> selection) => context
-                          .read<PreferencesStore>()
-                          .setOutputMode(selection.first),
-              ),
+                ),
+              ],
+              selected: <OutputMode>{preferences.outputMode},
+              showSelectedIcon: false,
+              onSelectionChanged: locked
+                  ? null
+                  : (Set<OutputMode> selection) => context
+                        .read<PreferencesStore>()
+                        .setOutputMode(selection.first),
             ),
           ),
           if (!alongside) ...<Widget>[

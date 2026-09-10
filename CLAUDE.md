@@ -298,9 +298,25 @@ Two pieces of chrome that were chosen against the framework's default:
 - A message is shown with `showAppMessage`
   ([lib/ui/messages.dart](lib/ui/messages.dart)), never `showSnackBar`
   directly: it lays the snack bar out beside the Start button and stops short
-  of it. The button's own location deliberately ignores the snack bar's
-  height, so the one control the screen is for does not jump because
-  something was said.
+  of it. Two things make that possible, and neither is obvious:
+  - the button's own location ignores the snack bar's height, so the one
+    control the screen is for does not jump because something was said;
+  - **the body is a `Scaffold` of its own**, with `bodyMessengerKey`. A
+    Scaffold anchors a floating snack bar to the *top* of its
+    FloatingActionButton, so a message shown by the window's Scaffold can
+    only ever appear above the button. The body has no button, so the
+    message is laid against the bottom of the body — the line the button
+    sits on. A negative bottom margin would be the other way, and `Padding`
+    forbids one.
+- **The strip under an app bar carries the scrolled-under shadow, not the
+  app bar** — on the queue and on the silences page, where a toolbar or a
+  heading sits in between. `ScrolledUnder`
+  ([lib/ui/widgets/scrolled_under.dart](lib/ui/widgets/scrolled_under.dart))
+  is that strip, and those app bars are given a `notificationPredicate` of
+  false. An app bar takes the shadow for any scroll notification that
+  reaches it, with no regard for whether the content is going beneath it.
+  The settings and about pages scroll directly under their bar and keep the
+  default.
 
 Three layout constraints that are easy to undo:
 

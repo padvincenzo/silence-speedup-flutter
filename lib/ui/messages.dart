@@ -6,6 +6,15 @@
 
 import 'package:flutter/material.dart';
 
+/// The messenger of the body's own Scaffold.
+///
+/// Messages go there rather than to the window's Scaffold, because that one
+/// has the Start button and anchors a floating snack bar above it. The body
+/// has no button of its own, so a message can be laid against the bottom of
+/// it — which is the line the button sits on.
+final GlobalKey<ScaffoldMessengerState> bodyMessengerKey =
+    GlobalKey<ScaffoldMessengerState>();
+
 /// The queue's Start button, so a message can be laid out beside it.
 ///
 /// A global key rather than something handed down: there is one window, one
@@ -29,7 +38,9 @@ const double _kBottom = kFloatingActionButtonMargin;
 /// screen that must not move, and a sentence does not need the whole window.
 /// So the message stops short of the button, and sits at its level.
 void showAppMessage(BuildContext context, String message) {
-  ScaffoldMessenger.of(context).showSnackBar(
+  final ScaffoldMessengerState messenger =
+      bodyMessengerKey.currentState ?? ScaffoldMessenger.of(context);
+  messenger.showSnackBar(
     SnackBar(content: Text(message), margin: _marginBeside(context)),
   );
 }

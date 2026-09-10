@@ -16,6 +16,7 @@ import '../shortcuts.dart';
 import '../widgets/entry_list.dart';
 import '../widgets/log_console.dart';
 import '../widgets/progress_footer.dart';
+import '../widgets/scrolled_under.dart';
 
 /// Room left below the queue so the floating action button never sits on top
 /// of the last row.
@@ -29,7 +30,7 @@ const double kQueueBottomInset = 88;
 /// slot so the button has somewhere to float that covers nothing. The rates
 /// and the way into the encoding settings are one control in the app bar, so
 /// this page carries neither.
-class QueuePage extends StatelessWidget {
+class QueuePage extends StatefulWidget {
   const QueuePage({
     super.key,
     required this.onOpenFiles,
@@ -44,15 +45,40 @@ class QueuePage extends StatelessWidget {
   final void Function(MediaEntry entry) onPreview;
 
   @override
+  State<QueuePage> createState() => _QueuePageState();
+}
+
+class _QueuePageState extends State<QueuePage> {
+  /// Whether the queue has been scrolled off its top.
+  ///
+  /// What the rows pass under is the toolbar, not the app bar above it, so
+  /// the toolbar is what lifts. The app bar is told to ignore the scroll.
+  bool _scrolled = false;
+
+  @override
   Widget build(BuildContext context) {
     return Column(
       children: <Widget>[
-        _Toolbar(onOpenFiles: onOpenFiles, onOpenFolder: onOpenFolder),
-        const Divider(),
+        ScrolledUnder(
+          lifted: _scrolled,
+          child: _Toolbar(
+            onOpenFiles: widget.onOpenFiles,
+            onOpenFolder: widget.onOpenFolder,
+          ),
+        ),
         Expanded(
-          child: EntryList(
-            onRevealOutput: onRevealOutput,
-            onPreview: onPreview,
+          child: NotificationListener<ScrollNotification>(
+            onNotification: (ScrollNotification notification) {
+              final bool scrolled = ScrolledUnder.isScrolled(notification);
+              if (scrolled != _scrolled) {
+                setState(() => _scrolled = scrolled);
+              }
+              return false;
+            },
+            child: EntryList(
+              onRevealOutput: widget.onRevealOutput,
+              onPreview: widget.onPreview,
+            ),
           ),
         ),
       ],

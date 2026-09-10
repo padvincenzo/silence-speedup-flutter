@@ -22,6 +22,7 @@ import 'package:silence_speedup/state/preferences_store.dart';
 import 'package:silence_speedup/state/process_store.dart';
 import 'package:silence_speedup/state/queue_store.dart';
 import 'package:silence_speedup/ui/pages/about_page.dart';
+import 'package:silence_speedup/ui/messages.dart';
 import 'package:silence_speedup/ui/pages/app_settings_page.dart';
 import 'package:silence_speedup/ui/pages/license_text_page.dart';
 import 'package:silence_speedup/ui/pages/licenses_page.dart';
@@ -31,6 +32,7 @@ import 'package:silence_speedup/ui/widgets/compact_progress_view.dart';
 import 'package:silence_speedup/ui/widgets/encoding_settings_panel.dart';
 import 'package:silence_speedup/ui/widgets/output_destination.dart';
 import 'package:silence_speedup/ui/widgets/readable_width.dart';
+import 'package:silence_speedup/ui/widgets/scrolled_under.dart';
 import 'package:silence_speedup/ui/widgets/silence_timeline.dart';
 import 'package:silence_speedup/ui/widgets/encoding_settings_view.dart';
 import 'package:silence_speedup/ui/theme.dart';
@@ -274,6 +276,42 @@ void main() {
     });
   });
 
+  group('what a message is beside', () {
+    testWidgets('sits at the Start button level, and stops short of it', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester, size: const Size(1400, 900));
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      showAppMessage(tester.element(find.byType(QueuePage)), 'Done');
+      await tester.pumpAndSettle();
+
+      final Rect button = tester.getRect(find.byType(FloatingActionButton));
+      // The visible pill, not the snack bar's box: the box carries the
+      // margin that puts the pill where it is.
+      final Rect pill = tester.getRect(
+        find
+            .descendant(
+              of: find.byType(SnackBar),
+              matching: find.byType(Material),
+            )
+            .first,
+      );
+
+      // A floating snack bar is anchored above a FloatingActionButton by the
+      // Scaffold showing it, which is why the body has a Scaffold of its own
+      // without one.
+      expect(pill.bottom, closeTo(button.bottom, 1));
+      expect(pill.right, lessThanOrEqualTo(button.left));
+      expect(pill.width, greaterThan(200));
+    });
+  });
+
   group('two strips, one rule', () {
     testWidgets('the queue toolbar and the panel title bar line up', (
       WidgetTester tester,
@@ -363,6 +401,14 @@ void main() {
       // The path is editable once a folder is what is wanted.
       expect(find.byType(TextField), findsOneWidget);
 
+      // And the toggle fits the panel: with icons it ran past the window,
+      // and a control that has to be scrolled sideways to be read is worse
+      // than a short label.
+      expect(
+        tester.getSize(find.byType(SegmentedButton<OutputMode>)).width,
+        lessThanOrEqualTo(kEncodingPanelWidth - 32),
+      );
+
       // Both choices are named and on screen, with the live one pressed:
       // as a single chip, the off state meant something without saying
       // what. Going back to the source hides the path with it.
@@ -373,6 +419,39 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(TextField), findsNothing);
       expect(find.text('Export to Renders'), findsNothing);
+    });
+
+    testWidgets('the toolbar takes the shadow, not the app bar', (
+      WidgetTester tester,
+    ) async {
+      // Short, so a handful of rows overflows it.
+      await useDesktopSurface(tester, size: const Size(900, 480));
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+      await harness.queue.addFiles(<String>[
+        for (int i = 0; i < 12; i++) 'C:\\videos\\clip$i.mp4',
+      ]);
+
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      double elevationOf(Finder of) => tester
+          .widget<Material>(
+            find.descendant(of: of, matching: find.byType(Material)).first,
+          )
+          .elevation;
+
+      expect(elevationOf(find.byType(ScrolledUnder)), 0);
+      expect(elevationOf(find.byType(AppBar)), 0);
+
+      await tester.drag(find.byType(ListView), const Offset(0, -200));
+      await tester.pumpAndSettle();
+
+      // The rows go under the toolbar, so the toolbar lifts and the bar
+      // above it -- which nothing is passing under -- stays flat.
+      expect(elevationOf(find.byType(ScrolledUnder)), greaterThan(0));
+      expect(elevationOf(find.byType(AppBar)), 0);
     });
 
     testWidgets('the log has one switch, and it is not in the app bar', (

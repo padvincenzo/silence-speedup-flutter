@@ -318,6 +318,13 @@ class _AppShellState extends State<AppShell> {
         child: Scaffold(
           key: _scaffold,
           appBar: AppBar(
+            // On the queue the rows pass under the toolbar, not under this,
+            // so the toolbar carries the shadow and this stays flat. The
+            // settings and about pages scroll directly beneath it, and
+            // there the default is right.
+            notificationPredicate: _destination == AppDestination.queue
+                ? (ScrollNotification _) => false
+                : defaultScrollNotificationPredicate,
             title: Text(_titleFor(_destination, strings)),
             actions: _actionsFor(_destination, strings),
           ),
@@ -357,40 +364,54 @@ class _AppShellState extends State<AppShell> {
           floatingActionButtonLocation: _showDockedEncoding
               ? const _ShiftedFabLocation(kEncodingPanelWidth)
               : FloatingActionButtonLocation.endFloat,
-          body: DropTarget(
-            enable: context.watch<QueueStore>().canImport,
-            onDragEntered: (_) => setState(() => _dragging = true),
-            onDragExited: (_) => setState(() => _dragging = false),
-            onDragDone: (DropDoneDetails details) {
-              setState(() => _dragging = false);
-              _handleDrop(details);
-            },
-            child: Stack(
-              children: <Widget>[
-                Row(
+          // The body is a Scaffold of its own for one reason: a floating
+          // snack bar is anchored to the *top* of a FloatingActionButton
+          // when the Scaffold showing it has one, which puts a message
+          // above the Start button rather than beside it. This one has no
+          // button, so the message is placed against the bottom of the body
+          // and lands at the button's own level.
+          body: ScaffoldMessenger(
+            key: bodyMessengerKey,
+            child: Scaffold(
+              backgroundColor: Colors.transparent,
+              body: DropTarget(
+                enable: context.watch<QueueStore>().canImport,
+                onDragEntered: (_) => setState(() => _dragging = true),
+                onDragExited: (_) => setState(() => _dragging = false),
+                onDragDone: (DropDoneDetails details) {
+                  setState(() => _dragging = false);
+                  _handleDrop(details);
+                },
+                child: Stack(
                   children: <Widget>[
-                    Expanded(
-                      child: switch (_destination) {
-                        AppDestination.queue => QueuePage(
-                          onOpenFiles: _openFiles,
-                          onOpenFolder: _openFolder,
-                          onRevealOutput: _revealOutput,
-                          onPreview: _preview,
+                    Row(
+                      children: <Widget>[
+                        Expanded(
+                          child: switch (_destination) {
+                            AppDestination.queue => QueuePage(
+                              onOpenFiles: _openFiles,
+                              onOpenFolder: _openFolder,
+                              onRevealOutput: _revealOutput,
+                              onPreview: _preview,
+                            ),
+                            AppDestination.settings => const AppSettingsPage(),
+                            AppDestination.about => AboutPage(
+                              version: _version,
+                              onOpenLink: _openLink,
+                              update: _update,
+                            ),
+                          },
                         ),
-                        AppDestination.settings => const AppSettingsPage(),
-                        AppDestination.about => AboutPage(
-                          version: _version,
-                          onOpenLink: _openLink,
-                          update: _update,
-                        ),
-                      },
+                        if (_showDockedEncoding)
+                          DockedEncodingSettings(
+                            onClose: () => _setDocked(false),
+                          ),
+                      ],
                     ),
-                    if (_showDockedEncoding)
-                      DockedEncodingSettings(onClose: () => _setDocked(false)),
+                    if (_dragging) const _DropOverlay(),
                   ],
                 ),
-                if (_dragging) const _DropOverlay(),
-              ],
+              ),
             ),
           ),
         ),
