@@ -99,6 +99,10 @@ class DockedEncodingSettings extends StatelessWidget {
       child: Material(
         color: scheme.surfaceContainerLow,
         child: DecoratedBox(
+          // Painted over the panel, not behind it. A pinned group heading
+          // is opaque and spans the full width, so a background border
+          // disappeared behind it and the panel ran into the queue.
+          position: DecorationPosition.foreground,
           decoration: BoxDecoration(
             border: Border(left: BorderSide(color: scheme.outlineVariant)),
           ),

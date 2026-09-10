@@ -232,7 +232,14 @@ runs as far away as the ones they set on the first day. They are separate now:
   and `collapsibleGroupSlivers` returns slivers: a pinned header has to state
   its extent up front, which an open heading can do — it shows only its title,
   since the summary is for when the group is shut, and a shut group has nothing
-  under it to stick above.
+  under it to stick above. Two things there are load-bearing:
+  - each group's header and list go inside a **`SliverMainAxisGroup`**. Pinned
+    slivers of a viewport *accumulate*; without the group, opening all five
+    ends with five headings stacked at the top and no room for a control;
+  - the pinned header must **fill** `kGroupHeaderHeight`. It reports its
+    paint extent from what its child measures and its layout extent from the
+    extent it declared, so a child that does not fill the height makes the
+    two disagree and the framework asserts.
 - **The groups collapse, and a closed one shows only what differs from the
   default.** The summaries are the `*Changes` functions in
   [labels.dart](lib/l10n/labels.dart), each comparing against

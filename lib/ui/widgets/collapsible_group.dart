@@ -123,6 +123,12 @@ class CollapsibleGroupHeader extends StatelessWidget {
 /// one when they are not — which is the only way to scroll a long panel and
 /// still know what is being changed. A shut group is a plain box: there is
 /// nothing under it to stick above.
+///
+/// The pinning is scoped by a [SliverMainAxisGroup] deliberately. Pinned
+/// slivers of a viewport *accumulate*: left to themselves, opening every
+/// group ends with five headings stacked at the top and no room for the
+/// controls. Inside a group the header can only be pinned for as long as
+/// that group is on screen, which is what makes the next one push it off.
 List<Widget> collapsibleGroupSlivers({
   required BuildContext context,
   required IconData icon,
@@ -157,11 +163,15 @@ List<Widget> collapsibleGroupSlivers({
   }
 
   return <Widget>[
-    SliverPersistentHeader(
-      pinned: true,
-      delegate: _PinnedGroupHeader(child: header, background: scheme),
+    SliverMainAxisGroup(
+      slivers: <Widget>[
+        SliverPersistentHeader(
+          pinned: true,
+          delegate: _PinnedGroupHeader(child: header, background: scheme),
+        ),
+        SliverList(delegate: SliverChildListDelegate(children)),
+      ],
     ),
-    SliverList(delegate: SliverChildListDelegate(children)),
     SliverToBoxAdapter(child: Divider(height: 1, color: scheme.outlineVariant)),
   ];
 }
@@ -185,22 +195,19 @@ class _PinnedGroupHeader extends SliverPersistentHeaderDelegate {
     bool overlapsContent,
   ) {
     // Opaque, and the same colour as the panel: pinned means the controls
-    // pass behind it.
+    // pass behind it. The shadow is drawn only while they actually are —
+    // above its own group it is just a heading, and a shadow over nothing
+    // is not a seam.
     return Material(
       color: background.surfaceContainerLow,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: <Widget>[
-          Expanded(child: child),
-          // Drawn only while something is actually passing under it.
-          Divider(
-            height: 1,
-            color: overlapsContent
-                ? background.outlineVariant
-                : Colors.transparent,
-          ),
-        ],
-      ),
+      surfaceTintColor: Colors.transparent,
+      shadowColor: background.shadow,
+      elevation: overlapsContent ? 3 : 0,
+      // Filled to the extent the delegate promises. A pinned header reports
+      // paintExtent from what its child actually measures and layoutExtent
+      // from maxExtent, so a child that does not fill the height it was
+      // given makes the two disagree — and the framework asserts.
+      child: SizedBox.expand(child: child),
     );
   }
 

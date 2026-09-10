@@ -134,10 +134,8 @@ class TestHarness {
   }
 
   /// The whole app, as `main` assembles it.
-  Widget get app => MultiProvider(
-    providers: providers,
-    child: const SilenceSpeedUpApp(),
-  );
+  Widget get app =>
+      MultiProvider(providers: providers, child: const SilenceSpeedUpApp());
 }
 
 void main() {
@@ -189,9 +187,9 @@ void main() {
       expect(find.text('Add folder'), findsNothing);
       // The queue starts empty, so Start has nothing to do yet.
       expect(
-        tester.widget<FloatingActionButton>(
-          find.byType(FloatingActionButton),
-        ).onPressed,
+        tester
+            .widget<FloatingActionButton>(find.byType(FloatingActionButton))
+            .onPressed,
         isNull,
       );
     });
@@ -569,6 +567,64 @@ void main() {
       expect(find.text('Silence speed'), findsOneWidget);
     });
 
+    testWidgets('open headings take turns rather than piling up', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester, size: const Size(1400, 700));
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      // Every group open: the case where pinned headings, left to
+      // themselves, end as a stack of five with no room for the controls.
+      for (final String group in <String>[
+        'speed',
+        'audio',
+        'detection',
+        'export',
+        'preview',
+      ]) {
+        await harness.preferences.setEncodingGroupOpen(group, true);
+      }
+
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      final Finder panel = find.byType(DockedEncodingSettings);
+      expect(
+        find.descendant(of: panel, matching: find.text('Speed')),
+        findsOneWidget,
+      );
+
+      await tester.drag(
+        find.byType(CustomScrollView).last,
+        const Offset(0, -700),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      // Its own controls are long gone, so its heading went with them.
+      expect(
+        find.descendant(of: panel, matching: find.text('Speed')),
+        findsNothing,
+      );
+      // At most the one holding the top, plus whichever is arriving to take
+      // it. Pinned slivers of a viewport accumulate if nothing scopes them,
+      // and five headings on a 700-pixel panel leave no room for controls.
+      final int headings =
+          <String>['Speed', 'Audio', 'Silence detection', 'Export', 'Preview']
+              .map(
+                (String label) => find
+                    .descendant(of: panel, matching: find.text(label))
+                    .evaluate()
+                    .length,
+              )
+              .reduce((int a, int b) => a + b);
+
+      expect(headings, greaterThan(0));
+      expect(headings, lessThanOrEqualTo(2));
+    });
+
     testWidgets('the reset asks first, and only then puts everything back', (
       WidgetTester tester,
     ) async {
@@ -658,10 +714,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
-      expect(
-        harness.preferences.settings.silenceSpeedIndex,
-        lessThan(before),
-      );
+      expect(harness.preferences.settings.silenceSpeedIndex, lessThan(before));
     });
 
     testWidgets('render in Italian too', (WidgetTester tester) async {
@@ -761,9 +814,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        harness.wrap(
-          AboutPage(version: '0.9.0', onOpenLink: (String _) {}),
-        ),
+        harness.wrap(AboutPage(version: '0.9.0', onOpenLink: (String _) {})),
       );
       await tester.pumpAndSettle();
 
@@ -788,9 +839,7 @@ void main() {
       );
 
       await tester.pumpWidget(
-        harness.wrap(
-          AboutPage(version: '0.9.0', onOpenLink: (String _) {}),
-        ),
+        harness.wrap(AboutPage(version: '0.9.0', onOpenLink: (String _) {})),
       );
       await tester.pumpAndSettle();
 
@@ -803,10 +852,10 @@ void main() {
     MediaEntry entryWithSilences() {
       final MediaEntry entry = MediaEntry(r'C:\videos\talk.mp4')
         ..duration = const Duration(minutes: 1);
-      entry.setSilences(
-        const <SilenceRange>[SilenceRange(10, 20), SilenceRange(40, 50)],
-        detectedWith: const ProcessingSettings(),
-      );
+      entry.setSilences(const <SilenceRange>[
+        SilenceRange(10, 20),
+        SilenceRange(40, 50),
+      ], detectedWith: const ProcessingSettings());
       return entry;
     }
 
@@ -989,10 +1038,9 @@ void main() {
       // point at.
       final MediaEntry entry = MediaEntry(r'C:ideosrief.mp4')
         ..duration = const Duration(minutes: 1);
-      entry.setSilences(
-        const <SilenceRange>[SilenceRange(30, 30.4)],
-        detectedWith: const ProcessingSettings(),
-      );
+      entry.setSilences(const <SilenceRange>[
+        SilenceRange(30, 30.4),
+      ], detectedWith: const ProcessingSettings());
 
       await tester.pumpWidget(harness.wrap(SilencesPage(entry: entry)));
       await tester.pumpAndSettle();
@@ -1240,8 +1288,8 @@ void main() {
     /// Centred, and no wider than a page of text should be.
     void expectHeldToWidth(WidgetTester tester, Finder content) {
       final Rect held = tester.getRect(content);
-      final Size window = tester.view.physicalSize /
-          tester.view.devicePixelRatio;
+      final Size window =
+          tester.view.physicalSize / tester.view.devicePixelRatio;
 
       expect(held.width, lessThanOrEqualTo(kReadableWidth));
       expect(held.center.dx, closeTo(window.width / 2, 1));
@@ -1264,9 +1312,7 @@ void main() {
       expectHeldToWidth(tester, find.byType(ListView));
     });
 
-    testWidgets('the app settings page does too', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('the app settings page does too', (WidgetTester tester) async {
       await useDesktopSurface(tester, size: const Size(1920, 1000));
       final TestHarness harness = await TestHarness.create(
         preferred: const Locale('en'),
@@ -1279,9 +1325,7 @@ void main() {
       expectHeldToWidth(tester, find.byType(ListView));
     });
 
-    testWidgets('a narrow window is left alone', (
-      WidgetTester tester,
-    ) async {
+    testWidgets('a narrow window is left alone', (WidgetTester tester) async {
       await useDesktopSurface(tester, size: const Size(640, 480));
       final TestHarness harness = await TestHarness.create(
         preferred: const Locale('en'),
@@ -1310,10 +1354,7 @@ void main() {
       expect(tester.takeException(), isNull);
       // The real file, shipped as an asset: its first lines and the clause
       // the app's own notice paraphrases.
-      expect(
-        find.textContaining('GNU GENERAL PUBLIC LICENSE'),
-        findsOneWidget,
-      );
+      expect(find.textContaining('GNU GENERAL PUBLIC LICENSE'), findsOneWidget);
       expect(find.textContaining('Version 3, 29 June 2007'), findsOneWidget);
       expect(find.textContaining('NO WARRANTY'), findsOneWidget);
     });
