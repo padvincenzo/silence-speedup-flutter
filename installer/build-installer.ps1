@@ -34,8 +34,9 @@ $script = Join-Path $PSScriptRoot 'silence-speedup.iss'
 $distDir = Join-Path $projectRoot 'dist'
 
 # --- Version -----------------------------------------------------------------
-# Single source of truth: pubspec.yaml. The build number after '+' is dropped,
-# because Inno Setup wants a plain x.y.z.
+# Single source of truth: pubspec.yaml, where the version is a plain x.y.z
+# whose patch number rises with every build. Anything after a '+' is dropped
+# anyway, since Inno Setup will not take it.
 $pubspec = Join-Path $projectRoot 'pubspec.yaml'
 $versionLine = Select-String -Path $pubspec -Pattern '^version:\s*(.+)$' | Select-Object -First 1
 if (-not $versionLine) { throw "No version found in $pubspec" }

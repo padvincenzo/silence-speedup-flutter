@@ -80,6 +80,30 @@ never relative to anything. A preview processes a `TimeWindow` rather than the
 whole file, and `silencedetect` reports relative to its own seek, so
 `buildRanges` adds the window's start back. Keep that conversion in one place.
 
+### The version is bumped on every build
+
+`version:` in [pubspec.yaml](pubspec.yaml) is the one place the version is
+stated, and it is a plain `x.y.z` — **no `+build` suffix**. It ends up verbatim
+in the executable's `FileVersion`, and `0.9.0+1` there reads like a leftover.
+
+**Raise the patch number before every build that gets packaged or installed.**
+Two builds must never carry the same version: the installer names its output
+after it, the in-app update check compares against it, and a bug report that
+says 0.9.4 has to mean one specific binary. A plain `x.y.z` also becomes the
+`x.y.z.0` an MSIX package needs, which is the other reason there is no `+`.
+
+### A Store build is not allowed to update itself
+
+The app is heading for the Microsoft Store as well as GitHub, from this same
+source. `kStoreBuild` in [lib/build_config.dart](lib/build_config.dart) —
+set with `--dart-define=STORE_BUILD=true` — switches the update check off,
+because a Store app must not look for its own updates or point anyone at an
+executable to download. Anything new that fetches or launches code has to
+respect the same flag. Links to pages are fine.
+
+The packaging itself is not wired up yet; what exists and what is still
+missing is in [docs/microsoft-store.md](docs/microsoft-store.md).
+
 ### Strings come from ARB, always
 
 UI and log text is generated from `lib/l10n/arb/app_en.arb` (the template) and

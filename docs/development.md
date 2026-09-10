@@ -187,6 +187,10 @@ than breaks — but the ARB test will flag it.
 ## Releasing
 
 1. Bump `version:` in `pubspec.yaml` — the one place the version is stated.
+   Raise the patch number for **every** build that leaves the machine, and
+   keep it a plain `x.y.z`: the string goes straight into the executable's
+   `FileVersion`, and a `+build` suffix there is noise. Two binaries with the
+   same version cannot be told apart afterwards.
 2. `flutter analyze && flutter test`.
 3. Build and package:
 
@@ -210,6 +214,9 @@ than breaks — but the ARB test will flag it.
    DLLs beside the executable are required.
 4. Tag and publish a GitHub release. The in-app update check reads the
    repository's `releases.atom`, so the tag must contain the version number.
+5. The Microsoft Store is a second channel for the same source, packaged as
+   MSIX and not wired up yet. [microsoft-store.md](microsoft-store.md) says
+   what is prepared and what is missing.
 
 Because FFmpeg is bundled under the GPL, releases must keep carrying the GPLv3
 notice and offer the corresponding source.

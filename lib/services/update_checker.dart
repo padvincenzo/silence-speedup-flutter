@@ -7,6 +7,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 
+import '../build_config.dart';
+
 /// A release newer than the running build.
 @immutable
 class AvailableUpdate {
@@ -36,10 +38,16 @@ class UpdateChecker {
     this.feedUrl =
         'https://github.com/padvincenzo/silence-speedup-flutter/releases.atom',
     this.timeout = const Duration(seconds: 8),
+    this.enabled = !kStoreBuild,
   });
 
   final String feedUrl;
   final Duration timeout;
+
+  /// Whether to look at all. Off in a Store build, where the Store is what
+  /// updates the app; the parameter exists so a test can say so too, without
+  /// rebuilding with a different `--dart-define`.
+  final bool enabled;
 
   static final RegExp _entryPattern = RegExp(
     r'<entry>(.*?)</entry>',
@@ -50,8 +58,11 @@ class UpdateChecker {
   static final RegExp _versionPattern = RegExp(r'(\d+(?:\.\d+)*)');
 
   /// Returns the newest release when it is ahead of [currentVersion], else
-  /// null. Never throws: a failed check is not worth interrupting the app for.
+  /// null. Never throws: a failed check is not worth interrupting the app for,
+  /// and it answers null without touching the network when [enabled] is false.
   Future<AvailableUpdate?> check(String currentVersion) async {
+    if (!enabled) return null;
+
     try {
       final http.Response response = await http
           .get(Uri.parse(feedUrl))

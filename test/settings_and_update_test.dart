@@ -201,6 +201,21 @@ void main() {
     });
   });
 
+  group('UpdateChecker', () {
+    test('answers null without a network call when it is switched off', () async {
+      // What a Microsoft Store build compiles to: the Store is the update
+      // mechanism there, so the app must not go looking. The unreachable
+      // feed URL is the assertion — a check that ran would have to fail on
+      // it, and this returns null immediately instead.
+      const UpdateChecker checker = UpdateChecker(
+        feedUrl: 'http://127.0.0.1:9/releases.atom',
+        enabled: false,
+      );
+
+      expect(await checker.check('0.0.1'), isNull);
+    });
+  });
+
   group('UpdateChecker.compareVersions', () {
     test('compares component by component, not as one number', () {
       // The Electron version stripped the dots, making 2.1.0 look older.
