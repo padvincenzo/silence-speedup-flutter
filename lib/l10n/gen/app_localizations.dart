@@ -890,16 +890,22 @@ abstract class AppLocalizations {
   /// **'Preview length'**
   String get settingsPreviewDuration;
 
+  /// No description provided for @settingsReset.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset'**
+  String get settingsReset;
+
   /// No description provided for @settingsResetDone.
   ///
   /// In en, this message translates to:
-  /// **'Processing settings reset'**
+  /// **'Encoding settings reset'**
   String get settingsResetDone;
 
   /// No description provided for @settingsResetProcessing.
   ///
   /// In en, this message translates to:
-  /// **'Reset processing settings'**
+  /// **'Reset the encoding settings'**
   String get settingsResetProcessing;
 
   /// No description provided for @settingsResetProcessingHint.
@@ -1021,6 +1027,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{percentage} % silence'**
   String statusSilenceShare(double percentage);
+
+  /// No description provided for @uiCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get uiCancel;
 
   /// No description provided for @uiClose.
   ///

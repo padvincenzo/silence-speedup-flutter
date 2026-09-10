@@ -517,10 +517,13 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsPreviewDuration => 'Preview length';
 
   @override
-  String get settingsResetDone => 'Processing settings reset';
+  String get settingsReset => 'Reset';
 
   @override
-  String get settingsResetProcessing => 'Reset processing settings';
+  String get settingsResetDone => 'Encoding settings reset';
+
+  @override
+  String get settingsResetProcessing => 'Reset the encoding settings';
 
   @override
   String get settingsResetProcessingHint =>
@@ -602,6 +605,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
     return '$percentageString % silence';
   }
+
+  @override
+  String get uiCancel => 'Cancel';
 
   @override
   String get uiClose => 'Close';

@@ -144,6 +144,10 @@ they belong:
 - a setting that changes how a video is encoded → a tile in the right group of
   `EncodingSettingsView`, **with a description**, and an entry in that group's
   summary in [lib/l10n/labels.dart](lib/l10n/labels.dart);
+- an action inside a settings surface → a `TextButton`, not a tile. A tile's
+  title is `bodyLarge`, which makes it the largest text in the panel and
+  louder than the group headings; the reset was one and read as a setting
+  someone could switch on. If it cannot be undone, it asks first.
 - a setting about the application itself → a tile on `AppSettingsPage`, again
   with a description, since both surfaces explain themselves in place;
 - something application-level → the drawer.

@@ -283,8 +283,9 @@
   "settingsPlaybackSpeed": "Speech speed",
   "settingsPreset": "Preset",
   "settingsPreviewDuration": "Preview length",
-  "settingsResetDone": "Processing settings reset",
-  "settingsResetProcessing": "Reset processing settings",
+  "settingsReset": "Reset",
+  "settingsResetDone": "Encoding settings reset",
+  "settingsResetProcessing": "Reset the encoding settings",
   "settingsResetProcessingHint": "Puts every speed, detection and export setting back to its default.",
   "settingsSecondsValue": "{seconds} s",
   "@settingsSecondsValue": {
@@ -334,6 +335,7 @@
       }
     }
   },
+  "uiCancel": "Cancel",
   "uiClose": "Close",
   "uiDarkMode": "Dark",
   "uiDropVideo": "Drop videos here",

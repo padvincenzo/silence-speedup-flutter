@@ -14,6 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:silence_speedup/app.dart';
 import 'package:silence_speedup/l10n/gen/app_localizations.dart';
 import 'package:silence_speedup/l10n/locale_controller.dart';
+import 'package:silence_speedup/models/processing_settings.dart';
 import 'package:silence_speedup/services/ffmpeg_runner.dart';
 import 'package:silence_speedup/state/log_store.dart';
 import 'package:silence_speedup/state/preferences_store.dart';
@@ -471,6 +472,48 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.text('CRF'), findsNothing);
       expect(harness.preferences.openEncodingGroups, isNot(contains('export')));
+    });
+
+    testWidgets('the reset asks first, and only then puts everything back', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester);
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+      await harness.preferences.updateSettings(
+        harness.preferences.settings.copyWith(crf: 20),
+      );
+
+      await tester.pumpWidget(harness.wrap(const EncodingSettingsView()));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Reset'));
+      await tester.pumpAndSettle();
+
+      // There is no undo for it, so it asks -- and says what it will undo.
+      expect(find.byType(AlertDialog), findsOneWidget);
+      expect(find.text('Reset the encoding settings'), findsOneWidget);
+      expect(find.textContaining('back to its default'), findsOneWidget);
+
+      final Finder confirm = find.descendant(
+        of: find.byType(AlertDialog),
+        matching: find.text('Reset'),
+      );
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+      expect(find.byType(AlertDialog), findsNothing);
+      expect(harness.preferences.settings.crf, 20, reason: 'cancel undid it');
+
+      await tester.tap(find.text('Reset'));
+      await tester.pumpAndSettle();
+      await tester.tap(confirm);
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(harness.preferences.settings, const ProcessingSettings());
+      expect(find.text('Encoding settings reset'), findsOneWidget);
     });
 
     testWidgets('lay out every group with its explanations', (

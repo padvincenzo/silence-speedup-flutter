@@ -522,11 +522,13 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsPreviewDuration => 'Durata dell\'anteprima';
 
   @override
-  String get settingsResetDone => 'Impostazioni di elaborazione reimpostate';
+  String get settingsReset => 'Reimposta';
 
   @override
-  String get settingsResetProcessing =>
-      'Reimposta le impostazioni di elaborazione';
+  String get settingsResetDone => 'Impostazioni di codifica reimpostate';
+
+  @override
+  String get settingsResetProcessing => 'Reimposta le impostazioni di codifica';
 
   @override
   String get settingsResetProcessingHint =>
@@ -608,6 +610,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
     return '$percentageString % di silenzio';
   }
+
+  @override
+  String get uiCancel => 'Annulla';
 
   @override
   String get uiClose => 'Chiudi';

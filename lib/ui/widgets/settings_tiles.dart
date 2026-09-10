@@ -59,37 +59,6 @@ class SettingsGroup extends StatelessWidget {
   }
 }
 
-/// Title, explanation, and a control on the trailing edge.
-class SettingTile extends StatelessWidget {
-  const SettingTile({
-    super.key,
-    required this.title,
-    this.description,
-    this.trailing,
-    this.onTap,
-    this.enabled = true,
-  });
-
-  final String title;
-  final String? description;
-  final Widget? trailing;
-  final VoidCallback? onTap;
-  final bool enabled;
-
-  @override
-  Widget build(BuildContext context) {
-    return ListTile(
-      enabled: enabled,
-      onTap: onTap,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      title: Text(title),
-      subtitle: description == null ? null : Text(description!),
-      trailing: trailing,
-      isThreeLine: false,
-    );
-  }
-}
-
 /// A setting whose control needs the full width, with the current value shown
 /// beside the title so it stays readable while dragging.
 class SliderSettingTile extends StatelessWidget {

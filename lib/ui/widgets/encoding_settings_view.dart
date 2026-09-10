@@ -334,27 +334,19 @@ class EncodingSettingsView extends StatelessWidget {
         ),
 
         // The reset belongs here rather than with the application settings:
-        // what it puts back are the encoding settings above it.
+        // what it puts back are the encoding settings above it. It is an
+        // action, not a setting, so it is a small button and not a tile --
+        // as a tile its title was the largest text in the panel, louder
+        // than the groups it undoes.
         Padding(
-          padding: const EdgeInsets.only(top: 8),
-          child: SettingTile(
-            title: strings.settingsResetProcessing,
-            description: strings.settingsResetProcessingHint,
-            enabled: !locked,
-            trailing: const Icon(Icons.restart_alt),
-            onTap: locked
-                ? null
-                : () async {
-                    await context.read<PreferencesStore>().resetSettings();
-                    if (!context.mounted) return;
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Text(
-                          AppLocalizations.of(context).settingsResetDone,
-                        ),
-                      ),
-                    );
-                  },
+          padding: const EdgeInsets.fromLTRB(8, 8, 8, 0),
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: TextButton.icon(
+              onPressed: locked ? null : () => _confirmReset(context),
+              icon: const Icon(Icons.restart_alt, size: 18),
+              label: Text(strings.settingsReset),
+            ),
           ),
         ),
       ],
@@ -363,6 +355,43 @@ class EncodingSettingsView extends StatelessWidget {
 
   static const int _durationDivisions =
       (kSilenceDurationMax - kSilenceDurationMin) ~/ kSilenceDurationStep;
+
+  /// Asks before undoing every encoding setting at once.
+  ///
+  /// There is no undo for it, and the button sits under the groups it would
+  /// clear, which is exactly where a stray click lands.
+  static Future<void> _confirmReset(BuildContext context) async {
+    final AppLocalizations strings = AppLocalizations.of(context);
+    final PreferencesStore preferences = context.read<PreferencesStore>();
+
+    final bool confirmed =
+        await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) => AlertDialog(
+            icon: const Icon(Icons.restart_alt),
+            title: Text(strings.settingsResetProcessing),
+            content: Text(strings.settingsResetProcessingHint),
+            actions: <Widget>[
+              TextButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(strings.uiCancel),
+              ),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                child: Text(strings.settingsReset),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (!confirmed) return;
+    await preferences.resetSettings();
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(strings.settingsResetDone)),
+    );
+  }
 }
 
 /// Turns an option catalogue into dropdown entries addressed by index.
