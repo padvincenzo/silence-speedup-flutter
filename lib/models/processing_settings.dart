@@ -90,6 +90,17 @@ class ProcessingSettings {
   /// Length of a preview sample, in seconds.
   int get previewSeconds => kPreviewDurations[previewIndex];
 
+  /// True when [other] would find the same silences.
+  ///
+  /// Only these three decide what `silencedetect` reports and how each range
+  /// is then trimmed, so a view of detected silences is out of date when one
+  /// of them has moved and not otherwise — changing the export container
+  /// does not invalidate a detection.
+  bool detectsLike(ProcessingSettings other) =>
+      thresholdIndex == other.thresholdIndex &&
+      silenceMinDuration == other.silenceMinDuration &&
+      silenceMargin == other.silenceMargin;
+
   /// Window handed to `silencedetect`. It is widened by the margin on both
   /// sides so that, once each detected range is trimmed back by the margin,
   /// what survives is still at least [silenceMinDuration] long.

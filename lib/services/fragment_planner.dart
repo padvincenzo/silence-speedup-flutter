@@ -155,15 +155,40 @@ class FragmentPlanner {
     for (final SilenceRange range in silences) {
       addPlayback(cursor, range.start);
       if (!dropSilence && range.duration > kMinFragmentSeconds) {
-        plan.add(
-          Fragment(start: range.start, end: range.end, isSilence: true),
-        );
+        plan.add(Fragment(start: range.start, end: range.end, isSilence: true));
       }
       cursor = range.end;
     }
     addPlayback(cursor, to);
 
     return plan;
+  }
+
+  /// Seconds the export will last, with every fragment shortened by its own
+  /// rate and the removed ones contributing nothing.
+  ///
+  /// Derived from the same [plan] the run itself walks, so the figure shown
+  /// before a run and the file that comes out cannot disagree about what the
+  /// settings mean.
+  static double outputSeconds({
+    required List<SilenceRange> silences,
+    required double sourceSeconds,
+    required ProcessingSettings settings,
+  }) {
+    final List<Fragment> fragments = plan(
+      silences: silences,
+      from: 0,
+      to: sourceSeconds,
+      dropSilence: settings.dropsSilence,
+    );
+
+    double total = 0;
+    for (final Fragment fragment in fragments) {
+      final SpeedOption speed = fragment.speed(settings);
+      if (speed.isRemove) continue;
+      total += fragment.duration / speed.factor;
+    }
+    return total;
   }
 
   /// Arguments that encode one fragment at its own rate.

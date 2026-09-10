@@ -6,8 +6,6 @@
 
 import 'package:flutter/material.dart';
 
-import '../../l10n/gen/app_localizations.dart';
-
 /// Building blocks for the settings page.
 ///
 /// Every setting carries its explanation as a visible subtitle rather than a
@@ -36,7 +34,12 @@ class SettingsGroup extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: <Widget>[
         Padding(
-          padding: const EdgeInsets.only(left: 16, right: 16, top: 24, bottom: 4),
+          padding: const EdgeInsets.only(
+            left: 16,
+            right: 16,
+            top: 24,
+            bottom: 4,
+          ),
           child: Row(
             children: <Widget>[
               Icon(icon, size: 18, color: scheme.primary),
@@ -249,9 +252,7 @@ class DropdownSettingTile<T> extends StatelessWidget {
         Text(
           title,
           style: theme.textTheme.bodyLarge?.copyWith(
-            color: enabled
-                ? theme.colorScheme.onSurface
-                : theme.disabledColor,
+            color: enabled ? theme.colorScheme.onSurface : theme.disabledColor,
           ),
         ),
         if (description != null)
@@ -290,11 +291,7 @@ class DropdownSettingTile<T> extends StatelessWidget {
           if (constraints.maxWidth < width + _minimumLabelWidth) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: <Widget>[
-                label,
-                const SizedBox(height: 10),
-                field,
-              ],
+              children: <Widget>[label, const SizedBox(height: 10), field],
             );
           }
           return Row(
@@ -397,117 +394,12 @@ class LockedNotice extends StatelessWidget {
           Expanded(
             child: Text(
               message,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: scheme.onTertiaryContainer,
-              ),
+              style: Theme.of(context).textTheme.bodySmall
+                  ?.copyWith(color: scheme.onTertiaryContainer),
             ),
           ),
         ],
       ),
-    );
-  }
-}
-
-/// A settings group that collapses to a summary of what has been changed.
-///
-/// A panel beside the queue cannot afford to show thirteen controls at once,
-/// and most of them are set once and never touched again. Closed, a group
-/// says what it is and what was changed inside it; open, it hands over the
-/// controls. The summary disappears while the group is open, because the
-/// controls themselves already show their values.
-class CollapsibleSettingsGroup extends StatelessWidget {
-  const CollapsibleSettingsGroup({
-    super.key,
-    required this.icon,
-    required this.title,
-    required this.changes,
-    required this.expanded,
-    required this.onExpanded,
-    required this.children,
-  });
-
-  final IconData icon;
-  final String title;
-
-  /// What differs from the shipped defaults. Empty means untouched.
-  final List<String> changes;
-
-  final bool expanded;
-  final ValueChanged<bool> onExpanded;
-  final List<Widget> children;
-
-  @override
-  Widget build(BuildContext context) {
-    final AppLocalizations strings = AppLocalizations.of(context);
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme scheme = theme.colorScheme;
-    final bool changed = changes.isNotEmpty;
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        InkWell(
-          onTap: () => onExpanded(!expanded),
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 12, 8, 12),
-            child: Row(
-              children: <Widget>[
-                Icon(icon, size: 18, color: scheme.primary),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: <Widget>[
-                      Text(
-                        title,
-                        style: theme.textTheme.titleSmall?.copyWith(
-                          color: scheme.primary,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                      if (!expanded)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 2),
-                          child: Text(
-                            changed
-                                ? changes.join('  ·  ')
-                                : strings.settingsDefault,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: changed
-                                  ? scheme.onSurface
-                                  : scheme.onSurfaceVariant,
-                            ),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                // A dot rather than a count: the summary beside it already
-                // says what changed, so this only has to survive the moment
-                // the group is open and the summary is gone.
-                if (changed && expanded)
-                  Padding(
-                    padding: const EdgeInsets.only(right: 4),
-                    child: Icon(
-                      Icons.circle,
-                      size: 8,
-                      color: scheme.primary,
-                    ),
-                  ),
-                Icon(
-                  expanded ? Icons.expand_less : Icons.expand_more,
-                  color: scheme.onSurfaceVariant,
-                ),
-              ],
-            ),
-          ),
-        ),
-        if (expanded) ...children,
-        Divider(height: 1, color: scheme.outlineVariant),
-      ],
     );
   }
 }

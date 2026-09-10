@@ -14,6 +14,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:silence_speedup/app.dart';
 import 'package:silence_speedup/l10n/gen/app_localizations.dart';
 import 'package:silence_speedup/l10n/locale_controller.dart';
+import 'package:silence_speedup/models/media_entry.dart';
 import 'package:silence_speedup/models/processing_settings.dart';
 import 'package:silence_speedup/services/ffmpeg_runner.dart';
 import 'package:silence_speedup/state/log_store.dart';
@@ -24,6 +25,7 @@ import 'package:silence_speedup/ui/pages/about_page.dart';
 import 'package:silence_speedup/ui/pages/app_settings_page.dart';
 import 'package:silence_speedup/ui/pages/licenses_page.dart';
 import 'package:silence_speedup/ui/pages/queue_page.dart';
+import 'package:silence_speedup/ui/pages/silences_page.dart';
 import 'package:silence_speedup/ui/widgets/compact_progress_view.dart';
 import 'package:silence_speedup/ui/widgets/encoding_settings_panel.dart';
 import 'package:silence_speedup/ui/widgets/output_destination.dart';
@@ -714,6 +716,122 @@ void main() {
     });
   });
 
+  group('silences page', () {
+    /// An entry with a known shape: a minute long, two ten-second pauses.
+    MediaEntry entryWithSilences() {
+      final MediaEntry entry = MediaEntry(r'C:\videos\talk.mp4')
+        ..duration = const Duration(minutes: 1);
+      entry.setSilences(
+        const <SilenceRange>[SilenceRange(10, 20), SilenceRange(40, 50)],
+        detectedWith: const ProcessingSettings(),
+      );
+      return entry;
+    }
+
+    testWidgets('draws the ranges and states what the run will produce', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester);
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(
+        harness.wrap(SilencesPage(entry: entryWithSilences())),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('talk.mp4'), findsOneWidget);
+      expect(find.byType(SilenceTimeline), findsOneWidget);
+
+      // Twenty seconds of silence in sixty, sped up eightfold by default:
+      // forty spoken seconds and two and a half quiet ones, so a 42-second
+      // export and 17 seconds saved. The hours are dropped under an hour.
+      expect(find.text('00:20'), findsOneWidget);
+      expect(find.text('33.3 %'), findsOneWidget);
+      expect(find.text('00:42'), findsOneWidget);
+      expect(find.text('00:17'), findsOneWidget);
+      // The timeline is labelled with the ends of the source.
+      expect(find.text('01:00'), findsOneWidget);
+    });
+
+    testWidgets('keeps the list closed until it is asked for', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester);
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(
+        harness.wrap(SilencesPage(entry: entryWithSilences())),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('2 silences'), findsOneWidget);
+      expect(find.textContaining('→'), findsNothing);
+
+      await tester.tap(find.text('2 silences'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      // One row per range, each saying where it is and what happens to it.
+      expect(find.textContaining('→'), findsNWidgets(2));
+      expect(find.text('8x'), findsNWidgets(2));
+    });
+
+    testWidgets('says so when the detection settings have moved since', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester);
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(
+        harness.wrap(SilencesPage(entry: entryWithSilences())),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('have changed'), findsNothing);
+
+      // The container has nothing to do with where a boundary falls.
+      await harness.preferences.updateSettings(
+        harness.preferences.settings.copyWith(outputFormat: 'mkv'),
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('have changed'), findsNothing);
+
+      // The margin does.
+      await harness.preferences.updateSettings(
+        harness.preferences.settings.copyWith(silenceMargin: 0.25),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('have changed'), findsOneWidget);
+      expect(find.text('Detect again'), findsOneWidget);
+    });
+
+    testWidgets('has something to say about a video with no silence', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester);
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      final MediaEntry quiet = MediaEntry(r'C:\videos\quiet.mp4')
+        ..duration = const Duration(minutes: 1);
+
+      await tester.pumpWidget(harness.wrap(SilencesPage(entry: quiet)));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('No silence was found'), findsOneWidget);
+      expect(find.byType(SilenceTimeline), findsNothing);
+    });
+  });
+
   group('compact progress strip', () {
     testWidgets('fits the height it asks the window for', (
       WidgetTester tester,
@@ -738,6 +856,33 @@ void main() {
       expect(find.byType(LinearProgressIndicator), findsOneWidget);
       expect(find.byIcon(Icons.stop), findsOneWidget);
       expect(find.byIcon(Icons.open_in_full), findsOneWidget);
+    });
+
+    testWidgets('keeps a tooltip inside the window', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(
+        tester,
+        size: const Size(kCompactWidth, kCompactContentHeight),
+      );
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(
+        harness.wrap(CompactProgressView(onExpand: () {})),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.longPress(find.byIcon(Icons.stop));
+      await tester.pumpAndSettle();
+
+      // A tooltip lives in the app's overlay, so it cannot escape a 64px
+      // window: left to itself it opened below the button and the bottom
+      // edge cut it in half.
+      final Rect tip = tester.getRect(find.text('Stop').last);
+      expect(tip.top, greaterThanOrEqualTo(0));
+      expect(tip.bottom, lessThanOrEqualTo(kCompactContentHeight));
     });
 
     testWidgets('survives being dragged to its narrowest', (

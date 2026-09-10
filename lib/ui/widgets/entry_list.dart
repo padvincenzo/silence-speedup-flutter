@@ -13,6 +13,8 @@ import '../../models/media_entry.dart';
 import '../../state/process_store.dart';
 import '../pages/queue_page.dart' show kQueueBottomInset;
 import '../../state/queue_store.dart';
+import '../format.dart';
+import '../pages/silences_page.dart';
 import '../theme.dart';
 
 /// The queue, or the welcome note when there is nothing in it yet.
@@ -85,9 +87,8 @@ class _EmptyQueueMessage extends StatelessWidget {
                 Expanded(
                   child: Text(
                     AppLocalizations.of(context).appIntro,
-                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: scheme.onSecondaryContainer,
-                    ),
+                    style: Theme.of(context).textTheme.bodyMedium
+                        ?.copyWith(color: scheme.onSecondaryContainer),
                   ),
                 ),
               ],
@@ -144,9 +145,8 @@ class _EntryTile extends StatelessWidget {
                     _statusLine(AppLocalizations.of(context), entry),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: accent,
-                    ),
+                    style: Theme.of(context).textTheme.bodySmall
+                        ?.copyWith(color: accent),
                   ),
                 ],
               ),
@@ -158,11 +158,22 @@ class _EntryTile extends StatelessWidget {
                 icon: const Icon(Icons.folder_outlined),
                 tooltip: AppLocalizations.of(context).fileReveal,
               ),
+            // Offered as soon as there is something to draw, which is after
+            // an analysis or a finished run: the ranges survive both.
+            if (entry.hasSilences)
+              IconButton(
+                onPressed: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (BuildContext context) =>
+                        SilencesPage(entry: entry),
+                  ),
+                ),
+                icon: const Icon(Icons.timeline),
+                tooltip: AppLocalizations.of(context).fileSilences,
+              ),
             if (!process.isRunning) ...<Widget>[
               IconButton(
-                onPressed: entry.isProcessable
-                    ? () => onPreview(entry)
-                    : null,
+                onPressed: entry.isProcessable ? () => onPreview(entry) : null,
                 icon: const Icon(Icons.play_circle_outline),
                 tooltip: AppLocalizations.of(context).filePreview,
               ),
@@ -210,8 +221,9 @@ class _EntryTile extends StatelessWidget {
         EntryStatus.analyzing ||
         EntryStatus.exporting ||
         EntryStatus.concatenating => palette.busy,
-        EntryStatus.probing || EntryStatus.ready || EntryStatus.queued =>
-          palette.idle,
+        EntryStatus.probing ||
+        EntryStatus.ready ||
+        EntryStatus.queued => palette.idle,
       };
 }
 
@@ -249,18 +261,4 @@ class _StatusIcon extends StatelessWidget {
       color: color,
     );
   }
-}
-
-/// `hh:mm:ss` for anything an hour or longer, `mm:ss` otherwise.
-String formatDuration(Duration duration) {
-  final int hours = duration.inHours;
-  final String minutes = duration.inMinutes
-      .remainder(60)
-      .toString()
-      .padLeft(2, '0');
-  final String seconds = duration.inSeconds
-      .remainder(60)
-      .toString()
-      .padLeft(2, '0');
-  return hours > 0 ? '$hours:$minutes:$seconds' : '$minutes:$seconds';
 }

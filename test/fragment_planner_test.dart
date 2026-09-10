@@ -18,6 +18,94 @@ String? argumentAfter(List<String> arguments, String flag) {
 }
 
 void main() {
+  group('FragmentPlanner.outputSeconds', () {
+    // A minute of video with two ten-second pauses in it.
+    const List<SilenceRange> silences = <SilenceRange>[
+      SilenceRange(10, 20),
+      SilenceRange(40, 50),
+    ];
+
+    test('leaves the source alone when nothing is sped up', () {
+      // 1x over the lot: every fragment plays at its own length.
+      const ProcessingSettings settings = ProcessingSettings(
+        silenceSpeedIndex: 2,
+        playbackSpeedIndex: 2,
+      );
+      expect(settings.silenceSpeed.factor, 1.0);
+
+      expect(
+        FragmentPlanner.outputSeconds(
+          silences: silences,
+          sourceSeconds: 60,
+          settings: settings,
+        ),
+        closeTo(60, 0.001),
+      );
+    });
+
+    test('shortens each fragment by its own rate', () {
+      // Silences at 8x, speech untouched: 40 spoken seconds stay, and the
+      // 20 quiet ones become 2.5.
+      const ProcessingSettings settings = ProcessingSettings();
+      expect(settings.silenceSpeed.factor, 8.0);
+
+      expect(
+        FragmentPlanner.outputSeconds(
+          silences: silences,
+          sourceSeconds: 60,
+          settings: settings,
+        ),
+        closeTo(42.5, 0.001),
+      );
+    });
+
+    test('counts a removed silence as nothing at all', () {
+      final ProcessingSettings settings = const ProcessingSettings()
+          .copyWith(silenceSpeedIndex: kSpeedOptions.length - 1);
+      expect(settings.dropsSilence, isTrue);
+
+      expect(
+        FragmentPlanner.outputSeconds(
+          silences: silences,
+          sourceSeconds: 60,
+          settings: settings,
+        ),
+        closeTo(40, 0.001),
+      );
+    });
+
+    test('is the source length when no silence was found', () {
+      expect(
+        FragmentPlanner.outputSeconds(
+          silences: const <SilenceRange>[],
+          sourceSeconds: 60,
+          settings: const ProcessingSettings(),
+        ),
+        closeTo(60, 0.001),
+      );
+    });
+  });
+
+  group('ProcessingSettings.detectsLike', () {
+    test('ignores everything that cannot move a boundary', () {
+      const ProcessingSettings a = ProcessingSettings();
+      // Container, quality and speeds do not change what was detected.
+      final ProcessingSettings b = a.copyWith(
+        crf: 18,
+        outputFormat: 'mkv',
+        silenceSpeedIndex: 3,
+      );
+      expect(a.detectsLike(b), isTrue);
+    });
+
+    test('notices the three that can', () {
+      const ProcessingSettings a = ProcessingSettings();
+      expect(a.detectsLike(a.copyWith(thresholdIndex: 0)), isFalse);
+      expect(a.detectsLike(a.copyWith(silenceMinDuration: 0.5)), isFalse);
+      expect(a.detectsLike(a.copyWith(silenceMargin: 0.2)), isFalse);
+    });
+  });
+
   group('buildRanges', () {
     test('trims every range by the margin, including the first', () {
       final SilenceParseResult result = FragmentPlanner.buildRanges(

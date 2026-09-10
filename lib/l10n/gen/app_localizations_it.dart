@@ -44,6 +44,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get fileAnalyze => 'Misura i silenzi senza esportare';
 
   @override
+  String get fileSilences => 'Mostra i silenzi rilevati';
+
+  @override
   String get fileOpenDir => 'Seleziona una cartella';
 
   @override
@@ -569,6 +572,55 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get settingsTune => 'Tono';
+
+  @override
+  String get silencesEmpty => 'Nessun silenzio rilevato in questo video.';
+
+  @override
+  String silencesPercent(double percentage) {
+    final intl.NumberFormat percentageNumberFormat =
+        intl.NumberFormat.decimalPatternDigits(
+          locale: localeName,
+          decimalDigits: 1,
+        );
+    final String percentageString = percentageNumberFormat.format(percentage);
+
+    return '$percentageString %';
+  }
+
+  @override
+  String silencesRanges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count silenzi',
+      one: '1 silenzio',
+      zero: 'Nessun silenzio',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get silencesRedetect => 'Rileva di nuovo';
+
+  @override
+  String get silencesSaved => 'Tempo risparmiato';
+
+  @override
+  String get silencesShare => 'Del sorgente';
+
+  @override
+  String get silencesStale =>
+      'Le impostazioni di rilevamento sono cambiate dopo questo rilevamento.';
+
+  @override
+  String get silencesTitle => 'Silenzi rilevati';
+
+  @override
+  String get silencesTotal => 'Silenzio';
+
+  @override
+  String get silencesOutput => 'Output stimato';
 
   @override
   String get statusAnalyzing => 'Analizzando i silenzi...';

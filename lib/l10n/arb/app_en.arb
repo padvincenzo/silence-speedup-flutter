@@ -17,6 +17,7 @@
   "ffmpegSpeed": "Speed",
   "ffmpegTime": "Time",
   "fileAnalyze": "Measure the silences without exporting",
+  "fileSilences": "Show the detected silences",
   "fileOpenDir": "Select a folder",
   "fileOpenFile": "Select one or more videos",
   "filePreview": "Generate a short preview sample",
@@ -307,6 +308,34 @@
   "settingsSpeedRemove": "Remove",
   "settingsSpeedRemoveShort": "cut",
   "settingsTune": "Tune",
+  "silencesEmpty": "No silence was found in this video.",
+  "silencesPercent": "{percentage} %",
+  "@silencesPercent": {
+    "placeholders": {
+      "percentage": {
+        "type": "double",
+        "format": "decimalPatternDigits",
+        "optionalParameters": {
+          "decimalDigits": 1
+        }
+      }
+    }
+  },
+  "silencesRanges": "{count, plural, =0{No silences} =1{1 silence} other{{count} silences}}",
+  "@silencesRanges": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "silencesRedetect": "Detect again",
+  "silencesSaved": "Time saved",
+  "silencesShare": "Of the source",
+  "silencesStale": "The detection settings have changed since these silences were found.",
+  "silencesTitle": "Detected silences",
+  "silencesTotal": "Silence",
+  "silencesOutput": "Estimated output",
   "statusAnalyzing": "Detecting silences...",
   "statusCompleted": "Completed",
   "statusConcatenating": "Joining fragments...",

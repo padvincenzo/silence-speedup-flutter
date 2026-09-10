@@ -140,6 +140,7 @@ void main() {
         // is the decimal separator, and that comes from the number format,
         // not from the text.
         'settingsSecondsValue',
+        'silencesPercent',
         'aboutCopyright',
       };
 

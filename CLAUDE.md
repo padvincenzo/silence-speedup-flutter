@@ -73,6 +73,30 @@ Four invariants that are easy to break:
 - **Detection always reads `0:a:0`.** Even when every track is exported, the
   pauses come from the first track — the voice track in a multi-track recording.
 
+### The detected silences are shown, and they can go stale
+
+[lib/ui/pages/silences_page.dart](lib/ui/pages/silences_page.dart) draws what
+the detection found for one entry: a timeline, the figures, and the ranges
+behind a closed heading. It is reached from a queue row once
+`entry.hasSilences`, which is true after an analysis and after a finished run.
+
+Two things it depends on:
+
+- `FragmentPlanner.outputSeconds` derives the estimated result from the same
+  `plan` the run walks, so the figure and the file cannot disagree about what
+  the settings mean. Anything else derived from a run belongs there too, and
+  pure means testable.
+- `MediaEntry.detectedWith` remembers the settings the ranges were found with,
+  and `ProcessingSettings.detectsLike` says whether they still hold — only the
+  threshold, the minimum duration and the margin can move a boundary. The page
+  shows a notice rather than silently redrawing trimmed ranges against a
+  margin that has since changed. Detection is not re-run on its own: on a long
+  file that would be an unasked-for wait.
+
+`_RangeTile` is where per-range editing will go. `setSilences` already takes a
+replacement list, so that is a matter of building controls, not of changing the
+model.
+
 ### Positions are absolute source seconds
 
 `Fragment` and `SilenceRange` are in seconds from the start of the source file,

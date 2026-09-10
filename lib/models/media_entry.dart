@@ -7,6 +7,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:path/path.dart' as p;
 
+import 'processing_settings.dart';
+
 import 'options.dart';
 
 /// A closed quiet range in the source file, in seconds.
@@ -57,6 +59,7 @@ class MediaEntry extends ChangeNotifier {
   EntryStatus _status = EntryStatus.probing;
   String? _detail;
   List<SilenceRange> _silences = const <SilenceRange>[];
+  ProcessingSettings? _detectedWith;
   String? _outputPath;
 
   Duration? get duration => _duration;
@@ -67,6 +70,13 @@ class MediaEntry extends ChangeNotifier {
   String? get detail => _detail;
 
   List<SilenceRange> get silences => _silences;
+
+  /// The settings the silences were found with, or null when none have been.
+  ///
+  /// Kept so a view of them can say when it has gone stale: the ranges are
+  /// already trimmed by the margin that was set at the time, and redrawing
+  /// them against a margin that has since changed would be a quiet lie.
+  ProcessingSettings? get detectedWith => _detectedWith;
 
   /// Where the finished file landed, once it has.
   String? get outputPath => _outputPath;
@@ -91,8 +101,12 @@ class MediaEntry extends ChangeNotifier {
     notifyListeners();
   }
 
-  void setSilences(List<SilenceRange> silences) {
+  void setSilences(
+    List<SilenceRange> silences, {
+    ProcessingSettings? detectedWith,
+  }) {
     _silences = silences;
+    _detectedWith = detectedWith;
     notifyListeners();
   }
 
@@ -104,6 +118,7 @@ class MediaEntry extends ChangeNotifier {
   /// Resets the per-run state so a re-run starts from a clean slate.
   void prepare() {
     _silences = const <SilenceRange>[];
+    _detectedWith = null;
     _outputPath = null;
     setStatus(EntryStatus.queued);
   }

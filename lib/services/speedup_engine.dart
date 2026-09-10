@@ -351,8 +351,7 @@ class SpeedupEngine {
               (window.start * 1000).round() + progress.position.inMilliseconds,
         ),
         speed: progress.speed,
-        fraction:
-            progress.position.inMilliseconds / 1000.0 / window.duration,
+        fraction: progress.position.inMilliseconds / 1000.0 / window.duration,
       ),
     );
 
@@ -376,12 +375,10 @@ class SpeedupEngine {
       return false;
     }
 
-    entry.setSilences(parsed.ranges);
+    entry.setSilences(parsed.ranges, detectedWith: settings);
 
     if (entry.hasSilences) {
-      _log.info(
-        _s.logSilencePercentage(_silenceShare(entry, window) * 100),
-      );
+      _log.info(_s.logSilencePercentage(_silenceShare(entry, window) * 100));
     }
     return true;
   }
@@ -481,10 +478,7 @@ class SpeedupEngine {
     );
 
     final FFmpegResult result = await _runner.run(
-      FragmentPlanner.concatArguments(
-        listPath: listFile.path,
-        output: output,
-      ),
+      FragmentPlanner.concatArguments(listPath: listFile.path, output: output),
       onLine: _reportFfmpegLine,
       onProgress: (FFmpegProgress progress) => _emit(
         entry: entry,

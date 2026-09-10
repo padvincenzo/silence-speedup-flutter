@@ -44,58 +44,25 @@ class CompactProgressView extends StatelessWidget {
     final ColorScheme scheme = theme.colorScheme;
 
     return Scaffold(
-      body: Padding(
-        padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
-        child: Row(
-          children: <Widget>[
-            Text(
-              '${progress.completed}/${progress.total}',
-              style: theme.textTheme.labelLarge?.copyWith(
-                color: scheme.onSurface,
-                fontFeatures: const <FontFeature>[
-                  FontFeature.tabularFigures(),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  Text(
-                    progress.entryName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.textTheme.bodySmall?.copyWith(
-                      color: scheme.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  // The whole batch, not the file: the file's own share is
-                  // the percentage to the right, and what someone watching
-                  // an always-on-top strip wants is how far the run has got.
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(3),
-                    child: LinearProgressIndicator(
-                      value: progress.queueFraction.clamp(0.0, 1.0),
-                      minHeight: 6,
-                      backgroundColor: scheme.surfaceContainerHighest,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            // Room held for the widest reading, so the buttons beside it do
-            // not shuffle every time FFmpeg reports.
-            ConstrainedBox(
-              constraints: const BoxConstraints(minWidth: 52),
-              child: Text(
-                progress.fraction == null
-                    ? '-.- %'
-                    : '${(progress.fraction! * 100).toStringAsFixed(1)} %',
-                textAlign: TextAlign.end,
+      // A tooltip is drawn in the app's own overlay, so it cannot leave the
+      // window — and this window is 64 pixels tall. Left to itself it opens
+      // below the button and is cut off by the bottom edge. Compact, close
+      // to the button and above it, one fits.
+      body: TooltipTheme(
+        data: TooltipThemeData(
+          preferBelow: false,
+          verticalOffset: 6,
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          textStyle: theme.textTheme.labelSmall?.copyWith(
+            color: scheme.onInverseSurface,
+          ),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(12, 8, 8, 8),
+          child: Row(
+            children: <Widget>[
+              Text(
+                '${progress.completed}/${progress.total}',
                 style: theme.textTheme.labelLarge?.copyWith(
                   color: scheme.onSurface,
                   fontFeatures: const <FontFeature>[
@@ -103,23 +70,70 @@ class CompactProgressView extends StatelessWidget {
                   ],
                 ),
               ),
-            ),
-            const SizedBox(width: 4),
-            IconButton(
-              onPressed: () => context.read<ProcessStore>().stop(),
-              icon: const Icon(Icons.stop),
-              iconSize: 20,
-              visualDensity: VisualDensity.compact,
-              tooltip: strings.processStop,
-            ),
-            IconButton(
-              onPressed: onExpand,
-              icon: const Icon(Icons.open_in_full),
-              iconSize: 20,
-              visualDensity: VisualDensity.compact,
-              tooltip: strings.menuWindowMode,
-            ),
-          ],
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: <Widget>[
+                    Text(
+                      progress.entryName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurface,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    // The whole batch, not the file: the file's own share is
+                    // the percentage to the right, and what someone watching
+                    // an always-on-top strip wants is how far the run has got.
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(3),
+                      child: LinearProgressIndicator(
+                        value: progress.queueFraction.clamp(0.0, 1.0),
+                        minHeight: 6,
+                        backgroundColor: scheme.surfaceContainerHighest,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 12),
+              // Room held for the widest reading, so the buttons beside it do
+              // not shuffle every time FFmpeg reports.
+              ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 52),
+                child: Text(
+                  progress.fraction == null
+                      ? '-.- %'
+                      : '${(progress.fraction! * 100).toStringAsFixed(1)} %',
+                  textAlign: TextAlign.end,
+                  style: theme.textTheme.labelLarge?.copyWith(
+                    color: scheme.onSurface,
+                    fontFeatures: const <FontFeature>[
+                      FontFeature.tabularFigures(),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(width: 4),
+              IconButton(
+                onPressed: () => context.read<ProcessStore>().stop(),
+                icon: const Icon(Icons.stop),
+                iconSize: 20,
+                visualDensity: VisualDensity.compact,
+                tooltip: strings.processStop,
+              ),
+              IconButton(
+                onPressed: onExpand,
+                icon: const Icon(Icons.open_in_full),
+                iconSize: 20,
+                visualDensity: VisualDensity.compact,
+                tooltip: strings.menuWindowMode,
+              ),
+            ],
+          ),
         ),
       ),
     );

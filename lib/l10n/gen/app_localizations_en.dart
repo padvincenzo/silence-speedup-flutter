@@ -44,6 +44,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get fileAnalyze => 'Measure the silences without exporting';
 
   @override
+  String get fileSilences => 'Show the detected silences';
+
+  @override
   String get fileOpenDir => 'Select a folder';
 
   @override
@@ -564,6 +567,55 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsTune => 'Tune';
+
+  @override
+  String get silencesEmpty => 'No silence was found in this video.';
+
+  @override
+  String silencesPercent(double percentage) {
+    final intl.NumberFormat percentageNumberFormat =
+        intl.NumberFormat.decimalPatternDigits(
+          locale: localeName,
+          decimalDigits: 1,
+        );
+    final String percentageString = percentageNumberFormat.format(percentage);
+
+    return '$percentageString %';
+  }
+
+  @override
+  String silencesRanges(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count silences',
+      one: '1 silence',
+      zero: 'No silences',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get silencesRedetect => 'Detect again';
+
+  @override
+  String get silencesSaved => 'Time saved';
+
+  @override
+  String get silencesShare => 'Of the source';
+
+  @override
+  String get silencesStale =>
+      'The detection settings have changed since these silences were found.';
+
+  @override
+  String get silencesTitle => 'Detected silences';
+
+  @override
+  String get silencesTotal => 'Silence';
+
+  @override
+  String get silencesOutput => 'Estimated output';
 
   @override
   String get statusAnalyzing => 'Detecting silences...';

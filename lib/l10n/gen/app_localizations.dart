@@ -158,6 +158,12 @@ abstract class AppLocalizations {
   /// **'Measure the silences without exporting'**
   String get fileAnalyze;
 
+  /// No description provided for @fileSilences.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the detected silences'**
+  String get fileSilences;
+
   /// No description provided for @fileOpenDir.
   ///
   /// In en, this message translates to:
@@ -967,6 +973,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Tune'**
   String get settingsTune;
+
+  /// No description provided for @silencesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No silence was found in this video.'**
+  String get silencesEmpty;
+
+  /// No description provided for @silencesPercent.
+  ///
+  /// In en, this message translates to:
+  /// **'{percentage} %'**
+  String silencesPercent(double percentage);
+
+  /// No description provided for @silencesRanges.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No silences} =1{1 silence} other{{count} silences}}'**
+  String silencesRanges(int count);
+
+  /// No description provided for @silencesRedetect.
+  ///
+  /// In en, this message translates to:
+  /// **'Detect again'**
+  String get silencesRedetect;
+
+  /// No description provided for @silencesSaved.
+  ///
+  /// In en, this message translates to:
+  /// **'Time saved'**
+  String get silencesSaved;
+
+  /// No description provided for @silencesShare.
+  ///
+  /// In en, this message translates to:
+  /// **'Of the source'**
+  String get silencesShare;
+
+  /// No description provided for @silencesStale.
+  ///
+  /// In en, this message translates to:
+  /// **'The detection settings have changed since these silences were found.'**
+  String get silencesStale;
+
+  /// No description provided for @silencesTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Detected silences'**
+  String get silencesTitle;
+
+  /// No description provided for @silencesTotal.
+  ///
+  /// In en, this message translates to:
+  /// **'Silence'**
+  String get silencesTotal;
+
+  /// No description provided for @silencesOutput.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated output'**
+  String get silencesOutput;
 
   /// No description provided for @statusAnalyzing.
   ///

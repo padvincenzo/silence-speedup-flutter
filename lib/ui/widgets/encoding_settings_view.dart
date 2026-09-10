@@ -14,6 +14,7 @@ import '../../models/options.dart';
 import '../../models/processing_settings.dart';
 import '../../state/preferences_store.dart';
 import '../../state/process_store.dart';
+import 'collapsible_group.dart';
 import 'output_destination.dart';
 import 'settings_tiles.dart';
 
@@ -53,19 +54,18 @@ class EncodingSettingsView extends StatelessWidget {
         context.read<PreferencesStore>().updateSettings(next);
 
     final Set<String> open = preferences.openEncodingGroups;
-    void toggle(String group, bool expanded) => context
-        .read<PreferencesStore>()
-        .setEncodingGroupOpen(group, expanded);
+    void toggle(String group, bool expanded) =>
+        context.read<PreferencesStore>().setEncodingGroupOpen(group, expanded);
 
     return ListView(
       padding: padding ?? const EdgeInsets.only(bottom: 32),
       children: <Widget>[
         if (locked) LockedNotice(message: strings.ffmpegAlreadyRunning),
 
-        CollapsibleSettingsGroup(
+        CollapsibleGroup(
           icon: Icons.bolt,
           title: strings.settingsGroupSpeed,
-          changes: speedChanges(settings, strings),
+          summary: speedChanges(settings, strings),
           expanded: open.contains(groupSpeed),
           onExpanded: (bool value) => toggle(groupSpeed, value),
           children: <Widget>[
@@ -104,10 +104,10 @@ class EncodingSettingsView extends StatelessWidget {
           ],
         ),
 
-        CollapsibleSettingsGroup(
+        CollapsibleGroup(
           icon: Icons.headphones_outlined,
           title: strings.settingsGroupAudio,
-          changes: audioChanges(settings, strings),
+          summary: audioChanges(settings, strings),
           expanded: open.contains(groupAudio),
           onExpanded: (bool value) => toggle(groupAudio, value),
           children: <Widget>[
@@ -143,10 +143,10 @@ class EncodingSettingsView extends StatelessWidget {
           ],
         ),
 
-        CollapsibleSettingsGroup(
+        CollapsibleGroup(
           icon: Icons.graphic_eq,
           title: strings.settingsGroupDetection,
-          changes: detectionChanges(settings, strings),
+          summary: detectionChanges(settings, strings),
           expanded: open.contains(groupDetection),
           onExpanded: (bool value) => toggle(groupDetection, value),
           children: <Widget>[
@@ -161,7 +161,10 @@ class EncodingSettingsView extends StatelessWidget {
               slider: IndexSlider(
                 value: settings.thresholdIndex,
                 max: kThresholds.length - 1,
-                label: optionText(kThresholds[settings.thresholdIndex], strings),
+                label: optionText(
+                  kThresholds[settings.thresholdIndex],
+                  strings,
+                ),
                 onChanged: locked
                     ? null
                     : (int index) =>
@@ -195,9 +198,7 @@ class EncodingSettingsView extends StatelessWidget {
             SliderSettingTile(
               title: strings.settingsSilenceMargin,
               description: strings.helpSilenceMargin,
-              valueLabel: strings.settingsSecondsValue(
-                settings.silenceMargin,
-              ),
+              valueLabel: strings.settingsSecondsValue(settings.silenceMargin),
               enabled: !locked,
               slider: Slider(
                 value: settings.silenceMargin.clamp(
@@ -218,13 +219,13 @@ class EncodingSettingsView extends StatelessWidget {
           ],
         ),
 
-        CollapsibleSettingsGroup(
+        CollapsibleGroup(
           icon: Icons.movie_creation_outlined,
           title: strings.settingsGroupExport,
           // The destination is not part of ProcessingSettings — it is a
           // preference of its own — so its summary is built here, where the
           // store is at hand, and put in front of the encoder's.
-          changes: <String>[
+          summary: <String>[
             if (!preferences.exportsAlongsideSource)
               '${strings.outputFolder} '
                   '${p.basename(preferences.fixedDirectory)}',
@@ -305,10 +306,10 @@ class EncodingSettingsView extends StatelessWidget {
           ],
         ),
 
-        CollapsibleSettingsGroup(
+        CollapsibleGroup(
           icon: Icons.play_circle_outline,
           title: strings.settingsGroupPreview,
-          changes: previewChanges(settings, strings),
+          summary: previewChanges(settings, strings),
           expanded: open.contains(groupPreview),
           onExpanded: (bool value) => toggle(groupPreview, value),
           children: <Widget>[
@@ -388,9 +389,8 @@ class EncodingSettingsView extends StatelessWidget {
     if (!confirmed) return;
     await preferences.resetSettings();
     if (!context.mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(strings.settingsResetDone)),
-    );
+    ScaffoldMessenger.of(context)
+        .showSnackBar(SnackBar(content: Text(strings.settingsResetDone)));
   }
 }
 
@@ -434,9 +434,8 @@ class _FilterPreview extends StatelessWidget {
         children: <Widget>[
           Text(
             AppLocalizations.of(context).settingsFilterPreview,
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-            ),
+            style: Theme.of(context).textTheme.labelSmall
+                ?.copyWith(color: scheme.onSurfaceVariant),
           ),
           const SizedBox(height: 4),
           SelectableText(
