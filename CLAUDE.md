@@ -239,7 +239,13 @@ runs as far away as the ones they set on the first day. They are separate now:
   - the pinned header must **fill** `kGroupHeaderHeight`. It reports its
     paint extent from what its child measures and its layout extent from the
     extent it declared, so a child that does not fill the height makes the
-    two disagree and the framework asserts.
+    two disagree and the framework asserts;
+  - the shadow under a pinned heading comes from the group's own
+    `scrollOffset`, read through a `SliverLayoutBuilder`. Not from
+    `overlapsContent` — that means *another* pinned sliver is over this one,
+    and it is false in the case that matters — and not from whether the panel
+    has scrolled at all, which shadows every open heading including the ones
+    still in the middle of the list with nothing beneath them.
 - **The groups collapse, and a closed one shows only what differs from the
   default.** The summaries are the `*Changes` functions in
   [labels.dart](lib/l10n/labels.dart), each comparing against

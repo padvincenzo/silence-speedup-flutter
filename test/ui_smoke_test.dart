@@ -683,6 +683,50 @@ void main() {
       expect(headingElevation(), greaterThan(0));
     });
 
+    testWidgets('a heading in the middle of the list stays flat', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester, size: const Size(1400, 700));
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      // Detection open, the speeds shut: its heading starts well down the
+      // panel, with two shut groups above it.
+      await harness.preferences.setEncodingGroupOpen('speed', false);
+      await harness.preferences.setEncodingGroupOpen('detection', true);
+
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      final Finder title = find.descendant(
+        of: find.byType(DockedEncodingSettings),
+        matching: find.text('Silence detection'),
+      );
+      double headingElevation() => tester
+          .widget<Material>(
+            find.ancestor(of: title, matching: find.byType(Material)).first,
+          )
+          .elevation;
+
+      final Finder panelScroll = find.descendant(
+        of: find.byType(DockedEncodingSettings),
+        matching: find.byType(CustomScrollView),
+      );
+
+      // Scrolled a little: the panel has moved, but this heading has not
+      // reached the top and nothing is passing under it. Asking whether the
+      // panel had scrolled at all shadowed it here, which is wrong.
+      await tester.drag(panelScroll, const Offset(0, -30));
+      await tester.pumpAndSettle();
+      expect(headingElevation(), 0);
+
+      // Far enough for its own controls to start going under it.
+      await tester.drag(panelScroll, const Offset(0, -260));
+      await tester.pumpAndSettle();
+      expect(headingElevation(), greaterThan(0));
+    });
+
     testWidgets('open headings take turns rather than piling up', (
       WidgetTester tester,
     ) async {

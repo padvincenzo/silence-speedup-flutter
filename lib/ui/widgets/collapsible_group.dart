@@ -5,6 +5,7 @@
 // License: GNU GPL v3 or later <http://www.gnu.org/copyleft/gpl.html>
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 
 import '../../l10n/gen/app_localizations.dart';
 
@@ -137,7 +138,6 @@ List<Widget> collapsibleGroupSlivers({
   required bool expanded,
   required ValueChanged<bool> onExpanded,
   required List<Widget> children,
-  bool lifted = false,
 }) {
   final ColorScheme scheme = Theme.of(context).colorScheme;
 
@@ -166,13 +166,20 @@ List<Widget> collapsibleGroupSlivers({
   return <Widget>[
     SliverMainAxisGroup(
       slivers: <Widget>[
-        SliverPersistentHeader(
-          pinned: true,
-          delegate: _PinnedGroupHeader(
-            child: header,
-            background: scheme,
-            lifted: lifted,
-          ),
+        // The heading needs to know whether it is pinned *now*, which is
+        // to say whether its own group has begun to pass beneath it. The
+        // group's scroll offset says exactly that, and a sliver layout
+        // builder is how a widget gets to read its own constraints.
+        SliverLayoutBuilder(
+          builder: (BuildContext context, SliverConstraints constraints) =>
+              SliverPersistentHeader(
+                pinned: true,
+                delegate: _PinnedGroupHeader(
+                  child: header,
+                  background: scheme,
+                  lifted: constraints.scrollOffset > 0,
+                ),
+              ),
         ),
         SliverList(delegate: SliverChildListDelegate(children)),
       ],
@@ -191,13 +198,16 @@ class _PinnedGroupHeader extends SliverPersistentHeaderDelegate {
   final Widget child;
   final ColorScheme background;
 
-  /// Whether the list this heading belongs to has been scrolled at all.
+  /// Whether this heading is pinned: its own group has started to pass
+  /// underneath it.
   ///
-  /// Told from outside, because a pinned header is never told from inside.
-  /// The `overlapsContent` the framework hands the delegate means something
-  /// else entirely — that *another* pinned sliver is over this one — and it
-  /// is false in the case that matters here, which is a group's own controls
-  /// sliding beneath its heading.
+  /// Worked out from the group's scroll offset, because the framework does
+  /// not offer it. The `overlapsContent` handed to the delegate means
+  /// something else entirely — that *another* pinned sliver is over this
+  /// one — and it is false in the case that matters here. Asking whether
+  /// the panel had scrolled at all was the first attempt and was too
+  /// coarse: it shadowed every open heading, including the ones still
+  /// sitting in the middle of the list with nothing under them.
   final bool lifted;
 
   @override
