@@ -16,6 +16,7 @@ import '../../state/preferences_store.dart';
 import '../../state/process_store.dart';
 import '../format.dart';
 import '../widgets/collapsible_group.dart';
+import '../widgets/silence_timeline.dart';
 
 /// What the detection found in one video, drawn.
 ///
@@ -27,10 +28,27 @@ import '../widgets/collapsible_group.dart';
 /// A route rather than a second window: Flutter desktop has one window — the
 /// compact strip shrinks this one rather than opening another — and a
 /// timeline wants the full width anyway.
-class SilencesPage extends StatelessWidget {
+class SilencesPage extends StatefulWidget {
   const SilencesPage({super.key, required this.entry});
 
   final MediaEntry entry;
+
+  @override
+  State<SilencesPage> createState() => _SilencesPageState();
+}
+
+class _SilencesPageState extends State<SilencesPage> {
+  /// Held by the page rather than the timeline, so a row of the list can
+  /// point the view at its own range.
+  late final SilenceTimelineController _view = SilenceTimelineController(
+    sourceSeconds: widget.entry.seconds,
+  );
+
+  @override
+  void dispose() {
+    _view.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -38,12 +56,13 @@ class SilencesPage extends StatelessWidget {
     // is a route of its own, so there is no queue row above it to inherit
     // from, and a re-detection started from here has to redraw the page.
     return ListenableBuilder(
-      listenable: entry,
+      listenable: widget.entry,
       builder: (BuildContext context, Widget? child) => _build(context),
     );
   }
 
   Widget _build(BuildContext context) {
+    final MediaEntry entry = widget.entry;
     final AppLocalizations strings = AppLocalizations.of(context);
     final ThemeData theme = Theme.of(context);
 
@@ -80,148 +99,20 @@ class SilencesPage extends StatelessWidget {
               children: <Widget>[
                 if (stale) _StaleNotice(entry: entry),
                 Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
-                  child: SilenceTimeline(
-                    ranges: ranges,
-                    sourceSeconds: entry.seconds,
-                  ),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: SilenceTimeline(ranges: ranges, controller: _view),
                 ),
                 _Figures(entry: entry, settings: settings),
                 const SizedBox(height: 8),
-                _RangeList(entry: entry, settings: settings),
+                _RangeList(
+                  entry: entry,
+                  settings: settings,
+                  onReveal: _view.reveal,
+                ),
               ],
             ),
     );
   }
-}
-
-/// The source as a track, with the silences marked on it.
-///
-/// Public so a test can find it, and because it is the piece most likely to
-/// be wanted somewhere else — a row in the queue, say.
-class SilenceTimeline extends StatelessWidget {
-  const SilenceTimeline({
-    super.key,
-    required this.ranges,
-    required this.sourceSeconds,
-    this.height = 56,
-  });
-
-  final List<SilenceRange> ranges;
-  final double sourceSeconds;
-  final double height;
-
-  @override
-  Widget build(BuildContext context) {
-    final ThemeData theme = Theme.of(context);
-    final ColorScheme scheme = theme.colorScheme;
-
-    final TextStyle? scale = theme.textTheme.bodySmall?.copyWith(
-      color: scheme.onSurfaceVariant,
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: <Widget>[
-        SizedBox(
-          height: height,
-          child: CustomPaint(
-            painter: _TimelinePainter(
-              ranges: ranges,
-              sourceSeconds: sourceSeconds,
-              track: scheme.surfaceContainerHighest,
-              silence: scheme.primary,
-              border: scheme.outlineVariant,
-            ),
-          ),
-        ),
-        const SizedBox(height: 6),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: <Widget>[
-            Text(formatDuration(Duration.zero), style: scale),
-            Text(
-              formatDuration(
-                Duration(milliseconds: (sourceSeconds * 1000).round()),
-              ),
-              style: scale,
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
-class _TimelinePainter extends CustomPainter {
-  const _TimelinePainter({
-    required this.ranges,
-    required this.sourceSeconds,
-    required this.track,
-    required this.silence,
-    required this.border,
-  });
-
-  final List<SilenceRange> ranges;
-  final double sourceSeconds;
-  final Color track;
-  final Color silence;
-  final Color border;
-
-  /// Narrowest a silence may be drawn.
-  ///
-  /// A tenth of a second in an hour-long video is a third of a pixel, which
-  /// paints as nothing at all. A short pause is exactly what someone opens
-  /// this page to look for, so it is widened to stay visible; the numbers
-  /// beside it are what to read for the real figure.
-  static const double _minimumBlock = 2;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final RRect body = RRect.fromRectAndRadius(
-      Offset.zero & size,
-      const Radius.circular(8),
-    );
-
-    canvas.drawRRect(body, Paint()..color = track);
-
-    if (sourceSeconds > 0) {
-      canvas.save();
-      canvas.clipRRect(body);
-
-      final Paint fill = Paint()..color = silence;
-      for (final SilenceRange range in ranges) {
-        final double left = (range.start / sourceSeconds) * size.width;
-        final double width = (range.duration / sourceSeconds) * size.width;
-        canvas.drawRect(
-          Rect.fromLTWH(
-            left.clamp(0, size.width),
-            0,
-            width.clamp(_minimumBlock, size.width),
-            size.height,
-          ),
-          fill,
-        );
-      }
-
-      canvas.restore();
-    }
-
-    canvas.drawRRect(
-      body,
-      Paint()
-        ..color = border
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1,
-    );
-  }
-
-  @override
-  bool shouldRepaint(_TimelinePainter old) =>
-      old.ranges != ranges ||
-      old.sourceSeconds != sourceSeconds ||
-      old.silence != silence ||
-      old.track != track;
 }
 
 /// The numbers worth knowing before starting a run.
@@ -258,10 +149,7 @@ class _Figures extends StatelessWidget {
               label: strings.silencesShare,
               value: strings.silencesPercent(share * 100),
             ),
-          _Figure(
-            label: strings.silencesOutput,
-            value: _duration(output),
-          ),
+          _Figure(label: strings.silencesOutput, value: _duration(output)),
           _Figure(label: strings.silencesSaved, value: _duration(saved)),
         ],
       ),
@@ -310,10 +198,15 @@ class _Figure extends StatelessWidget {
 /// Closed by default: the drawing above answers "how are they spread" in one
 /// look, and the list is for when the answer is "one of them is wrong".
 class _RangeList extends StatefulWidget {
-  const _RangeList({required this.entry, required this.settings});
+  const _RangeList({
+    required this.entry,
+    required this.settings,
+    required this.onReveal,
+  });
 
   final MediaEntry entry;
   final ProcessingSettings settings;
+  final void Function(SilenceRange range) onReveal;
 
   @override
   State<_RangeList> createState() => _RangeListState();
@@ -342,6 +235,7 @@ class _RangeListState extends State<_RangeList> {
             index: i,
             range: ranges[i],
             settings: widget.settings,
+            onReveal: () => widget.onReveal(ranges[i]),
           ),
       ],
     );
@@ -359,11 +253,17 @@ class _RangeTile extends StatelessWidget {
     required this.index,
     required this.range,
     required this.settings,
+    required this.onReveal,
   });
 
   final int index;
   final SilenceRange range;
   final ProcessingSettings settings;
+
+  /// Frames this range on the timeline above. A tenth of a second is under a
+  /// pixel wide at whole-video scale, so a row is often the only way to find
+  /// the one being read about.
+  final VoidCallback onReveal;
 
   @override
   Widget build(BuildContext context) {
@@ -371,59 +271,65 @@ class _RangeTile extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-      child: Row(
-        children: <Widget>[
-          SizedBox(
-            width: 32,
-            child: Text(
-              '${index + 1}',
+    return InkWell(
+      onTap: onReveal,
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+        child: Row(
+          children: <Widget>[
+            Tooltip(
+              message: strings.silencesReveal,
+              child: const Icon(Icons.center_focus_weak, size: 16),
+            ),
+            const SizedBox(width: 8),
+            SizedBox(
+              width: 32,
+              child: Text(
+                '${index + 1}',
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: scheme.onSurfaceVariant,
+                  fontFeatures: const <FontFeature>[
+                    FontFeature.tabularFigures(),
+                  ],
+                ),
+              ),
+            ),
+            Expanded(
+              child: Text(
+                '${_at(range.start)}  →  ${_at(range.end)}',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: scheme.onSurface,
+                  fontFeatures: const <FontFeature>[
+                    FontFeature.tabularFigures(),
+                  ],
+                ),
+              ),
+            ),
+            Text(
+              strings.settingsSecondsValue(range.duration),
               style: theme.textTheme.bodySmall?.copyWith(
                 color: scheme.onSurfaceVariant,
-                fontFeatures: const <FontFeature>[
-                  FontFeature.tabularFigures(),
-                ],
+                fontFeatures: const <FontFeature>[FontFeature.tabularFigures()],
               ),
             ),
-          ),
-          Expanded(
-            child: Text(
-              '${_at(range.start)}  →  ${_at(range.end)}',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: scheme.onSurface,
-                fontFeatures: const <FontFeature>[
-                  FontFeature.tabularFigures(),
-                ],
+            const SizedBox(width: 12),
+            // What the run will do to this one, in the same words the settings
+            // use for it.
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+              decoration: BoxDecoration(
+                color: scheme.secondaryContainer,
+                borderRadius: BorderRadius.circular(6),
+              ),
+              child: Text(
+                speedText(settings.silenceSpeed, strings),
+                style: theme.textTheme.labelSmall?.copyWith(
+                  color: scheme.onSecondaryContainer,
+                ),
               ),
             ),
-          ),
-          Text(
-            strings.settingsSecondsValue(range.duration),
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: scheme.onSurfaceVariant,
-              fontFeatures: const <FontFeature>[
-                FontFeature.tabularFigures(),
-              ],
-            ),
-          ),
-          const SizedBox(width: 12),
-          // What the run will do to this one, in the same words the settings
-          // use for it.
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-            decoration: BoxDecoration(
-              color: scheme.secondaryContainer,
-              borderRadius: BorderRadius.circular(6),
-            ),
-            child: Text(
-              speedText(settings.silenceSpeed, strings),
-              style: theme.textTheme.labelSmall?.copyWith(
-                color: scheme.onSecondaryContainer,
-              ),
-            ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

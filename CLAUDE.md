@@ -82,6 +82,13 @@ behind a closed heading. It is reached from a queue row once
 
 Two things it depends on:
 
+- The timeline is zoomable, because the numbers that matter are small: at
+  whole-video scale a tenth of a second is under a pixel. The view is a
+  *window* — `SilenceTimelineController` holds a start and a span, and the
+  painters map only that stretch onto the width. It is not a scaled-up canvas:
+  seeing a tenth of a second in an hour needs a thousandfold magnification,
+  and a canvas a thousand windows wide is not a thing to ask a compositor
+  for. The controller is pure and tested; the gestures are not.
 - `FragmentPlanner.outputSeconds` derives the estimated result from the same
   `plan` the run walks, so the figure and the file cannot disagree about what
   the settings mean. Anything else derived from a run belongs there too, and

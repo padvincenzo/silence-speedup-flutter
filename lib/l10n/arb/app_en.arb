@@ -308,6 +308,7 @@
   "settingsSpeedRemove": "Remove",
   "settingsSpeedRemoveShort": "cut",
   "settingsTune": "Tune",
+  "silencesFit": "The whole video",
   "silencesEmpty": "No silence was found in this video.",
   "silencesPercent": "{percentage} %",
   "@silencesPercent": {
@@ -330,12 +331,15 @@
     }
   },
   "silencesRedetect": "Detect again",
+  "silencesReveal": "Show it on the timeline",
   "silencesSaved": "Time saved",
   "silencesShare": "Of the source",
   "silencesStale": "The detection settings have changed since these silences were found.",
   "silencesTitle": "Detected silences",
   "silencesTotal": "Silence",
   "silencesOutput": "Estimated output",
+  "silencesZoomIn": "Zoom in",
+  "silencesZoomOut": "Zoom out",
   "statusAnalyzing": "Detecting silences...",
   "statusCompleted": "Completed",
   "statusConcatenating": "Joining fragments...",

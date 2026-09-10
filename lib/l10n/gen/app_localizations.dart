@@ -974,6 +974,12 @@ abstract class AppLocalizations {
   /// **'Tune'**
   String get settingsTune;
 
+  /// No description provided for @silencesFit.
+  ///
+  /// In en, this message translates to:
+  /// **'The whole video'**
+  String get silencesFit;
+
   /// No description provided for @silencesEmpty.
   ///
   /// In en, this message translates to:
@@ -997,6 +1003,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Detect again'**
   String get silencesRedetect;
+
+  /// No description provided for @silencesReveal.
+  ///
+  /// In en, this message translates to:
+  /// **'Show it on the timeline'**
+  String get silencesReveal;
 
   /// No description provided for @silencesSaved.
   ///
@@ -1033,6 +1045,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Estimated output'**
   String get silencesOutput;
+
+  /// No description provided for @silencesZoomIn.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom in'**
+  String get silencesZoomIn;
+
+  /// No description provided for @silencesZoomOut.
+  ///
+  /// In en, this message translates to:
+  /// **'Zoom out'**
+  String get silencesZoomOut;
 
   /// No description provided for @statusAnalyzing.
   ///

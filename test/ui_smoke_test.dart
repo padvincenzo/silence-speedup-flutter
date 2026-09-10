@@ -29,6 +29,7 @@ import 'package:silence_speedup/ui/pages/silences_page.dart';
 import 'package:silence_speedup/ui/widgets/compact_progress_view.dart';
 import 'package:silence_speedup/ui/widgets/encoding_settings_panel.dart';
 import 'package:silence_speedup/ui/widgets/output_destination.dart';
+import 'package:silence_speedup/ui/widgets/silence_timeline.dart';
 import 'package:silence_speedup/ui/widgets/encoding_settings_view.dart';
 import 'package:silence_speedup/ui/theme.dart';
 
@@ -752,8 +753,8 @@ void main() {
       expect(find.text('33.3 %'), findsOneWidget);
       expect(find.text('00:42'), findsOneWidget);
       expect(find.text('00:17'), findsOneWidget);
-      // The timeline is labelled with the ends of the source.
-      expect(find.text('01:00'), findsOneWidget);
+      // The timeline opens on the whole video, and says so.
+      expect(find.text('00:00  →  01:00'), findsOneWidget);
     });
 
     testWidgets('keeps the list closed until it is asked for', (
@@ -770,15 +771,75 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('2 silences'), findsOneWidget);
-      expect(find.textContaining('→'), findsNothing);
+      expect(find.text('00:10  →  00:20'), findsNothing);
 
       await tester.tap(find.text('2 silences'));
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
       // One row per range, each saying where it is and what happens to it.
-      expect(find.textContaining('→'), findsNWidgets(2));
+      expect(find.text('00:10  →  00:20'), findsOneWidget);
+      expect(find.text('00:40  →  00:50'), findsOneWidget);
       expect(find.text('8x'), findsNWidgets(2));
+    });
+
+    testWidgets('the zoom buttons narrow the view and put it back', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester);
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(
+        harness.wrap(SilencesPage(entry: entryWithSilences())),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byTooltip('Zoom in'));
+      await tester.pumpAndSettle();
+
+      // Half the video, around the middle: what was in the centre stays in
+      // the centre, which is what makes repeated zooming predictable.
+      expect(find.text('00:15  →  00:45'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('The whole video'));
+      await tester.pumpAndSettle();
+      expect(find.text('00:00  →  01:00'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('a row of the list frames its own range', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester);
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      // Four tenths of a second in a minute of video: half a pixel at
+      // whole-video scale, which is precisely what a row has to be able to
+      // point at.
+      final MediaEntry entry = MediaEntry(r'C:ideosrief.mp4')
+        ..duration = const Duration(minutes: 1);
+      entry.setSilences(
+        const <SilenceRange>[SilenceRange(30, 30.4)],
+        detectedWith: const ProcessingSettings(),
+      );
+
+      await tester.pumpWidget(harness.wrap(SilencesPage(entry: entry)));
+      await tester.pumpAndSettle();
+
+      expect(find.text('00:00  →  01:00'), findsOneWidget);
+
+      await tester.tap(find.text('1 silence'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('00:30  →  00:30'));
+      await tester.pumpAndSettle();
+
+      // Two and a half seconds around it: six times its own length.
+      expect(tester.takeException(), isNull);
+      expect(find.text('00:29  →  00:31'), findsOneWidget);
     });
 
     testWidgets('says so when the detection settings have moved since', (
@@ -829,6 +890,91 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.textContaining('No silence was found'), findsOneWidget);
       expect(find.byType(SilenceTimeline), findsNothing);
+    });
+  });
+
+  group('silence timeline controller', () {
+    test('opens on the whole video', () {
+      final SilenceTimelineController view = SilenceTimelineController(
+        sourceSeconds: 600,
+      );
+
+      expect(view.start, 0);
+      expect(view.span, 600);
+      expect(view.isFit, isTrue);
+    });
+
+    test('zooms around the middle by default', () {
+      final SilenceTimelineController view = SilenceTimelineController(
+        sourceSeconds: 600,
+      );
+
+      view.zoom(0.5);
+      expect(view.span, 300);
+      expect(view.start, 150, reason: 'the middle stayed put');
+      expect(view.isFit, isFalse);
+    });
+
+    test('zooms where the pointer is', () {
+      final SilenceTimelineController view = SilenceTimelineController(
+        sourceSeconds: 600,
+      );
+
+      // Pointer three quarters along: the frame under it must not move.
+      view.zoom(0.5, anchor: 0.75);
+      expect(view.start + view.span * 0.75, closeTo(450, 0.001));
+    });
+
+    test('narrows far enough to see a tenth of a second', () {
+      final SilenceTimelineController view = SilenceTimelineController(
+        sourceSeconds: 3600,
+      );
+
+      for (int i = 0; i < 40; i++) {
+        view.zoom(0.5);
+      }
+
+      // A tenth of a second is a fifth of the width at this span, which is
+      // the whole point of zooming an hour-long video.
+      expect(view.span, SilenceTimelineController.minimumSpan);
+      expect(0.1 / view.span, greaterThan(0.15));
+    });
+
+    test('never leaves the video', () {
+      final SilenceTimelineController view = SilenceTimelineController(
+        sourceSeconds: 600,
+      );
+
+      view.zoom(0.1);
+      view.panSeconds(-1000);
+      expect(view.start, 0);
+
+      view.panSeconds(10000);
+      expect(view.end, closeTo(600, 0.001));
+
+      // Zooming back out cannot leave a window hanging off the end either.
+      view.fit();
+      expect(view.start, 0);
+      expect(view.span, 600);
+    });
+
+    test('frames a range with some room around it', () {
+      final SilenceTimelineController view = SilenceTimelineController(
+        sourceSeconds: 600,
+      );
+
+      view.reveal(const SilenceRange(300, 300.4));
+      expect(view.span, closeTo(2.4, 0.001), reason: 'six times its length');
+      expect(view.start + view.span / 2, closeTo(300.2, 0.001));
+    });
+
+    test('a range shorter than the smallest span still gets the minimum', () {
+      final SilenceTimelineController view = SilenceTimelineController(
+        sourceSeconds: 600,
+      );
+
+      view.reveal(const SilenceRange(10, 10.02));
+      expect(view.span, SilenceTimelineController.minimumSpan);
     });
   });
 

@@ -574,6 +574,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get settingsTune => 'Tono';
 
   @override
+  String get silencesFit => 'Tutto il video';
+
+  @override
   String get silencesEmpty => 'Nessun silenzio rilevato in questo video.';
 
   @override
@@ -604,6 +607,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get silencesRedetect => 'Rileva di nuovo';
 
   @override
+  String get silencesReveal => 'Mostralo sulla timeline';
+
+  @override
   String get silencesSaved => 'Tempo risparmiato';
 
   @override
@@ -621,6 +627,12 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get silencesOutput => 'Output stimato';
+
+  @override
+  String get silencesZoomIn => 'Ingrandisci';
+
+  @override
+  String get silencesZoomOut => 'Riduci';
 
   @override
   String get statusAnalyzing => 'Analizzando i silenzi...';
