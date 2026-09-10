@@ -4,6 +4,7 @@
 // Author: Vincenzo Padula <padvincenzo@gmail.com>
 // License: GNU GPL v3 or later <http://www.gnu.org/copyleft/gpl.html>
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
@@ -20,6 +21,7 @@ import 'package:silence_speedup/state/process_store.dart';
 import 'package:silence_speedup/state/queue_store.dart';
 import 'package:silence_speedup/ui/pages/about_page.dart';
 import 'package:silence_speedup/ui/pages/app_settings_page.dart';
+import 'package:silence_speedup/ui/pages/licenses_page.dart';
 import 'package:silence_speedup/ui/widgets/encoding_settings_panel.dart';
 import 'package:silence_speedup/ui/widgets/encoding_settings_view.dart';
 import 'package:silence_speedup/ui/theme.dart';
@@ -561,6 +563,80 @@ void main() {
     });
   });
 
+  group('licences page', () {
+    setUp(() {
+      // Deterministic contents: the registry would otherwise hold whatever
+      // the binding managed to read out of the asset bundle.
+      LicenseRegistry.reset();
+      LicenseRegistry.addLicense(() async* {
+        yield const LicenseEntryWithLineBreaks(<String>[
+          'silence_speedup',
+        ], 'GNU GPL v3 or later');
+        yield const LicenseEntryWithLineBreaks(<String>[
+          'ffmpeg_kit_flutter_new',
+        ], 'LGPL, or GPL with libx264');
+        yield const LicenseEntryWithLineBreaks(<String>[
+          'ffmpeg_kit_flutter_new',
+        ], 'A second notice for the same package');
+      });
+    });
+
+    tearDown(LicenseRegistry.reset);
+
+    testWidgets('keeps the name and version in view while the list scrolls', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester, size: const Size(640, 480));
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(
+        harness.wrap(const LicensesPage(version: '0.9.3')),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      // A large app bar carries the title twice, collapsed and expanded, and
+      // cross-fades between them.
+      expect(find.text('Silence SpeedUp 0.9.3'), findsWidgets);
+      expect(find.text('2 packages'), findsOneWidget);
+      // One package carries two notices, and the row says so.
+      expect(find.text('2 licences'), findsOneWidget);
+
+      // The heading is pinned, so scrolling the list past it does not take
+      // it away -- which is the whole reason this page exists.
+      await tester.drag(find.byType(CustomScrollView), const Offset(0, -400));
+      await tester.pumpAndSettle();
+      expect(find.text('Silence SpeedUp 0.9.3'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('opens the licence text of one package', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester);
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(
+        harness.wrap(const LicensesPage(version: '0.9.3')),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('ffmpeg_kit_flutter_new'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.textContaining('libx264'), findsOneWidget);
+      expect(
+        find.textContaining('A second notice for the same package'),
+        findsOneWidget,
+      );
+    });
+  });
+
   group('theme', () {
     // ListTile installs its subtitle style as a DefaultTextStyle, which
     // replaces the ambient one instead of merging with it. A subtitle style
@@ -593,6 +669,20 @@ void main() {
           style.color,
           isNot(buildAppTheme(brightness).colorScheme.surface),
         );
+      }
+    });
+
+    // Material 3 would tint the app bar's background once content scrolls
+    // under it, and that tint is baked into the colour at build time: the
+    // bar changed shade in one frame while only its elevation animated.
+    // A shadow does animate, so the tint is off and the elevation is not.
+    test('an app bar lifts on a shadow rather than changing colour', () {
+      for (final Brightness brightness in Brightness.values) {
+        final ThemeData theme = buildAppTheme(brightness);
+        expect(theme.appBarTheme.surfaceTintColor, Colors.transparent);
+        expect(theme.appBarTheme.shadowColor, theme.colorScheme.shadow);
+        expect(theme.appBarTheme.elevation, 0);
+        expect(theme.appBarTheme.scrolledUnderElevation, greaterThan(0));
       }
     });
   });

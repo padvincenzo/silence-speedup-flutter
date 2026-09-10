@@ -179,6 +179,21 @@ runs as far away as the ones they set on the first day. They are separate now:
 Neither one navigates away from the queue, which is the point: the list stays
 where it is, and the settings arrive beside it.
 
+Two pieces of chrome that were chosen against the framework's default:
+
+- **The app bar lifts on a shadow, not a tint.** Material 3 tints the
+  background once content scrolls under the bar, and folds that tint into the
+  colour at build time — the elevation animates, the colour does not, so the
+  bar changes shade in a single frame. `surfaceTintColor` is therefore
+  transparent and `scrolledUnderElevation` does the work. Do not put the tint
+  back; a test guards it.
+- **The licences list is ours**, [lib/ui/pages/licenses_page.dart](lib/ui/pages/licenses_page.dart),
+  not `showLicensePage`. The framework's page scrolls the app name and version
+  off the top and offers no way to keep them; here they are a large title that
+  shrinks into a pinned bar, because a licence list has to say what it is a
+  licence list of. It reads `LicenseRegistry` directly, so a new dependency
+  appears in it without anything being wired up.
+
 Three layout constraints that are easy to undo:
 
 - The queue's status strip is the Scaffold's `bottomNavigationBar`, not the last

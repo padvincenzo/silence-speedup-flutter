@@ -154,6 +154,31 @@ class AppLocalizationsEn extends AppLocalizations {
       'A hint to x264 about the kind of content: Still image for slides, Film for camera footage.';
 
   @override
+  String licensesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count licences',
+      one: '1 licence',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get licensesEmpty => 'No licence information was found in this build.';
+
+  @override
+  String licensesPackages(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count packages',
+      one: '1 package',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get logAllDone => 'All done.';
 
   @override

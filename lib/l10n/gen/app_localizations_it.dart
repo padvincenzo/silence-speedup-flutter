@@ -155,6 +155,32 @@ class AppLocalizationsIt extends AppLocalizations {
       'Un suggerimento a x264 sul tipo di contenuto: Still image per le slide, Film per le riprese.';
 
   @override
+  String licensesCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count licenze',
+      one: '1 licenza',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get licensesEmpty =>
+      'Nessuna informazione di licenza trovata in questa build.';
+
+  @override
+  String licensesPackages(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count pacchetti',
+      one: '1 pacchetto',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get logAllDone => 'Tutti i video sono stati completati.';
 
   @override

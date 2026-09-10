@@ -47,6 +47,23 @@
   "helpSilenceSpeed": "Rate for the quiet parts. Pick Remove to cut them out entirely.",
   "helpTheme": "Follow the system, or pin light or dark.",
   "helpTune": "A hint to x264 about the kind of content: Still image for slides, Film for camera footage.",
+  "licensesCount": "{count, plural, =1{1 licence} other{{count} licences}}",
+  "@licensesCount": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "licensesEmpty": "No licence information was found in this build.",
+  "licensesPackages": "{count, plural, =1{1 package} other{{count} packages}}",
+  "@licensesPackages": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "logAllDone": "All done.",
   "logAlreadyExists": "Cannot load {name}: that file name is already queued.",
   "@logAlreadyExists": {

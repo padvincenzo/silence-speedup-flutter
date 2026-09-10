@@ -338,6 +338,24 @@ abstract class AppLocalizations {
   /// **'A hint to x264 about the kind of content: Still image for slides, Film for camera footage.'**
   String get helpTune;
 
+  /// No description provided for @licensesCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 licence} other{{count} licences}}'**
+  String licensesCount(int count);
+
+  /// No description provided for @licensesEmpty.
+  ///
+  /// In en, this message translates to:
+  /// **'No licence information was found in this build.'**
+  String get licensesEmpty;
+
+  /// No description provided for @licensesPackages.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 package} other{{count} packages}}'**
+  String licensesPackages(int count);
+
   /// No description provided for @logAllDone.
   ///
   /// In en, this message translates to:

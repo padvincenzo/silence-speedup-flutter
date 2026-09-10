@@ -31,14 +31,20 @@ ThemeData buildAppTheme(Brightness brightness) {
     useMaterial3: true,
     scaffoldBackgroundColor: scheme.surface,
 
-    // Flat and tonal rather than shadowed: the app bar sits above a list that
-    // scrolls under it, and a drop shadow there reads as a leftover from a
-    // toolkit that had one.
+    // A shadow, not a tint, once a list scrolls under the bar.
+    //
+    // Material 3 would tint the background instead, and that tint is folded
+    // into the colour when the bar is built: the elevation animates but the
+    // colour does not, so the bar turns grey in a single frame the moment
+    // scrolling starts. With the tint suppressed the only thing that changes
+    // is the elevation, which does animate — the bar keeps its colour and
+    // grows a soft shadow.
     appBarTheme: AppBarTheme(
       backgroundColor: scheme.surface,
-      surfaceTintColor: scheme.surfaceTint,
+      surfaceTintColor: Colors.transparent,
+      shadowColor: scheme.shadow,
       elevation: 0,
-      scrolledUnderElevation: 2,
+      scrolledUnderElevation: 3,
       centerTitle: false,
       titleTextStyle: TextStyle(
         color: scheme.onSurface,

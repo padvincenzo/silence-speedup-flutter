@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../../services/ffmpeg_runner.dart';
 import '../../services/update_checker.dart';
+import 'licenses_page.dart';
 
 /// Credits, the licence notice GPLv3 asks a program to display, and the
 /// update check.
@@ -121,10 +122,14 @@ class AboutPage extends StatelessWidget {
                         label: Text(strings.helpReadLicense),
                       ),
                       OutlinedButton.icon(
-                        onPressed: () => showLicensePage(
-                          context: context,
-                          applicationName: 'Silence SpeedUp',
-                          applicationVersion: version,
+                        // Our own page rather than showLicensePage: that one
+                        // scrolls the app's name and version away and cannot
+                        // be told not to.
+                        onPressed: () => Navigator.of(context).push(
+                          MaterialPageRoute<void>(
+                            builder: (BuildContext context) =>
+                                LicensesPage(version: version),
+                          ),
                         ),
                         icon: const Icon(Icons.list_alt, size: 18),
                         label: Text(strings.menuThirdPartyLicenses),
