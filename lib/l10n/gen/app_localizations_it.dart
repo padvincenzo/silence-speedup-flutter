@@ -301,6 +301,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get menuCleanShell => 'Svuota log';
 
   @override
+  String get menuAdd => 'Aggiungi';
+
+  @override
   String get menuClearQueue => 'Svuota la coda';
 
   @override

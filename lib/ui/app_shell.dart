@@ -26,6 +26,7 @@ import 'pages/about_page.dart';
 import 'pages/app_settings_page.dart';
 import 'pages/queue_page.dart';
 import 'platform.dart';
+import 'shortcuts.dart';
 import 'widgets/app_drawer.dart';
 import 'widgets/compact_progress_view.dart';
 import 'widgets/encoding_settings_panel.dart';
@@ -304,21 +305,16 @@ class _AppShellState extends State<AppShell> {
     }
 
     return CallbackShortcuts(
+      // Declared in shortcuts.dart, because the Add menu advertises two of
+      // them and has to be saying the truth.
       bindings: <ShortcutActivator, VoidCallback>{
-        const SingleActivator(LogicalKeyboardKey.keyO, control: true):
-            _openFiles,
-        const SingleActivator(
-          LogicalKeyboardKey.keyO,
-          control: true,
-          shift: true,
-        ): _openFolder,
-        const SingleActivator(LogicalKeyboardKey.keyD, control: true): () {
+        kOpenFilesShortcut: _openFiles,
+        kOpenFolderShortcut: _openFolder,
+        kStopShortcut: () {
           if (process.isRunning) context.read<ProcessStore>().stop();
         },
-        const SingleActivator(LogicalKeyboardKey.keyQ, control: true): _quit,
-        // The encoding settings are the one panel worth a key of its own.
-        const SingleActivator(LogicalKeyboardKey.comma, control: true):
-            _toggleEncoding,
+        kQuitShortcut: _quit,
+        kEncodingSettingsShortcut: _toggleEncoding,
         const SingleActivator(LogicalKeyboardKey.escape):
             _closeEncodingSheet,
       },

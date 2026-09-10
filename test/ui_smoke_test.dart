@@ -23,6 +23,7 @@ import 'package:silence_speedup/state/queue_store.dart';
 import 'package:silence_speedup/ui/pages/about_page.dart';
 import 'package:silence_speedup/ui/pages/app_settings_page.dart';
 import 'package:silence_speedup/ui/pages/licenses_page.dart';
+import 'package:silence_speedup/ui/pages/queue_page.dart';
 import 'package:silence_speedup/ui/widgets/compact_progress_view.dart';
 import 'package:silence_speedup/ui/widgets/encoding_settings_panel.dart';
 import 'package:silence_speedup/ui/widgets/output_destination.dart';
@@ -167,8 +168,20 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(find.text('Silence SpeedUp'), findsWidgets);
       expect(find.text('Start'), findsOneWidget);
+
+      // One button for both kinds of import, and both behind it.
+      expect(find.text('Add'), findsOneWidget);
+      await tester.tap(find.text('Add'));
+      await tester.pumpAndSettle();
       expect(find.text('Add video(s)'), findsOneWidget);
       expect(find.text('Add folder'), findsOneWidget);
+      // It says which keys do the same thing without the menu.
+      expect(find.textContaining('Ctrl'), findsWidgets);
+
+      // The button closes what it opened.
+      await tester.tap(find.text('Add'));
+      await tester.pumpAndSettle();
+      expect(find.text('Add folder'), findsNothing);
       // The queue starts empty, so Start has nothing to do yet.
       expect(
         tester.widget<FloatingActionButton>(
@@ -259,12 +272,10 @@ void main() {
   });
 
   group('queue toolbar', () {
-    testWidgets('imports and clearing share one row, and nothing else does', (
+    testWidgets('filling and emptying sit at opposite ends of one row', (
       WidgetTester tester,
     ) async {
-      // Roomy on purpose: the test font draws every glyph as a square of the
-      // font size, so these labels are half again as wide here as on screen.
-      await useDesktopSurface(tester, size: const Size(1920, 1000));
+      await useDesktopSurface(tester, size: const Size(1400, 900));
       final TestHarness harness = await TestHarness.create(
         preferred: const Locale('en'),
       );
@@ -274,12 +285,17 @@ void main() {
 
       expect(tester.takeException(), isNull);
 
-      final double row = tester.getCenter(find.text('Add video(s)')).dy;
-      expect(tester.getCenter(find.text('Add folder')).dy, row);
-      expect(tester.getCenter(find.byIcon(Icons.playlist_remove)).dy, row);
+      final Rect add = tester.getRect(find.text('Add'));
+      final Rect clear = tester.getRect(find.byIcon(Icons.playlist_remove));
+      final Rect page = tester.getRect(find.byType(QueuePage));
 
-      // Emptying the queue is an icon here, not a labelled button: it is a
-      // once-in-a-while action and the row is for the imports.
+      // Same row, and pushed apart: they pull in opposite directions.
+      expect(clear.center.dy, add.center.dy);
+      expect(add.left - page.left, lessThan(60));
+      expect(page.right - clear.right, lessThan(60));
+
+      // Emptying the queue is an icon: a once-in-a-while action, and it was
+      // an icon in the app bar before it came here.
       expect(find.text('Clear queue'), findsNothing);
 
       // The destination is a setting about exporting, and it moved there.

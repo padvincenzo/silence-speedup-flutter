@@ -138,8 +138,8 @@ pages (`lib/ui/pages/`). There is deliberately **no** `MenuBar` — do not
 reintroduce one, and do not add a "File" or "View" menu. New actions go where
 they belong:
 
-- something you do to the queue → a button on the queue's own toolbar, the one
-  row that carries the imports, the clearing and the export destination;
+- something you do to the queue → the queue's own toolbar, which carries the
+  Add menu at one end and the clearing at the other, and nothing else;
 - the one primary action of a screen → the floating action button;
 - a setting that changes how a video is encoded → a tile in the right group of
   `EncodingSettingsView`, **with a description**, and an entry in that group's
@@ -175,6 +175,11 @@ runs as far away as the ones they set on the first day. They are separate now:
   They were also a chip on the queue, which meant two controls doing one job.
   Do not add a second indicator: if the app bar button needs to say more, say
   it there.
+
+Keyboard shortcuts are declared in [lib/ui/shortcuts.dart](lib/ui/shortcuts.dart),
+not where they are bound: the Add menu advertises two of them and the shell
+implements them, and a menu that lies about a key is worse than a menu that
+says nothing.
 
 The app bar is down to two actions for the same reason — the encoding button
 and the compact-progress one. The log toggle belongs to the status strip

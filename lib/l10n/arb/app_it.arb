@@ -65,6 +65,7 @@
   "logStopping": "Interrompendo...",
   "menuAbout": "Informazioni",
   "menuCleanShell": "Svuota log",
+  "menuAdd": "Aggiungi",
   "menuClearQueue": "Svuota la coda",
   "menuDonate": "Offrimi un caffè",
   "menuHideShell": "Nascondi log",

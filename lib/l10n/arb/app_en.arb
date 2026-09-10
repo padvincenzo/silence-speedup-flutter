@@ -188,6 +188,7 @@
   "logStopping": "Stopping...",
   "menuAbout": "About",
   "menuCleanShell": "Clear log",
+  "menuAdd": "Add",
   "menuClearQueue": "Clear queue",
   "menuDonate": "Buy me a coffee",
   "menuHideShell": "Hide log",

@@ -488,6 +488,12 @@ abstract class AppLocalizations {
   /// **'Clear log'**
   String get menuCleanShell;
 
+  /// No description provided for @menuAdd.
+  ///
+  /// In en, this message translates to:
+  /// **'Add'**
+  String get menuAdd;
+
   /// No description provided for @menuClearQueue.
   ///
   /// In en, this message translates to:

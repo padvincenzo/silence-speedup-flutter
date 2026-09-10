@@ -11,6 +11,7 @@ import '../../l10n/gen/app_localizations.dart';
 import '../../models/media_entry.dart';
 import '../../state/log_store.dart';
 import '../../state/queue_store.dart';
+import '../shortcuts.dart';
 import '../widgets/entry_list.dart';
 import '../widgets/log_console.dart';
 import '../widgets/progress_footer.dart';
@@ -80,14 +81,11 @@ class QueueStatusBar extends StatelessWidget {
 
 /// What goes into the queue, and what empties it.
 ///
-/// Kept to what acts on the queue itself. The export destination was here
-/// too, in a row of its own with a path field across the whole window; it is
-/// a setting about exporting, so it moved to the encoding settings beside
-/// the container and the quality. Emptying the queue is an icon: it is done
-/// once in a while, and it was an icon in the app bar before it came here.
-///
-/// A [Wrap] rather than a [Row]: at the smallest window the app allows the
-/// labels may not fit on one line, and they should fold rather than overflow.
+/// Filling it and emptying it pull in opposite directions, so they sit at
+/// opposite ends of the row, with the count beside the one that would throw
+/// it away. Nothing else belongs here: the export destination used to, in a
+/// row of its own with a path field across the whole window, and it is a
+/// setting about exporting, so it moved to the encoding settings.
 class _Toolbar extends StatelessWidget {
   const _Toolbar({required this.onOpenFiles, required this.onOpenFolder});
 
@@ -102,21 +100,24 @@ class _Toolbar extends StatelessWidget {
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 12, 12, 8),
-      child: Wrap(
-        spacing: 8,
-        runSpacing: 8,
-        crossAxisAlignment: WrapCrossAlignment.center,
+      child: Row(
         children: <Widget>[
-          FilledButton.icon(
-            onPressed: queue.canImport ? onOpenFiles : null,
-            icon: const Icon(Icons.movie_outlined),
-            label: Text(strings.menuOpenFile),
+          _AddMenu(
+            enabled: queue.canImport,
+            onOpenFiles: onOpenFiles,
+            onOpenFolder: onOpenFolder,
           ),
-          OutlinedButton.icon(
-            onPressed: queue.canImport ? onOpenFolder : null,
-            icon: const Icon(Icons.folder_open_outlined),
-            label: Text(strings.menuOpenFolder),
-          ),
+          const Spacer(),
+          if (queue.entries.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.only(right: 8),
+              child: Text(
+                strings.queueCount(queue.entries.length),
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+            ),
           IconButton(
             onPressed: queue.canImport && !queue.isEmpty
                 ? context.read<QueueStore>().clear
@@ -124,15 +125,65 @@ class _Toolbar extends StatelessWidget {
             icon: const Icon(Icons.playlist_remove),
             tooltip: strings.menuClearQueue,
           ),
-          if (queue.entries.isNotEmpty)
-            Text(
-              strings.queueCount(queue.entries.length),
-              style: theme.textTheme.bodySmall?.copyWith(
-                color: theme.colorScheme.onSurfaceVariant,
-              ),
-            ),
         ],
       ),
+    );
+  }
+}
+
+/// One button for both kinds of import.
+///
+/// They were two buttons side by side, which is a lot of row for one idea:
+/// what goes in is either some files or a folder of them, and the choice is
+/// made once you have already decided to add something. The menu states the
+/// keyboard shortcuts, which do both directly and are the fast path along
+/// with dropping files on the window.
+class _AddMenu extends StatelessWidget {
+  const _AddMenu({
+    required this.enabled,
+    required this.onOpenFiles,
+    required this.onOpenFolder,
+  });
+
+  final bool enabled;
+  final VoidCallback onOpenFiles;
+  final VoidCallback onOpenFolder;
+
+  @override
+  Widget build(BuildContext context) {
+    final AppLocalizations strings = AppLocalizations.of(context);
+
+    return MenuAnchor(
+      menuChildren: <Widget>[
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.movie_outlined),
+          shortcut: kOpenFilesShortcut,
+          onPressed: onOpenFiles,
+          child: Text(strings.menuOpenFile),
+        ),
+        MenuItemButton(
+          leadingIcon: const Icon(Icons.folder_open_outlined),
+          shortcut: kOpenFolderShortcut,
+          onPressed: onOpenFolder,
+          child: Text(strings.menuOpenFolder),
+        ),
+      ],
+      builder:
+          (
+            BuildContext context,
+            MenuController controller,
+            Widget? child,
+          ) {
+            return FilledButton.icon(
+              onPressed: !enabled
+                  ? null
+                  : () => controller.isOpen
+                        ? controller.close()
+                        : controller.open(),
+              icon: const Icon(Icons.add),
+              label: Text(strings.menuAdd),
+            );
+          },
     );
   }
 }
