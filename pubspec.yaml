@@ -45,6 +45,10 @@ flutter:
 
   assets:
     - assets/icons/
+    # The GPLv3 itself, shown in the app. The repository's own copy is used
+    # rather than a duplicate under assets/, so the file the installer shows
+    # and the file the app shows cannot drift apart.
+    - LICENSE
 
 # Microsoft Store packaging. Inert until the tool is installed:
 #

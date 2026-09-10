@@ -9,6 +9,8 @@ import 'package:flutter/material.dart';
 import '../../l10n/gen/app_localizations.dart';
 import '../../services/ffmpeg_runner.dart';
 import '../../services/update_checker.dart';
+import '../widgets/readable_width.dart';
+import 'license_text_page.dart';
 import 'licenses_page.dart';
 
 /// Credits, the licence notice GPLv3 asks a program to display, and the
@@ -40,139 +42,156 @@ class AboutPage extends StatelessWidget {
     final ThemeData theme = Theme.of(context);
     final ColorScheme scheme = theme.colorScheme;
 
-    return ListView(
-      padding: const EdgeInsets.only(bottom: 32),
-      children: <Widget>[
-        _Identity(version: version, intro: strings.helpIntro),
+    return ReadableWidth(
+      child: ListView(
+        padding: const EdgeInsets.only(bottom: 32),
+        children: <Widget>[
+          _Identity(version: version, intro: strings.helpIntro),
 
-        if (update != null)
-          _UpdateBanner(
-            title: strings.menuUpdate,
-            detail: strings.updateAvailable(update!.version),
-            action: strings.updateDownload,
-            onDownload: () => onOpenLink(update!.url),
+          if (update != null)
+            _UpdateBanner(
+              title: strings.menuUpdate,
+              detail: strings.updateAvailable(update!.version),
+              action: strings.updateDownload,
+              onDownload: () => onOpenLink(update!.url),
+            ),
+
+          _Section(
+            icon: Icons.favorite_outline,
+            title: strings.helpCredits,
+            children: <Widget>[
+              _InfoRow(
+                icon: Icons.memory,
+                title: 'FFmpeg',
+                badge: const _FFmpegVersion(),
+                detail: strings.helpFfmpegNotice,
+                link: 'https://ffmpeg.org/',
+                linkHint: strings.aboutOpenInBrowser,
+                onOpenLink: onOpenLink,
+              ),
+              _InfoRow(
+                icon: Icons.flutter_dash,
+                title: 'Flutter',
+                detail: strings.aboutBuiltWith,
+                link: 'https://flutter.dev/',
+                linkHint: strings.aboutOpenInBrowser,
+                onOpenLink: onOpenLink,
+              ),
+              _InfoRow(
+                icon: Icons.brush_outlined,
+                title: strings.helpIcons,
+                detail: strings.helpIconsCredit,
+                link: 'https://creazilla.com/',
+                linkHint: strings.aboutOpenInBrowser,
+                onOpenLink: onOpenLink,
+              ),
+              // Said plainly, and with the part a reader actually wants to
+              // know: that "AI" here means how the code was written, not
+              // something running inside the app or reading their files.
+              _InfoRow(
+                icon: Icons.auto_awesome_outlined,
+                title: strings.aboutAiAssisted,
+                detail: strings.aboutAiNotice,
+                onOpenLink: onOpenLink,
+              ),
+            ],
           ),
 
-        _Section(
-          icon: Icons.favorite_outline,
-          title: strings.helpCredits,
-          children: <Widget>[
-            _InfoRow(
-              icon: Icons.memory,
-              title: 'FFmpeg',
-              badge: const _FFmpegVersion(),
-              detail: strings.helpFfmpegNotice,
-              link: 'https://ffmpeg.org/',
-              linkHint: strings.aboutOpenInBrowser,
-              onOpenLink: onOpenLink,
-            ),
-            _InfoRow(
-              icon: Icons.flutter_dash,
-              title: 'Flutter',
-              detail: strings.aboutBuiltWith,
-              link: 'https://flutter.dev/',
-              linkHint: strings.aboutOpenInBrowser,
-              onOpenLink: onOpenLink,
-            ),
-            _InfoRow(
-              icon: Icons.brush_outlined,
-              title: strings.helpIcons,
-              detail: strings.helpIconsCredit,
-              link: 'https://creazilla.com/',
-              linkHint: strings.aboutOpenInBrowser,
-              onOpenLink: onOpenLink,
-            ),
-          ],
-        ),
-
-        _Section(
-          icon: Icons.gavel_outlined,
-          title: strings.aboutLicenseSection,
-          children: <Widget>[
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: <Widget>[
-                  Text(
-                    strings.aboutCopyright,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: scheme.onSurface,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    strings.helpGplNotice,
-                    style: theme.textTheme.bodyMedium?.copyWith(
-                      color: scheme.onSurfaceVariant,
-                      height: 1.4,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Wrap(
-                    spacing: 8,
-                    runSpacing: 8,
-                    children: <Widget>[
-                      OutlinedButton.icon(
-                        onPressed: () => onOpenLink(
-                          'https://www.gnu.org/licenses/gpl-3.0.html',
-                        ),
-                        icon: const Icon(Icons.article_outlined, size: 18),
-                        label: Text(strings.helpReadLicense),
+          _Section(
+            icon: Icons.gavel_outlined,
+            title: strings.aboutLicenseSection,
+            children: <Widget>[
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Text(
+                      strings.aboutCopyright,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: scheme.onSurface,
+                        fontWeight: FontWeight.w600,
                       ),
-                      OutlinedButton.icon(
-                        // Our own page rather than showLicensePage: that one
-                        // scrolls the app's name and version away and cannot
-                        // be told not to.
-                        onPressed: () => Navigator.of(context).push(
-                          MaterialPageRoute<void>(
-                            builder: (BuildContext context) =>
-                                LicensesPage(version: version),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      strings.helpGplNotice,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                        height: 1.4,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: <Widget>[
+                        OutlinedButton.icon(
+                          // The app carries the text; asking a browser for
+                          // it would be odd when every dependency's licence
+                          // is readable here already.
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (BuildContext context) =>
+                                  const LicenseTextPage(),
+                            ),
                           ),
+                          icon: const Icon(Icons.article_outlined, size: 18),
+                          label: Text(strings.helpReadLicense),
                         ),
-                        icon: const Icon(Icons.list_alt, size: 18),
-                        label: Text(strings.menuThirdPartyLicenses),
-                      ),
-                    ],
-                  ),
-                ],
+                        OutlinedButton.icon(
+                          // Our own page rather than showLicensePage: that one
+                          // scrolls the app's name and version away and cannot
+                          // be told not to.
+                          onPressed: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (BuildContext context) =>
+                                  LicensesPage(version: version),
+                            ),
+                          ),
+                          icon: const Icon(Icons.list_alt, size: 18),
+                          label: Text(strings.menuThirdPartyLicenses),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
 
-        _Section(
-          icon: Icons.link,
-          title: strings.menuReferences,
-          children: <Widget>[
-            _InfoRow(
-              icon: Icons.code,
-              title: strings.menuSourceCode,
-              detail: 'github.com/padvincenzo/silence-speedup-flutter',
-              link: _repository,
-              linkHint: strings.aboutOpenInBrowser,
-              onOpenLink: onOpenLink,
-            ),
-            _InfoRow(
-              icon: Icons.bug_report_outlined,
-              title: strings.menuIssue,
-              detail: '$_repository/issues',
-              link: '$_repository/issues',
-              linkHint: strings.aboutOpenInBrowser,
-              onOpenLink: onOpenLink,
-            ),
-            _InfoRow(
-              icon: Icons.coffee_outlined,
-              title: strings.menuDonate,
-              detail: 'paypal.me/VincenzoPadula',
-              link: 'https://paypal.me/VincenzoPadula',
-              linkHint: strings.aboutOpenInBrowser,
-              onOpenLink: onOpenLink,
-            ),
-          ],
-        ),
-      ],
+          _Section(
+            icon: Icons.link,
+            title: strings.menuReferences,
+            children: <Widget>[
+              _InfoRow(
+                icon: Icons.code,
+                title: strings.menuSourceCode,
+                detail: 'github.com/padvincenzo/silence-speedup-flutter',
+                link: _repository,
+                linkHint: strings.aboutOpenInBrowser,
+                onOpenLink: onOpenLink,
+              ),
+              _InfoRow(
+                icon: Icons.bug_report_outlined,
+                title: strings.menuIssue,
+                detail: '$_repository/issues',
+                link: '$_repository/issues',
+                linkHint: strings.aboutOpenInBrowser,
+                onOpenLink: onOpenLink,
+              ),
+              _InfoRow(
+                icon: Icons.coffee_outlined,
+                title: strings.menuDonate,
+                detail: 'paypal.me/VincenzoPadula',
+                link: 'https://paypal.me/VincenzoPadula',
+                linkHint: strings.aboutOpenInBrowser,
+                onOpenLink: onOpenLink,
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }
@@ -222,9 +241,7 @@ class _Identity extends StatelessWidget {
                     // later than the page is first built.
                     if (version.isNotEmpty)
                       _Badge(
-                        text: AppLocalizations.of(
-                          context,
-                        ).menuVersion(version),
+                        text: AppLocalizations.of(context).menuVersion(version),
                         prominent: true,
                       ),
                     const _Badge(text: 'GPLv3'),

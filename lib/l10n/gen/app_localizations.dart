@@ -98,6 +98,18 @@ abstract class AppLocalizations {
     Locale('it'),
   ];
 
+  /// No description provided for @aboutAiAssisted.
+  ///
+  /// In en, this message translates to:
+  /// **'Written with AI assistance'**
+  String get aboutAiAssisted;
+
+  /// No description provided for @aboutAiNotice.
+  ///
+  /// In en, this message translates to:
+  /// **'Parts of the code were written with an AI assistant, then reviewed and maintained by the author, who is responsible for it. The app itself contains no AI and sends nothing anywhere: silences are found by measuring the audio level with FFmpeg.'**
+  String get aboutAiNotice;
+
   /// No description provided for @aboutBuiltWith.
   ///
   /// In en, this message translates to:

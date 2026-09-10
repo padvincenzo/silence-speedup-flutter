@@ -135,6 +135,18 @@ after it, the in-app update check compares against it, and a bug report that
 says 0.9.4 has to mean one specific binary. A plain `x.y.z` also becomes the
 `x.y.z.0` an MSIX package needs, which is the other reason there is no `+`.
 
+### The GPL travels with the app
+
+`LICENSE` is a declared asset, so the licence text the installer shows, the
+one GitHub renders and the one [LicenseTextPage](lib/ui/pages/license_text_page.dart)
+displays are the same file. The About page reads it in-app rather than opening
+gnu.org: the app is required to carry the text, and every dependency's licence
+is already readable without a browser.
+
+The credits also state that the code was written with AI assistance, and — the
+part a reader of that phrase actually wants — that the app contains no AI and
+sends nothing anywhere. Keep both halves if you touch that wording.
+
 ### A Store build is not allowed to update itself
 
 The app is heading for the Microsoft Store as well as GitHub, from this same
@@ -146,6 +158,15 @@ respect the same flag. Links to pages are fine.
 
 The packaging itself is not wired up yet; what exists and what is still
 missing is in [docs/microsoft-store.md](docs/microsoft-store.md).
+
+### Pages of text and settings are held to a readable width
+
+`ReadableWidth` ([lib/ui/widgets/readable_width.dart](lib/ui/widgets/readable_width.dart))
+centres a page and stops it at `kReadableWidth`. The about page and the app
+settings use it: a window can be two thousand pixels across, and a row with a
+label at one edge and its control at the other makes the eye cross the whole
+monitor. The queue and the silence timeline deliberately do not — a working
+list and a timeline both earn their width.
 
 ### Strings come from ARB, always
 

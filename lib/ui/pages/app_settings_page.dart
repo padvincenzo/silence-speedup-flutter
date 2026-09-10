@@ -12,6 +12,7 @@ import '../../l10n/gen/app_localizations.dart';
 import '../../services/app_paths.dart';
 import '../../state/preferences_store.dart';
 import '../../state/process_store.dart';
+import '../widgets/readable_width.dart';
 import '../widgets/settings_tiles.dart';
 
 /// How the application itself behaves: appearance, language, scratch space.
@@ -28,70 +29,72 @@ class AppSettingsPage extends StatelessWidget {
     final AppLocalizations strings = AppLocalizations.of(context);
     final PreferencesStore preferences = context.watch<PreferencesStore>();
 
-    return ListView(
-      padding: const EdgeInsets.only(bottom: 32),
-      children: <Widget>[
-        SettingsGroup(
-          icon: Icons.palette_outlined,
-          title: strings.settingsGroupApp,
-          children: <Widget>[
-            SegmentedSettingTile<ThemeMode>(
-              title: strings.uiTheme,
-              description: strings.helpTheme,
-              selected: preferences.themeMode,
-              segments: <ButtonSegment<ThemeMode>>[
-                ButtonSegment<ThemeMode>(
-                  value: ThemeMode.system,
-                  label: Text(strings.uiSystemMode),
-                  icon: const Icon(Icons.brightness_auto_outlined),
-                ),
-                ButtonSegment<ThemeMode>(
-                  value: ThemeMode.light,
-                  label: Text(strings.uiLightMode),
-                  icon: const Icon(Icons.light_mode_outlined),
-                ),
-                ButtonSegment<ThemeMode>(
-                  value: ThemeMode.dark,
-                  label: Text(strings.uiDarkMode),
-                  icon: const Icon(Icons.dark_mode_outlined),
-                ),
-              ],
-              onChanged: (ThemeMode mode) =>
-                  context.read<PreferencesStore>().setThemeMode(mode),
-            ),
-            SegmentedSettingTile<String>(
-              title: strings.uiLanguage,
-              description: strings.helpLanguage,
-              // The empty string stands for "no pinned language".
-              selected: preferences.preferredLocale?.languageCode ?? '',
-              segments: <ButtonSegment<String>>[
-                ButtonSegment<String>(
-                  value: '',
-                  label: Text(strings.uiSystemMode),
-                  icon: const Icon(Icons.language),
-                ),
-                const ButtonSegment<String>(
-                  value: 'en',
-                  label: Text('English'),
-                ),
-                const ButtonSegment<String>(
-                  value: 'it',
-                  label: Text('Italiano'),
-                ),
-              ],
-              onChanged: (String code) => context
-                  .read<PreferencesStore>()
-                  .setPreferredLocale(code.isEmpty ? null : Locale(code)),
-            ),
-          ],
-        ),
+    return ReadableWidth(
+      child: ListView(
+        padding: const EdgeInsets.only(bottom: 32),
+        children: <Widget>[
+          SettingsGroup(
+            icon: Icons.palette_outlined,
+            title: strings.settingsGroupApp,
+            children: <Widget>[
+              SegmentedSettingTile<ThemeMode>(
+                title: strings.uiTheme,
+                description: strings.helpTheme,
+                selected: preferences.themeMode,
+                segments: <ButtonSegment<ThemeMode>>[
+                  ButtonSegment<ThemeMode>(
+                    value: ThemeMode.system,
+                    label: Text(strings.uiSystemMode),
+                    icon: const Icon(Icons.brightness_auto_outlined),
+                  ),
+                  ButtonSegment<ThemeMode>(
+                    value: ThemeMode.light,
+                    label: Text(strings.uiLightMode),
+                    icon: const Icon(Icons.light_mode_outlined),
+                  ),
+                  ButtonSegment<ThemeMode>(
+                    value: ThemeMode.dark,
+                    label: Text(strings.uiDarkMode),
+                    icon: const Icon(Icons.dark_mode_outlined),
+                  ),
+                ],
+                onChanged: (ThemeMode mode) =>
+                    context.read<PreferencesStore>().setThemeMode(mode),
+              ),
+              SegmentedSettingTile<String>(
+                title: strings.uiLanguage,
+                description: strings.helpLanguage,
+                // The empty string stands for "no pinned language".
+                selected: preferences.preferredLocale?.languageCode ?? '',
+                segments: <ButtonSegment<String>>[
+                  ButtonSegment<String>(
+                    value: '',
+                    label: Text(strings.uiSystemMode),
+                    icon: const Icon(Icons.language),
+                  ),
+                  const ButtonSegment<String>(
+                    value: 'en',
+                    label: Text('English'),
+                  ),
+                  const ButtonSegment<String>(
+                    value: 'it',
+                    label: Text('Italiano'),
+                  ),
+                ],
+                onChanged: (String code) => context
+                    .read<PreferencesStore>()
+                    .setPreferredLocale(code.isEmpty ? null : Locale(code)),
+              ),
+            ],
+          ),
 
-        SettingsGroup(
-          icon: Icons.folder_outlined,
-          title: strings.preferenceWorkingDir,
-          children: const <Widget>[_WorkingDirectoryTile()],
-        ),
-      ],
+          SettingsGroup(
+            icon: Icons.folder_outlined,
+            title: strings.preferenceWorkingDir,
+            children: const <Widget>[_WorkingDirectoryTile()],
+          ),
+        ],
+      ),
     );
   }
 }

@@ -157,6 +157,15 @@ change to the FFmpeg calls covered by a test in
 - Icons from [creazilla.com](https://creazilla.com/) under
   [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/)
 
+## AI assistance
+
+Parts of the code were written with an AI assistant, then reviewed and
+maintained by the author, who is responsible for it.
+
+The app itself contains **no AI**, and sends nothing anywhere: the silences are
+found by measuring the audio level with FFmpeg's `silencedetect`, which is a
+threshold and a stopwatch, not a model.
+
 ## Licence
 
 GPLv3 or later. Copyright (C) 2025-2026 Vincenzo Padula.

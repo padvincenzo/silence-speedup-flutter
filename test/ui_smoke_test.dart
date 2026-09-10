@@ -23,12 +23,14 @@ import 'package:silence_speedup/state/process_store.dart';
 import 'package:silence_speedup/state/queue_store.dart';
 import 'package:silence_speedup/ui/pages/about_page.dart';
 import 'package:silence_speedup/ui/pages/app_settings_page.dart';
+import 'package:silence_speedup/ui/pages/license_text_page.dart';
 import 'package:silence_speedup/ui/pages/licenses_page.dart';
 import 'package:silence_speedup/ui/pages/queue_page.dart';
 import 'package:silence_speedup/ui/pages/silences_page.dart';
 import 'package:silence_speedup/ui/widgets/compact_progress_view.dart';
 import 'package:silence_speedup/ui/widgets/encoding_settings_panel.dart';
 import 'package:silence_speedup/ui/widgets/output_destination.dart';
+import 'package:silence_speedup/ui/widgets/readable_width.dart';
 import 'package:silence_speedup/ui/widgets/silence_timeline.dart';
 import 'package:silence_speedup/ui/widgets/encoding_settings_view.dart';
 import 'package:silence_speedup/ui/theme.dart';
@@ -696,6 +698,11 @@ void main() {
       expect(find.text('Credits'), findsOneWidget);
       expect(find.textContaining('absolutely no warranty'), findsOneWidget);
       expect(find.text('FFmpeg'), findsWidgets);
+      // Said in the credits, where someone looks to find out what the app
+      // is made of -- and it says the app contains no AI, which is the part
+      // a reader of the phrase actually wants to know.
+      expect(find.text('Written with AI assistance'), findsOneWidget);
+      expect(find.textContaining('contains no AI'), findsOneWidget);
     });
 
     testWidgets('fits a narrow window without overflowing', (
@@ -1152,6 +1159,89 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('readable width', () {
+    /// Centred, and no wider than a page of text should be.
+    void expectHeldToWidth(WidgetTester tester, Finder content) {
+      final Rect held = tester.getRect(content);
+      final Size window = tester.view.physicalSize /
+          tester.view.devicePixelRatio;
+
+      expect(held.width, lessThanOrEqualTo(kReadableWidth));
+      expect(held.center.dx, closeTo(window.width / 2, 1));
+    }
+
+    testWidgets('the about page holds its cards to it, centred', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester, size: const Size(1920, 1000));
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(
+        harness.wrap(AboutPage(version: '0.9.12', onOpenLink: (String _) {})),
+      );
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expectHeldToWidth(tester, find.byType(ListView));
+    });
+
+    testWidgets('the app settings page does too', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester, size: const Size(1920, 1000));
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(harness.wrap(const AppSettingsPage()));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expectHeldToWidth(tester, find.byType(ListView));
+    });
+
+    testWidgets('a narrow window is left alone', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester, size: const Size(640, 480));
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(harness.wrap(const AppSettingsPage()));
+      await tester.pumpAndSettle();
+
+      // Nothing to give away at this size: the content takes the window.
+      expect(tester.getRect(find.byType(ListView)).width, 640);
+    });
+  });
+
+  group('the licence itself', () {
+    testWidgets('is read in the app, not on a website', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester);
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(harness.wrap(const LicenseTextPage()));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      // The real file, shipped as an asset: its first lines and the clause
+      // the app's own notice paraphrases.
+      expect(
+        find.textContaining('GNU GENERAL PUBLIC LICENSE'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Version 3, 29 June 2007'), findsOneWidget);
+      expect(find.textContaining('NO WARRANTY'), findsOneWidget);
     });
   });
 

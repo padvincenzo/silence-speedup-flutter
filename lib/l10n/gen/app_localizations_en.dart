@@ -10,6 +10,13 @@ class AppLocalizationsEn extends AppLocalizations {
   AppLocalizationsEn([String locale = 'en']) : super(locale);
 
   @override
+  String get aboutAiAssisted => 'Written with AI assistance';
+
+  @override
+  String get aboutAiNotice =>
+      'Parts of the code were written with an AI assistant, then reviewed and maintained by the author, who is responsible for it. The app itself contains no AI and sends nothing anywhere: silences are found by measuring the audio level with FFmpeg.';
+
+  @override
   String get aboutBuiltWith => 'Built with Flutter, powered by FFmpeg';
 
   @override
