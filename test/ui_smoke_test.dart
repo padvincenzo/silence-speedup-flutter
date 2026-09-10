@@ -944,6 +944,14 @@ void main() {
       // a reader of the phrase actually wants to know.
       expect(find.text('Written with AI assistance'), findsOneWidget);
       expect(find.textContaining('contains no AI'), findsOneWidget);
+      // Every reference is shown without the part every address has, and
+      // none of them is written out beside its link -- which is how one of
+      // the three came to be showing its scheme and the others not.
+      expect(find.textContaining('https://'), findsNothing);
+      expect(
+        find.text('github.com/padvincenzo/silence-speedup-flutter/issues'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('fits a narrow window without overflowing', (

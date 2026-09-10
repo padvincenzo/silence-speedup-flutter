@@ -35,6 +35,16 @@ class AboutPage extends StatelessWidget {
 
   static const String _repository =
       'https://github.com/padvincenzo/silence-speedup-flutter';
+  static const String _issues = '$_repository/issues';
+  static const String _donate = 'https://paypal.me/VincenzoPadula';
+
+  /// A link as it is shown: the address without the part every address has.
+  ///
+  /// Derived from the link itself rather than written out beside it, which
+  /// is how one of the three came to be showing its scheme and the other
+  /// two not.
+  static String _shown(String url) =>
+      url.replaceFirst(RegExp('^https?://'), '');
 
   @override
   Widget build(BuildContext context) {
@@ -167,7 +177,7 @@ class AboutPage extends StatelessWidget {
               _InfoRow(
                 icon: Icons.code,
                 title: strings.menuSourceCode,
-                detail: 'github.com/padvincenzo/silence-speedup-flutter',
+                detail: _shown(_repository),
                 link: _repository,
                 linkHint: strings.aboutOpenInBrowser,
                 onOpenLink: onOpenLink,
@@ -175,16 +185,16 @@ class AboutPage extends StatelessWidget {
               _InfoRow(
                 icon: Icons.bug_report_outlined,
                 title: strings.menuIssue,
-                detail: '$_repository/issues',
-                link: '$_repository/issues',
+                detail: _shown(_issues),
+                link: _issues,
                 linkHint: strings.aboutOpenInBrowser,
                 onOpenLink: onOpenLink,
               ),
               _InfoRow(
                 icon: Icons.coffee_outlined,
                 title: strings.menuDonate,
-                detail: 'paypal.me/VincenzoPadula',
-                link: 'https://paypal.me/VincenzoPadula',
+                detail: _shown(_donate),
+                link: _donate,
                 linkHint: strings.aboutOpenInBrowser,
                 onOpenLink: onOpenLink,
               ),

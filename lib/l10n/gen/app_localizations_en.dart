@@ -20,7 +20,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aboutBuiltWith => 'Built with Flutter, powered by FFmpeg';
 
   @override
-  String get aboutCopyright => 'Copyright (C) 2025-2026 Vincenzo Padula';
+  String get aboutCopyright => 'Copyright (C) 2026 Vincenzo Padula';
 
   @override
   String get aboutLicenseSection => 'Licence';

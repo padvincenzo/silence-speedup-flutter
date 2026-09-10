@@ -168,7 +168,7 @@ threshold and a stopwatch, not a model.
 
 ## Licence
 
-GPLv3 or later. Copyright (C) 2025-2026 Vincenzo Padula.
+GPLv3 or later. Copyright (C) 2026 Vincenzo Padula.
 
 This program comes with **absolutely no warranty**. It is free software, and you
 are welcome to redistribute it under certain conditions; see [LICENSE](LICENSE).

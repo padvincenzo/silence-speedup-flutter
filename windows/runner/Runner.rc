@@ -93,7 +93,7 @@ BEGIN
             VALUE "FileDescription", "Silence SpeedUp - shortens videos by speeding up their silences" "\0"
             VALUE "FileVersion", VERSION_AS_STRING "\0"
             VALUE "InternalName", "silence_speedup" "\0"
-            VALUE "LegalCopyright", "Copyright (C) 2025-2026 Vincenzo Padula. GNU GPL v3 or later." "\0"
+            VALUE "LegalCopyright", "Copyright (C) 2026 Vincenzo Padula. GNU GPL v3 or later." "\0"
             VALUE "OriginalFilename", "silence_speedup.exe" "\0"
             VALUE "ProductName", "Silence SpeedUp" "\0"
             VALUE "ProductVersion", VERSION_AS_STRING "\0"

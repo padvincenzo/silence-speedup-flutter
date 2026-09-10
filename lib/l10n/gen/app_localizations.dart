@@ -119,7 +119,7 @@ abstract class AppLocalizations {
   /// No description provided for @aboutCopyright.
   ///
   /// In en, this message translates to:
-  /// **'Copyright (C) 2025-2026 Vincenzo Padula'**
+  /// **'Copyright (C) 2026 Vincenzo Padula'**
   String get aboutCopyright;
 
   /// No description provided for @aboutLicenseSection.
