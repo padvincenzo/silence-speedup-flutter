@@ -76,7 +76,9 @@ the app imports that package.** Two things follow:
   API, so the engine, the planner and the models are already portable. What
   needs replacing is the desktop chrome (drag-and-drop, the resizable window,
   the compact always-on-top strip) and `AppPaths`, since an Android app cannot
-  write to an arbitrary folder in the user's home. The navigation drawer, the
+  write to an arbitrary folder in the user's home. Single-instance
+  enforcement is desktop chrome too — it lives in the Windows runner, and
+  Android's launcher already reuses the task. The navigation drawer, the
   settings page and the encoding panel — which already becomes a side sheet
   below `kEncodingPanelBreakpoint` — all work on a phone.
 - **A fake runner can drive the whole engine** without an encoder present.

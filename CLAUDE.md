@@ -379,6 +379,24 @@ is the only thing watching the layout.
 `provider`. `ProcessStore` is the only thing that starts a run and the only
 thing that locks the queue; widgets never reason about who may change what.
 
+### One copy at a time
+
+Two copies of the app share what cannot be shared: the scratch directory the
+fragments are written to, and the preferences file, which each rewrites whole
+from whatever it loaded at startup. The second one to close therefore wins,
+silently.
+
+`windows/runner/single_instance.cpp` holds a named mutex for the life of the
+process and, when it finds one already held, brings the running window
+forward and returns before an engine is started — so a second launch shows
+nothing and costs nothing. It identifies the other window by class *and* by
+the executable behind it: every Flutter app answers to
+`FLUTTER_RUNNER_WIN32_WINDOW`, so the class alone would find the wrong one.
+
+This is native on purpose. It has to run before a window could appear, and
+bringing another process forward is a Win32 errand either way. Android needs
+none of it; its launcher already reuses the task.
+
 ### Output and scratch space are separate
 
 The export folder can follow each source file, so there is no single output
