@@ -214,6 +214,39 @@ void main() {
       expect(find.byIcon(Icons.menu), findsOneWidget);
     });
 
+    testWidgets('a page reached from the drawer offers the way back', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester);
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      // The queue is where the drawer is opened from.
+      expect(find.byIcon(Icons.menu), findsOneWidget);
+      expect(find.byType(BackButton), findsNothing);
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('App settings'));
+      await tester.pumpAndSettle();
+
+      // Offering the drawer again from a page the drawer sent you to is a
+      // way round, not a way back.
+      expect(find.byType(BackButton), findsOneWidget);
+      expect(find.byIcon(Icons.menu), findsNothing);
+
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Add'), findsOneWidget);
+      expect(find.byIcon(Icons.menu), findsOneWidget);
+    });
+
     testWidgets('quitting closes the window the way the title bar does', (
       WidgetTester tester,
     ) async {
@@ -279,6 +312,10 @@ void main() {
       expect(find.text('Language'), findsOneWidget);
       expect(find.text('Silence speed'), findsNothing);
 
+      // Back to the queue first: a page the drawer sent you to shows the
+      // way back rather than the drawer again.
+      await tester.tap(find.byType(BackButton));
+      await tester.pumpAndSettle();
       await tester.tap(find.byIcon(Icons.menu));
       await tester.pumpAndSettle();
       await tester.tap(find.text('About'));

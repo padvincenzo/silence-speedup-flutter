@@ -330,6 +330,14 @@ class _AppShellState extends State<AppShell> {
             notificationPredicate: _destination == AppDestination.queue
                 ? (ScrollNotification _) => false
                 : defaultScrollNotificationPredicate,
+            // Away from the queue, the way out is back to it. The drawer's
+            // own button would offer to open the drawer from inside a place
+            // the drawer sent you to, which is a way round rather than a
+            // way back; it is on the queue, where there is nothing to go
+            // back to.
+            leading: _destination == AppDestination.queue
+                ? null
+                : BackButton(onPressed: () => _go(AppDestination.queue)),
             title: Text(_titleFor(_destination, strings)),
             actions: _actionsFor(_destination, strings),
           ),

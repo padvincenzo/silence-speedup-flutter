@@ -239,6 +239,10 @@ they belong:
   with a description, since both surfaces explain themselves in place;
 - something application-level → the drawer.
 
+The drawer's own button is on the queue only. A page the drawer sent you to
+shows a back arrow to the queue instead: offering the drawer from inside
+one of its own destinations is a way round rather than a way back.
+
 ### Encoding settings are a panel, application settings are a page
 
 The two were one page once, and that made the settings people change between
