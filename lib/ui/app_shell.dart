@@ -209,7 +209,12 @@ class _AppShellState extends State<AppShell> {
       await process.stop();
     }
     if (isDesktop) {
-      await windowManager.destroy();
+      // close(), not destroy(). The plugin's destroy is PostQuitMessage,
+      // which ends the message loop and leaves the window standing: it
+      // then sits on screen, frozen, for as long as the engine takes to
+      // shut down. close() posts the same WM_CLOSE the title bar does, so
+      // the window goes at once and the teardown happens behind it.
+      await windowManager.close();
     } else {
       await SystemNavigator.pop();
     }

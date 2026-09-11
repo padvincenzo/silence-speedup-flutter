@@ -6,6 +6,7 @@
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:provider/provider.dart';
@@ -211,6 +212,47 @@ void main() {
       expect(find.byType(MenuBar), findsNothing);
       // Navigation is a drawer instead.
       expect(find.byIcon(Icons.menu), findsOneWidget);
+    });
+
+    testWidgets('quitting closes the window the way the title bar does', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester);
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      final List<String> calls = <String>[];
+      addTearDown(
+        () => TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(
+              const MethodChannel('window_manager'),
+              null,
+            ),
+      );
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            const MethodChannel('window_manager'),
+            (MethodCall call) async {
+              calls.add(call.method);
+              return null;
+            },
+          );
+
+      await tester.pumpWidget(harness.app);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.menu));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Quit'));
+      await tester.pumpAndSettle();
+
+      // The plugin's destroy() is PostQuitMessage: it ends the message loop
+      // and leaves the window on screen for the whole of the engine's
+      // shutdown, which is what made quitting look slow. close() posts the
+      // WM_CLOSE the title bar posts, and that path measures 154ms.
+      expect(calls, contains('close'));
+      expect(calls, isNot(contains('destroy')));
     });
 
     testWidgets('the drawer navigates to settings and to about', (
