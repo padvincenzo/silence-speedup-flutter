@@ -985,12 +985,18 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);
-      // Not the button back as though nothing had happened.
-      expect(find.textContaining('no audio to measure'), findsOneWidget);
-      expect(
-        harness.log.lines.map((LogLine line) => line.message),
-        contains('Could not read the levels of silent.mp4.'),
-      );
+      // Not the button back as though nothing had happened -- and not a
+      // claim about the file either: the app knows it could not read the
+      // levels, not that there was nothing to read.
+      expect(find.textContaining('Could not read the levels'), findsOneWidget);
+
+      final List<String> logged = harness.log.lines
+          .map((LogLine line) => line.message)
+          .toList();
+      expect(logged, contains('Could not read the levels of silent.mp4.'));
+      // With what FFmpeg actually answered, because a failure that explains
+      // nothing has to be reproduced to be understood.
+      expect(logged.any((String line) => line.contains('FFmpeg exited')), isTrue);
     });
 
     testWidgets('the reset asks first, and only then puts everything back', (

@@ -440,6 +440,12 @@ abstract class AppLocalizations {
   /// **'Could not open {url}'**
   String logLinkError(String url);
 
+  /// No description provided for @logMeasureDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'FFmpeg exited {code}; it printed {collected} lines, {streamed} of them live, and no levels among them.'**
+  String logMeasureDetail(int code, int collected, int streamed);
+
   /// No description provided for @logMeasureFailed.
   ///
   /// In en, this message translates to:
@@ -911,7 +917,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsNoiseFailed.
   ///
   /// In en, this message translates to:
-  /// **'This video has no audio to measure.'**
+  /// **'Could not read the levels of this video. The log says what FFmpeg answered.'**
   String get settingsNoiseFailed;
 
   /// No description provided for @settingsNoiseMeasure.

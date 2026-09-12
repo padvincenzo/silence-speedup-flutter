@@ -319,20 +319,43 @@ class SpeedupEngine {
   Future<AudioLevels?> measureLevels(MediaEntry entry) async {
     _log.info(_s.logMeasuring(entry.name));
 
-    // collectOutput, because everything this run has to say is said at the
-    // end: astats prints its summary when the filter closes, and those
-    // lines can still be in flight when the session reports itself done.
+    // Two records of the same output, because either can come up short.
+    // astats prints its whole summary as the filter closes, and those lines
+    // can still be in flight when the session reports itself finished: the
+    // streamed ones may stop early, and the collected ones have been known
+    // to arrive empty. Whichever has the figures is the one that answers.
+    final List<String> streamed = <String>[];
     final FFmpegResult result = await _runner.run(
       FragmentPlanner.levelArguments(input: entry.path),
       collectOutput: true,
+      onLine: streamed.add,
     );
 
-    final AudioLevels? levels = result.succeeded
-        ? FragmentPlanner.parseLevels(result.output.split('\n'))
-        : null;
+    final List<String> collected = result.output.isEmpty
+        ? const <String>[]
+        : result.output.split('\n');
+
+    final AudioLevels? levels =
+        FragmentPlanner.parseLevels(collected) ??
+        FragmentPlanner.parseLevels(streamed);
 
     if (levels == null) {
       _log.warning(_s.logMeasureFailed(entry.name));
+      // What it did say, since what it did not say is the whole problem.
+      // Kept short: the last few lines are where a filter's summary and a
+      // decoder's complaint both end up.
+      _log.warning(
+        _s.logMeasureDetail(
+          result.exitCode ?? -1,
+          collected.length,
+          streamed.length,
+        ),
+      );
+      for (final String line in _tailOf(
+        collected.isEmpty ? streamed : collected,
+      )) {
+        _log.warning(line);
+      }
       if (result.failure != null) {
         _log.warning(result.failure!);
       }
@@ -349,6 +372,16 @@ class SpeedupEngine {
     );
     entry.setLevels(levels);
     return levels;
+  }
+
+  /// The last few non-empty lines, for a failure that has to be explained
+  /// by someone who was not there.
+  static List<String> _tailOf(List<String> lines) {
+    final List<String> kept = lines
+        .map((String line) => line.trim())
+        .where((String line) => line.isNotEmpty)
+        .toList();
+    return kept.length <= 8 ? kept : kept.sublist(kept.length - 8);
   }
 
   Future<bool> _detectSilences({

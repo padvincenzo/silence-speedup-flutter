@@ -138,6 +138,20 @@
       }
     }
   },
+  "logMeasureDetail": "FFmpeg exited {code}; it printed {collected} lines, {streamed} of them live, and no levels among them.",
+  "@logMeasureDetail": {
+    "placeholders": {
+      "code": {
+        "type": "int"
+      },
+      "collected": {
+        "type": "int"
+      },
+      "streamed": {
+        "type": "int"
+      }
+    }
+  },
   "logMeasureFailed": "Could not read the levels of {name}.",
   "@logMeasureFailed": {
     "placeholders": {
@@ -300,7 +314,7 @@
   "settingsGroupPreview": "Preview",
   "settingsGroupSpeed": "Speed",
   "settingsMuteSilences": "Mute silences",
-  "settingsNoiseFailed": "This video has no audio to measure.",
+  "settingsNoiseFailed": "Could not read the levels of this video. The log says what FFmpeg answered.",
   "settingsNoiseMeasure": "Measure {name}",
   "@settingsNoiseMeasure": {
     "placeholders": {

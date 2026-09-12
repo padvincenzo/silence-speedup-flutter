@@ -257,6 +257,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String logMeasureDetail(int code, int collected, int streamed) {
+    return 'FFmpeg exited $code; it printed $collected lines, $streamed of them live, and no levels among them.';
+  }
+
+  @override
   String logMeasureFailed(String name) {
     return 'Could not read the levels of $name.';
   }
@@ -531,7 +536,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsMuteSilences => 'Mute silences';
 
   @override
-  String get settingsNoiseFailed => 'This video has no audio to measure.';
+  String get settingsNoiseFailed =>
+      'Could not read the levels of this video. The log says what FFmpeg answered.';
 
   @override
   String settingsNoiseMeasure(String name) {
