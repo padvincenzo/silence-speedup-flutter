@@ -140,7 +140,7 @@
   "settingsNoiseMeasured": "{name}: fruscio a {floor} dB, voce a {voice} dB",
   "settingsNoiseMeasuring": "Misurazione di {name}...",
   "settingsNoiseTooClose": "Qui il fruscio è forte quasi quanto la voce, quindi nessuna soglia li separa davvero.",
-  "settingsNoiseUse": "Usa {db} dB",
+  "settingsNoiseUse": "Suggerito: {db} dB",
   "settingsNoiseValue": "{db} dB",
   "settingsPlaybackSpeed": "Velocità del parlato",
   "settingsPreset": "Preset",

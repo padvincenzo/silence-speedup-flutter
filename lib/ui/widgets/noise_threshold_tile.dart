@@ -128,6 +128,8 @@ class _Measurement extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final AppLocalizations strings = AppLocalizations.of(context);
+    final ThemeData theme = Theme.of(context);
+    final ColorScheme scheme = theme.colorScheme;
 
     final ProcessStore process = context.watch<ProcessStore>();
     final QueueStore queue = context.watch<QueueStore>();
@@ -193,28 +195,57 @@ class _Measurement extends StatelessWidget {
           );
         }
 
+        // The reading and the number it points to are one answer, so they
+        // are one card: the suggestion means nothing without the two
+        // figures it sits between.
         final int suggestion = levels.suggestedThresholdDb;
-        return Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: <Widget>[
-            _Line(
-              icon: Icons.graphic_eq,
-              text: strings.settingsNoiseMeasured(
-                subject.name,
-                levels.noiseFloorDb.round(),
-                levels.rmsDb.round(),
-              ),
+        return Padding(
+          padding: const EdgeInsets.only(top: 8),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+            decoration: BoxDecoration(
+              color: scheme.surfaceContainerHighest,
+              borderRadius: BorderRadius.circular(12),
             ),
-            Align(
-              alignment: Alignment.centerLeft,
-              child: TextButton(
-                onPressed: enabled && onChanged != null
-                    ? () => onChanged!(suggestion)
-                    : null,
-                child: Text(strings.settingsNoiseUse(suggestion)),
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: <Widget>[
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: <Widget>[
+                    Icon(
+                      Icons.graphic_eq,
+                      size: 16,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        strings.settingsNoiseMeasured(
+                          subject.name,
+                          levels.noiseFloorDb.round(),
+                          levels.rmsDb.round(),
+                        ),
+                        style: theme.textTheme.bodySmall?.copyWith(
+                          color: scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: OutlinedButton(
+                    onPressed: enabled && onChanged != null
+                        ? () => onChanged!(suggestion)
+                        : null,
+                    child: Text(strings.settingsNoiseUse(suggestion)),
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         );
       },
     );

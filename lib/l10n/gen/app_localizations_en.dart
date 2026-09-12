@@ -554,7 +554,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String settingsNoiseUse(int db) {
-    return 'Use $db dB';
+    return 'Suggested: $db dB';
   }
 
   @override

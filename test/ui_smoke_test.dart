@@ -699,6 +699,29 @@ void main() {
       expect(harness.preferences.openEncodingGroups, isNot(contains('export')));
     });
 
+    testWidgets('detection comes before the audio it decides for', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester);
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+
+      await tester.pumpWidget(harness.wrap(const EncodingSettingsView()));
+      await tester.pumpAndSettle();
+
+      // Detection decides what a silence is; the audio settings act on what
+      // it found.
+      expect(
+        tester.getRect(find.text('Silence detection')).top,
+        lessThan(tester.getRect(find.text('Audio')).top),
+      );
+      expect(
+        tester.getRect(find.text('Speed')).top,
+        lessThan(tester.getRect(find.text('Silence detection')).top),
+      );
+    });
+
     testWidgets('an open group keeps its heading in view while it scrolls', (
       WidgetTester tester,
     ) async {
@@ -922,8 +945,20 @@ void main() {
         findsOneWidget,
       );
 
-      // Halfway between the two, and one press away.
-      await tester.tap(find.text('Use -33 dB'));
+      // Halfway between the two, named rather than ordered about, and in
+      // the same card as the reading it comes from.
+      expect(
+        find.ancestor(
+          of: find.text('Suggested: -33 dB'),
+          matching: find.ancestor(
+            of: find.textContaining('hiss at -48 dB'),
+            matching: find.byType(Container),
+          ),
+        ),
+        findsWidgets,
+      );
+
+      await tester.tap(find.text('Suggested: -33 dB'));
       await tester.pumpAndSettle();
 
       expect(tester.takeException(), isNull);

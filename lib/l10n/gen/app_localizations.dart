@@ -941,7 +941,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsNoiseUse.
   ///
   /// In en, this message translates to:
-  /// **'Use {db} dB'**
+  /// **'Suggested: {db} dB'**
   String settingsNoiseUse(int db);
 
   /// No description provided for @settingsNoiseValue.

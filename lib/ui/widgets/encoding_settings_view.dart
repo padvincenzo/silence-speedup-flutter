@@ -112,46 +112,6 @@ class EncodingSettingsView extends StatelessWidget {
 
         ...collapsibleGroupSlivers(
           context: context,
-          icon: Icons.headphones_outlined,
-          title: strings.settingsGroupAudio,
-          summary: audioChanges(settings, strings),
-          expanded: open.contains(groupAudio),
-          onExpanded: (bool value) => toggle(groupAudio, value),
-          children: <Widget>[
-            SwitchSettingTile(
-              title: strings.settingsAudioTracks,
-              description: strings.helpAudioTracks,
-              value: settings.keepAllAudioTracks,
-              onChanged: locked
-                  ? null
-                  : (bool value) =>
-                        update(settings.copyWith(keepAllAudioTracks: value)),
-            ),
-            SwitchSettingTile(
-              title: strings.settingsMuteSilences,
-              description: strings.helpMuteSilences,
-              value: settings.mutesSilence,
-              onChanged: locked || settings.dropsSilence
-                  ? null
-                  : (bool value) =>
-                        update(settings.copyWith(muteSilences: value)),
-            ),
-            DropdownSettingTile<int>(
-              title: strings.settingsAudioRate,
-              description: strings.helpAudioRate,
-              value: settings.audioRateIndex,
-              items: indexItems(kAudioRates, strings),
-              onChanged: locked
-                  ? null
-                  : (int? index) => index == null
-                        ? null
-                        : update(settings.copyWith(audioRateIndex: index)),
-            ),
-          ],
-        ),
-
-        ...collapsibleGroupSlivers(
-          context: context,
           icon: Icons.graphic_eq,
           title: strings.settingsGroupDetection,
           summary: detectionChanges(settings, strings),
@@ -210,6 +170,46 @@ class EncodingSettingsView extends StatelessWidget {
               ),
             ),
             _FilterPreview(settings: settings),
+          ],
+        ),
+
+        ...collapsibleGroupSlivers(
+          context: context,
+          icon: Icons.headphones_outlined,
+          title: strings.settingsGroupAudio,
+          summary: audioChanges(settings, strings),
+          expanded: open.contains(groupAudio),
+          onExpanded: (bool value) => toggle(groupAudio, value),
+          children: <Widget>[
+            SwitchSettingTile(
+              title: strings.settingsAudioTracks,
+              description: strings.helpAudioTracks,
+              value: settings.keepAllAudioTracks,
+              onChanged: locked
+                  ? null
+                  : (bool value) =>
+                        update(settings.copyWith(keepAllAudioTracks: value)),
+            ),
+            SwitchSettingTile(
+              title: strings.settingsMuteSilences,
+              description: strings.helpMuteSilences,
+              value: settings.mutesSilence,
+              onChanged: locked || settings.dropsSilence
+                  ? null
+                  : (bool value) =>
+                        update(settings.copyWith(muteSilences: value)),
+            ),
+            DropdownSettingTile<int>(
+              title: strings.settingsAudioRate,
+              description: strings.helpAudioRate,
+              value: settings.audioRateIndex,
+              items: indexItems(kAudioRates, strings),
+              onChanged: locked
+                  ? null
+                  : (int? index) => index == null
+                        ? null
+                        : update(settings.copyWith(audioRateIndex: index)),
+            ),
           ],
         ),
 

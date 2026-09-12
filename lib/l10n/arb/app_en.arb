@@ -334,7 +334,7 @@
   },
 
   "settingsNoiseTooClose": "The hiss is nearly as loud as the voice here, so no threshold separates them cleanly.",
-  "settingsNoiseUse": "Use {db} dB",
+  "settingsNoiseUse": "Suggested: {db} dB",
   "@settingsNoiseUse": {
     "placeholders": {
       "db": {
