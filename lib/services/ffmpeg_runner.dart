@@ -37,6 +37,7 @@ class FFmpegResult {
     required this.cancelled,
     this.exitCode,
     this.failure,
+    this.output = '',
   });
 
   final bool succeeded;
@@ -48,6 +49,15 @@ class FFmpegResult {
 
   /// Platform-level failure reason, when FFmpeg never got to run.
   final String? failure;
+
+  /// Everything FFmpeg logged, when the caller asked for it.
+  ///
+  /// Not the same as what reached `onLine`. Log messages are delivered
+  /// asynchronously and a session can complete with some still in flight,
+  /// so a filter that prints its findings at the end — `astats` does — can
+  /// have the whole of its output arrive after the run is over. This is
+  /// collected from the session itself, which waits for the stragglers.
+  final String output;
 }
 
 /// The app's whole dependency on FFmpeg, expressed as three operations.
@@ -62,10 +72,16 @@ abstract class FFmpegRunner {
 
   /// Runs FFmpeg with [arguments], streaming log lines to [onLine] and encoder
   /// telemetry to [onProgress]. Completes when the process exits.
+  ///
+  /// Pass [collectOutput] when the answer is in what FFmpeg printed rather
+  /// than in the file it wrote: the result then carries the session's whole
+  /// log, waited for. It is off by default because a real encode logs a line
+  /// per second and nothing reads them afterwards.
   Future<FFmpegResult> run(
     List<String> arguments, {
     void Function(String line)? onLine,
     void Function(FFmpegProgress progress)? onProgress,
+    bool collectOutput = false,
   });
 
   /// Cancels whatever is running. Safe to call when nothing is.
@@ -105,6 +121,7 @@ class FFmpegKitRunner implements FFmpegRunner {
     List<String> arguments, {
     void Function(String line)? onLine,
     void Function(FFmpegProgress progress)? onProgress,
+    bool collectOutput = false,
   }) async {
     final Completer<FFmpegResult> completer = Completer<FFmpegResult>();
     _pending.clear();
@@ -117,12 +134,19 @@ class FFmpegKitRunner implements FFmpegRunner {
           _sessionId = null;
           if (completer.isCompleted) return;
           final ReturnCode? code = await session.getReturnCode();
+          // Asked from the session rather than accumulated from the
+          // callback: the callback can still be owed the last messages when
+          // the session completes, and this waits for them.
+          final String output = collectOutput
+              ? (await session.getAllLogsAsString() ?? '')
+              : '';
           completer.complete(
             FFmpegResult(
               succeeded: ReturnCode.isSuccess(code),
               cancelled: ReturnCode.isCancel(code),
               exitCode: code?.getValue(),
               failure: await session.getFailStackTrace(),
+              output: output,
             ),
           );
         },

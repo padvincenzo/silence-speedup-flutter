@@ -138,6 +138,22 @@
       }
     }
   },
+  "logMeasureFailed": "Could not read the levels of {name}.",
+  "@logMeasureFailed": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "logMeasuring": "Measuring the levels of {name}...",
+  "@logMeasuring": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "logNoSilenceDetected": "No silences detected, moving on to the next.",
   "logOutputDirError": "Cannot write to {path}. {error}",
   "@logOutputDirError": {
@@ -285,7 +301,15 @@
   "settingsGroupSpeed": "Speed",
   "settingsMuteSilences": "Mute silences",
   "settingsNoiseFailed": "This video has no audio to measure.",
-  "settingsNoiseMeasure": "Measure a video",
+  "settingsNoiseMeasure": "Measure {name}",
+  "@settingsNoiseMeasure": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+
   "settingsNoiseMeasured": "{name}: hiss at {floor} dB, voice at {voice} dB",
   "@settingsNoiseMeasured": {
     "placeholders": {
@@ -300,7 +324,15 @@
       }
     }
   },
-  "settingsNoiseMeasuring": "Measuring...",
+  "settingsNoiseMeasuring": "Measuring {name}...",
+  "@settingsNoiseMeasuring": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+
   "settingsNoiseTooClose": "The hiss is nearly as loud as the voice here, so no threshold separates them cleanly.",
   "settingsNoiseUse": "Use {db} dB",
   "@settingsNoiseUse": {

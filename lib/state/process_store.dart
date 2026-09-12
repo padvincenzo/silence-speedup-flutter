@@ -62,6 +62,7 @@ class ProcessStore extends ChangeNotifier {
   RunProgress get progress => _progress;
 
   bool _measuring = false;
+  bool _measureFailed = false;
 
   bool get canStart => !_running && _queue.hasProcessableEntries;
 
@@ -97,6 +98,13 @@ class ProcessStore extends ChangeNotifier {
   /// True while a file is being measured.
   bool get isMeasuring => _measuring;
 
+  /// True when the last measurement asked for came back with nothing.
+  ///
+  /// Kept so the interface can say so: without it a measurement that found
+  /// no levels simply put its own button back, which looks exactly like a
+  /// press that never registered.
+  bool get measureFailed => _measureFailed;
+
   /// Measures how loud [entry] is, so a noise threshold can be chosen
   /// against a reading rather than against nothing.
   ///
@@ -105,9 +113,12 @@ class ProcessStore extends ChangeNotifier {
   Future<AudioLevels?> measure(MediaEntry entry) async {
     if (_running || _measuring) return null;
     _measuring = true;
+    _measureFailed = false;
     notifyListeners();
     try {
-      return await _engine.measureLevels(entry);
+      final AudioLevels? levels = await _engine.measureLevels(entry);
+      _measureFailed = levels == null;
+      return levels;
     } finally {
       _measuring = false;
       notifyListeners();

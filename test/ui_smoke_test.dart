@@ -15,7 +15,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:silence_speedup/app.dart';
 import 'package:silence_speedup/l10n/gen/app_localizations.dart';
 import 'package:silence_speedup/l10n/locale_controller.dart';
-import 'package:silence_speedup/models/audio_levels.dart';
 import 'package:silence_speedup/models/media_entry.dart';
 import 'package:silence_speedup/models/processing_settings.dart';
 import 'package:silence_speedup/services/ffmpeg_runner.dart';
@@ -47,6 +46,9 @@ class FakeFFmpegRunner implements FFmpegRunner {
   int cancels = 0;
   final List<List<String>> invocations = <List<String>>[];
 
+  /// What a run reports having printed, for the runs that are asked.
+  String output = '';
+
   @override
   Future<Duration?> probeDuration(String path) async =>
       const Duration(minutes: 10);
@@ -56,9 +58,15 @@ class FakeFFmpegRunner implements FFmpegRunner {
     List<String> arguments, {
     void Function(String line)? onLine,
     void Function(FFmpegProgress progress)? onProgress,
+    bool collectOutput = false,
   }) async {
     invocations.add(arguments);
-    return const FFmpegResult(succeeded: true, cancelled: false, exitCode: 0);
+    return FFmpegResult(
+      succeeded: true,
+      cancelled: false,
+      exitCode: 0,
+      output: collectOutput ? output : '',
+    );
   }
 
   @override
@@ -878,15 +886,36 @@ void main() {
       await tester.pumpWidget(harness.wrap(const EncodingSettingsView()));
       await tester.pumpAndSettle();
 
-      // A number with a unit, not one of three names twenty decibels apart.
+      // A number with a unit, not one of three names twenty decibels apart,
+      // and it says which video it is offering to measure.
       expect(find.text('-34 dB'), findsOneWidget);
-      expect(find.text('Measure a video'), findsOneWidget);
+      expect(find.text('Measure talk.mp4'), findsOneWidget);
 
-      // What a measurement of that file would leave behind.
-      harness.queue.entries.first.setLevels(
-        const AudioLevels(noiseFloorDb: -48, rmsDb: -18),
-      );
+      // What FFmpeg prints, and when it prints it: the summary comes out as
+      // the filter closes, which is why the run is asked for its collected
+      // output instead of what the streaming callback happened to deliver.
+      harness.runner.output = '''
+[Parsed_astats_0 @ 000001] Channel: 1
+[Parsed_astats_0 @ 000001] RMS level dB: -18.000000
+[Parsed_astats_0 @ 000001] Noise floor dB: -48.000000
+[Parsed_astats_0 @ 000001] Overall
+[Parsed_astats_0 @ 000001] RMS level dB: -18.000000
+[Parsed_astats_0 @ 000001] Noise floor dB: -48.000000
+''';
+
+      await tester.tap(find.text('Measure talk.mp4'));
       await tester.pumpAndSettle();
+
+      // It asked FFmpeg for the levels of that file.
+      expect(
+        harness.runner.invocations.last,
+        containsAllInOrder(<String>['-af', 'astats=metadata=1:reset=0']),
+      );
+      // And said so where someone would look for it.
+      expect(
+        harness.log.lines.map((LogLine line) => line.message),
+        contains('Measuring the levels of talk.mp4...'),
+      );
 
       expect(
         find.text('talk.mp4: hiss at -48 dB, voice at -18 dB'),
@@ -900,6 +929,33 @@ void main() {
       expect(tester.takeException(), isNull);
       expect(harness.preferences.settings.thresholdDb, -33);
       expect(find.text('-33 dB'), findsOneWidget);
+    });
+
+    testWidgets('a measurement that reads nothing says so', (
+      WidgetTester tester,
+    ) async {
+      await useDesktopSurface(tester);
+      final TestHarness harness = await TestHarness.create(
+        preferred: const Locale('en'),
+      );
+      await harness.preferences.setEncodingGroupOpen('detection', true);
+      await harness.queue.addFiles(<String>[r'C:\videos\silent.mp4']);
+
+      await tester.pumpWidget(harness.wrap(const EncodingSettingsView()));
+      await tester.pumpAndSettle();
+
+      // A file with no audio prints no levels.
+      harness.runner.output = '';
+      await tester.tap(find.text('Measure silent.mp4'));
+      await tester.pumpAndSettle();
+
+      expect(tester.takeException(), isNull);
+      // Not the button back as though nothing had happened.
+      expect(find.textContaining('no audio to measure'), findsOneWidget);
+      expect(
+        harness.log.lines.map((LogLine line) => line.message),
+        contains('Could not read the levels of silent.mp4.'),
+      );
     });
 
     testWidgets('the reset asks first, and only then puts everything back', (

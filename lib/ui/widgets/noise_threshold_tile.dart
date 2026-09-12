@@ -139,15 +139,15 @@ class _Measurement extends StatelessWidget {
         ? null
         : queue.processableEntries.first;
 
+    if (subject == null) {
+      return const SizedBox(height: 4);
+    }
+
     if (process.isMeasuring) {
       return _Line(
         icon: Icons.hourglass_empty,
-        text: strings.settingsNoiseMeasuring,
+        text: strings.settingsNoiseMeasuring(subject.name),
       );
-    }
-
-    if (subject == null) {
-      return const SizedBox(height: 4);
     }
 
     return ListenableBuilder(
@@ -156,15 +156,33 @@ class _Measurement extends StatelessWidget {
         final AudioLevels? levels = subject.levels;
 
         if (levels == null) {
-          return Align(
-            alignment: Alignment.centerLeft,
-            child: TextButton.icon(
-              onPressed: enabled
-                  ? () => context.read<ProcessStore>().measure(subject)
-                  : null,
-              icon: const Icon(Icons.graphic_eq, size: 18),
-              label: Text(strings.settingsNoiseMeasure),
-            ),
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: <Widget>[
+              // Named, because the queue may hold several and the answer is
+              // about one of them.
+              Align(
+                alignment: Alignment.centerLeft,
+                child: TextButton.icon(
+                  onPressed: enabled
+                      ? () => context.read<ProcessStore>().measure(subject)
+                      : null,
+                  icon: const Icon(Icons.graphic_eq, size: 18),
+                  label: Text(
+                    strings.settingsNoiseMeasure(subject.name),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ),
+              // A measurement that found nothing says so. It used to put the
+              // button back and look like a press that had not registered.
+              if (process.measureFailed)
+                _Line(
+                  icon: Icons.warning_amber_outlined,
+                  text: strings.settingsNoiseFailed,
+                ),
+            ],
           );
         }
 

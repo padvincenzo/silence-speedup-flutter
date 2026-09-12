@@ -139,6 +139,20 @@ encoder is busy, touches no status and produces no file. It is stored on the
 entry, and `prepare()` leaves it alone — it describes the file, and the file
 does not change between runs.
 
+It reads `FFmpegResult.output`, asked for with `collectOutput: true`, and
+**not** the lines that reached `onLine`. Log messages are delivered
+asynchronously and a session can complete with some still in flight, so a
+filter that prints its findings as it closes — `astats` prints all of them
+there — can have its entire output arrive after the run is over. Streaming
+works for `silencedetect` because that prints as it goes; it silently
+returned nothing here. Anything else that reads what FFmpeg *said* rather
+than what it wrote wants the same flag.
+
+It also says what it is doing: which file it is measuring, what it read, and
+when it read nothing — in the log and on the tile. A measurement that
+answered by putting its own button back was indistinguishable from a press
+that never registered.
+
 ### Positions are absolute source seconds
 
 `Fragment` and `SilenceRange` are in seconds from the start of the source file,

@@ -257,6 +257,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String logMeasureFailed(String name) {
+    return 'Could not read the levels of $name.';
+  }
+
+  @override
+  String logMeasuring(String name) {
+    return 'Measuring the levels of $name...';
+  }
+
+  @override
   String get logNoSilenceDetected =>
       'No silences detected, moving on to the next.';
 
@@ -524,7 +534,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsNoiseFailed => 'This video has no audio to measure.';
 
   @override
-  String get settingsNoiseMeasure => 'Measure a video';
+  String settingsNoiseMeasure(String name) {
+    return 'Measure $name';
+  }
 
   @override
   String settingsNoiseMeasured(String name, int floor, int voice) {
@@ -532,7 +544,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get settingsNoiseMeasuring => 'Measuring...';
+  String settingsNoiseMeasuring(String name) {
+    return 'Measuring $name...';
+  }
 
   @override
   String get settingsNoiseTooClose =>

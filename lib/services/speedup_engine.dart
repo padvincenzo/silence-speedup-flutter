@@ -317,22 +317,36 @@ class SpeedupEngine {
   /// it can be asked for while choosing a threshold rather than before
   /// starting. Returns null when the file has no audio to measure.
   Future<AudioLevels?> measureLevels(MediaEntry entry) async {
-    final List<String> lines = <String>[];
+    _log.info(_s.logMeasuring(entry.name));
 
+    // collectOutput, because everything this run has to say is said at the
+    // end: astats prints its summary when the filter closes, and those
+    // lines can still be in flight when the session reports itself done.
     final FFmpegResult result = await _runner.run(
       FragmentPlanner.levelArguments(input: entry.path),
-      onLine: (String line) {
-        lines.add(line);
-        _reportFfmpegLine(line);
-      },
+      collectOutput: true,
     );
 
-    if (!result.succeeded) {
+    final AudioLevels? levels = result.succeeded
+        ? FragmentPlanner.parseLevels(result.output.split('\n'))
+        : null;
+
+    if (levels == null) {
+      _log.warning(_s.logMeasureFailed(entry.name));
+      if (result.failure != null) {
+        _log.warning(result.failure!);
+      }
       entry.setLevels(null);
       return null;
     }
 
-    final AudioLevels? levels = FragmentPlanner.parseLevels(lines);
+    _log.info(
+      _s.settingsNoiseMeasured(
+        entry.name,
+        levels.noiseFloorDb.round(),
+        levels.rmsDb.round(),
+      ),
+    );
     entry.setLevels(levels);
     return levels;
   }

@@ -440,6 +440,18 @@ abstract class AppLocalizations {
   /// **'Could not open {url}'**
   String logLinkError(String url);
 
+  /// No description provided for @logMeasureFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not read the levels of {name}.'**
+  String logMeasureFailed(String name);
+
+  /// No description provided for @logMeasuring.
+  ///
+  /// In en, this message translates to:
+  /// **'Measuring the levels of {name}...'**
+  String logMeasuring(String name);
+
   /// No description provided for @logNoSilenceDetected.
   ///
   /// In en, this message translates to:
@@ -905,8 +917,8 @@ abstract class AppLocalizations {
   /// No description provided for @settingsNoiseMeasure.
   ///
   /// In en, this message translates to:
-  /// **'Measure a video'**
-  String get settingsNoiseMeasure;
+  /// **'Measure {name}'**
+  String settingsNoiseMeasure(String name);
 
   /// No description provided for @settingsNoiseMeasured.
   ///
@@ -917,8 +929,8 @@ abstract class AppLocalizations {
   /// No description provided for @settingsNoiseMeasuring.
   ///
   /// In en, this message translates to:
-  /// **'Measuring...'**
-  String get settingsNoiseMeasuring;
+  /// **'Measuring {name}...'**
+  String settingsNoiseMeasuring(String name);
 
   /// No description provided for @settingsNoiseTooClose.
   ///
