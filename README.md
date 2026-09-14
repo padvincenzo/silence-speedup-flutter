@@ -14,23 +14,24 @@ This is the **Flutter rewrite** of the Electron app at
 
 ---
 
-## Why the rewrite
+## Why Flutter
 
-The Electron version worked, but it asked the user to go and find `ffmpeg.exe`
-before it would do anything, and it refused to run until they had. That is a bad
-first five minutes.
-
-Here **FFmpeg is bundled**. There is no path to configure, no binary to
-download, no preference to get wrong. The plugin that provides it
+**FFmpeg is bundled.** There is no path to configure, no binary to download and
+no preference to get wrong; installing the app is the whole setup. The plugin
+that provides it
 ([`ffmpeg_kit_flutter_new`](https://pub.dev/packages/ffmpeg_kit_flutter_new),
-full-GPL, includes `libx264`) also covers Android, iOS, macOS and Linux behind
-the same API — so the same processing pipeline can follow the app to a phone
-later. See [ROADMAP.md](ROADMAP.md).
+full-GPL, includes `libx264`) covers Android, iOS, macOS and Linux behind the
+same API, so the same processing pipeline can follow the app to a phone later.
+See [ROADMAP.md](ROADMAP.md).
 
-Along the way, several bugs in the original were fixed rather than reproduced —
-the silence margin was applied unevenly, muting a silence desynced the audio,
-and the exporter could overwrite the source file. Each is listed with its
-reasoning in [docs/porting-notes.md](docs/porting-notes.md).
+The rest follows from that choice. The app is native rather than a browser in a
+window, the interface is Material and built for the job, and the part that
+decides what to ask FFmpeg for is pure: every argument list the app runs is
+built in one place and asserted in a test, because a wrong flag there produces a
+file that is subtly out of sync rather than an error.
+
+[docs/porting-notes.md](docs/porting-notes.md) records where this version
+behaves differently from the Electron app, for anyone moving between the two.
 
 ---
 
