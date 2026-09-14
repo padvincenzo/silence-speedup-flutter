@@ -36,6 +36,20 @@ needs network. Later builds reuse them.
 
 ## Rules that matter here
 
+### Work arrives on a branch, never straight on main
+
+`main` is the published branch now that the repository is public, and what is
+on it is what a stranger clones. Changes therefore go on a branch of their own
+and wait: the author validates them and merges them by hand. Do not push a
+code change to `main`, and do not merge your own branch.
+
+The exception is **Markdown**. Documentation, the README, the roadmap and this
+file can go straight to `main`, because a wrong sentence in a document costs a
+reader a minute and a wrong flag in an encoder costs them a re-encode. That
+holds only while the prose stands on its own: a document describing a change
+that is still sitting on a branch travels **with** that branch, or it tells
+readers about something their clone does not have.
+
 ### FFmpeg is bundled, never configured
 
 FFmpeg comes from the `ffmpeg_kit_flutter_new` plugin (full-GPL, includes
